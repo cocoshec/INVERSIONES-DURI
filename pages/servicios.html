@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios - Inversiones Duri C.A</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html" class="nav-link">Inicio</a></li>
+                <li><a href="productos.html" class="nav-link">Productos</a></li>
+                <li><a href="pedidos.html" class="nav-link">Pedidos</a></li>
+                <li><a href="servicios.html" class="nav-link active">Servicios</a></li>
+                <li><a href="nosotros.html" class="nav-link">Nosotros</a></li>
+                <li><a href="contacto.html" class="nav-link">Contacto</a></li>
+            </ul>
+            <button class="nav-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <section class="page-hero" style="background:linear-gradient(135deg,var(--green),#1E7E34)">
+        <div class="container">
+            <h1><i class="fas fa-concierge-bell"></i> Nuestros Servicios</h1>
+            <p>Soluciones integrales para tu negocio</p>
+        </div>
+    </section>
+
+    <section class="page-content">
+        <div class="container">
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon orange"><i class="fas fa-shopping-cart"></i></div>
+                    <h3>Gestión de Pedidos</h3>
+                    <p>Sistema completo para registrar y dar seguimiento a todos tus pedidos de manera eficiente y organizada.</p>
+                    <a href="pedidos.html" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Realizar Pedido</a>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon yellow"><i class="fas fa-warehouse"></i></div>
+                    <h3>Control de Inventario</h3>
+                    <p>Monitorea en tiempo real el stock de productos con alertas automáticas de reabastecimiento.</p>
+                    <a href="inventario.html" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Ver Inventario</a>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon green"><i class="fas fa-truck-fast"></i></div>
+                    <h3>Entrega a Domicilio</h3>
+                    <p>Servicio de entrega rápida en Maracay y alrededores. Recibe tus productos donde estés.</p>
+                    <a href="contacto.html" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Más Info</a>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon brown"><i class="fas fa-headset"></i></div>
+                    <h3>Soporte 24/7</h3>
+                    <p>Nuestro equipo está disponible para ayudarte con cualquier consulta o problema que tengas.</p>
+                    <a href="contacto.html" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Contactar</a>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon orange"><i class="fas fa-file-invoice"></i></div>
+                    <h3>Facturación Electrónica</h3>
+                    <p>Emisión de facturas electrónicas validadas por el SENIAT para tu contabilidad.</p>
+                    <a href="contacto.html" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Consultar</a>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon green"><i class="fas fa-hand-holding-dollar"></i></div>
+                    <h3>Crédito Empresarial</h3>
+                    <p>Facilidades de pago para empresas y compras al por mayor con precios especiales.</p>
+                    <a href="contacto.html" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Solicitar</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom"><p>&copy; 2026 Inversiones Duri C.A. Maracay, Estado Aragua.</p></div>
+        </div>
+    </footer>
+    <script src="../js/app.js"></script>
+</body>
+</html>

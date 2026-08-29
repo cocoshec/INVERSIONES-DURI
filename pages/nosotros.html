@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nosotros - Inversiones Duri C.A</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html" class="nav-link">Inicio</a></li>
+                <li><a href="productos.html" class="nav-link">Productos</a></li>
+                <li><a href="pedidos.html" class="nav-link">Pedidos</a></li>
+                <li><a href="servicios.html" class="nav-link">Servicios</a></li>
+                <li><a href="nosotros.html" class="nav-link active">Nosotros</a></li>
+                <li><a href="contacto.html" class="nav-link">Contacto</a></li>
+            </ul>
+            <button class="nav-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <section class="page-hero" style="background:linear-gradient(135deg,var(--orange),var(--yellow))">
+        <div class="container">
+            <h1><i class="fas fa-building"></i> Sobre Nosotros</h1>
+            <p>Conoce más sobre Inversiones Duri C.A</p>
+        </div>
+    </section>
+
+    <section class="page-content">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-text">
+                    <h2>Inversiones Duri C.A</h2>
+                    <p>Somos una empresa venezolana ubicada en Maracay, Estado Aragua, dedicada a proveer soluciones integrales en papelería, útiles escolares y artículos de oficina.</p>
+                    <p>Desde nuestros inicios, nos hemos comprometido a ofrecer productos de la más alta calidad a precios competitivos, brindando un servicio personalizado que supere las expectativas de nuestros clientes.</p>
+                    <p>Nuestro equipo de trabajo está conformado por profesionales comprometidos con la excelencia y la satisfacción del cliente.</p>
+                    <ul class="about-list">
+                        <li><i class="fas fa-check-circle"></i> Productos de alta calidad importados</li>
+                        <li><i class="fas fa-check-circle"></i> Precios competitivos del mercado</li>
+                        <li><i class="fas fa-check-circle"></i> Entrega rápida en Maracay</li>
+                        <li><i class="fas fa-check-circle"></i> Atención personalizada 24/7</li>
+                        <li><i class="fas fa-check-circle"></i> Facturación electrónica válida</li>
+                        <li><i class="fas fa-check-circle"></i> Facilidades de pago</li>
+                    </ul>
+                </div>
+                <div class="about-image">
+                    <img src="../img/logo-duri.png" alt="Inversiones Duri">
+                </div>
+            </div>
+
+            <div style="margin-top:60px">
+                <div class="section-header">
+                    <span class="section-tag"><i class="fas fa-bullseye"></i> Nuestros Pilares</span>
+                    <h2>Misión, Visión y Valores</h2>
+                </div>
+                <div class="services-grid" style="grid-template-columns:repeat(3,1fr)">
+                    <div class="service-card">
+                        <div class="service-icon orange"><i class="fas fa-bullseye"></i></div>
+                        <h3>Misión</h3>
+                        <p>Proveer soluciones integrales en papelería y útiles escolares con la más alta calidad, contribuyendo al desarrollo educativo y empresarial de la región.</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon yellow"><i class="fas fa-eye"></i></div>
+                        <h3>Visión</h3>
+                        <p>Ser la empresa líder en distribución de papelería y artículos de oficina en el centro del país, reconocida por nuestra calidad y servicio al cliente.</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon green"><i class="fas fa-heart"></i></div>
+                        <h3>Valores</h3>
+                        <p>Calidad, honestidad, compromiso, innovación y servicio al cliente son los pilares que guían cada una de nuestras acciones.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom"><p>&copy; 2026 Inversiones Duri C.A. Maracay, Estado Aragua.</p></div>
+        </div>
+    </footer>
+    <script src="../js/app.js"></script>
+</body>
+</html>

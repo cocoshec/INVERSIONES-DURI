@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedidos - Inversiones Duri C.A</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body data-page="pedidos">
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html" class="nav-link">Inicio</a></li>
+                <li><a href="productos.html" class="nav-link">Productos</a></li>
+                <li><a href="pedidos.html" class="nav-link active">Pedidos</a></li>
+                <li><a href="servicios.html" class="nav-link">Servicios</a></li>
+                <li><a href="nosotros.html" class="nav-link">Nosotros</a></li>
+                <li><a href="contacto.html" class="nav-link">Contacto</a></li>
+            </ul>
+            <button class="nav-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <section class="page-hero" style="background:linear-gradient(135deg,var(--yellow),#E6B800)">
+        <div class="container">
+            <h1><i class="fas fa-shopping-cart"></i> Gestión de Pedidos</h1>
+            <p>Crea pedidos y consulta el historial desde la base de datos</p>
+        </div>
+    </section>
+
+    <section class="page-content">
+        <div class="container">
+            <div class="order-grid">
+                <!-- Order Form -->
+                <div class="order-card">
+                    <h3><i class="fas fa-file-invoice"></i> Nuevo Pedido</h3>
+                    <form id="orderForm">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Cliente</label>
+                            <select id="clientSelect" required>
+                                <option value="">Cargando clientes...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-box"></i> Agregar Producto</label>
+                            <div style="display:flex;gap:10px">
+                                <select id="productSelect" style="flex:1;padding:12px;border:2px solid var(--cream);border-radius:var(--radius-sm);font-family:'Rubik',sans-serif">
+                                    <option value="">Cargando productos...</option>
+                                </select>
+                                <button type="button" class="btn btn-primary" onclick="addProductToCart()"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-map-marker-alt"></i> Dirección de Entrega</label>
+                            <textarea id="deliveryAddress" rows="2" placeholder="Dirección completa..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-sticky-note"></i> Notas</label>
+                            <textarea id="orderNotes" rows="2" placeholder="Instrucciones especiales..."></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Cart -->
+                <div class="order-card">
+                    <h3><i class="fas fa-shopping-cart"></i> Tu Pedido</h3>
+                    <div class="order-items" id="orderItems">
+                        <div class="empty-cart">
+                            <i class="fas fa-shopping-basket"></i>
+                            <p>Tu pedido está vacío</p>
+                            <span>Selecciona un producto para agregar</span>
+                        </div>
+                    </div>
+                    <div class="order-total-row">
+                        <span>Total (IVA incluido):</span>
+                        <strong id="orderTotal">$0.00</strong>
+                    </div>
+                    <button class="btn btn-primary btn-block btn-lg" onclick="submitOrder()" id="submitBtn" disabled>
+                        <i class="fas fa-paper-plane"></i> Enviar Pedido
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="recent-orders">
+                <h3><i class="fas fa-history"></i> Pedidos Recientes (desde BD)</h3>
+                <div id="recentOrders">
+                    <div style="text-align:center;padding:30px;color:var(--gray)">
+                        <i class="fas fa-spinner fa-spin" style="color:var(--orange)"></i> Cargando pedidos...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom"><p>&copy; 2026 Inversiones Duri C.A. Maracay, Estado Aragua.</p></div>
+        </div>
+    </footer>
+    <script src="../js/app.js"></script>
+    <script>
+        // Cargar productos en el select al cargar la página
+        document.addEventListener('DOMContentLoaded', async function() {
+            const isInPages = window.location.pathname.includes('/pages/');
+            try {
+                const res = await fetch(isInPages ? '../backend/api/productos.php' : 'backend/api/productos.php');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const select = document.getElementById('productSelect');
+                    select.innerHTML = '<option value="">Seleccionar producto...</option>' +
+                        data.data.filter(p => p.stock_actual > 0).map(p => 
+                            `<option value="${p.nombre}|${p.precio_venta}|${p.stock_actual}|${p.id}">${p.nombre} - $${parseFloat(p.precio_venta).toFixed(2)} (${p.stock_actual} u)</option>`
+                        ).join('');
+                }
+            } catch(err) { console.error(err); }
+        });
+    </script>
+</body>
+</html>

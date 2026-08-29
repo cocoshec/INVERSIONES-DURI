@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios - Inversiones Duri C.A</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html" class="nav-link">Inicio</a></li>
+                <li><a href="productos.html" class="nav-link">Productos</a></li>
+                <li><a href="pedidos.html" class="nav-link">Pedidos</a></li>
+                <li><a href="usuarios.html" class="nav-link active">Usuarios</a></li>
+                <li><a href="contacto.html" class="nav-link">Contacto</a></li>
+            </ul>
+            <div style="display:flex;align-items:center;gap:15px">
+                <span id="userDisplay" style="font-size:0.85rem;color:var(--gray)"></span>
+                <button onclick="logout()" class="btn btn-sm" style="background:var(--cream);color:var(--dark-brown)"><i class="fas fa-sign-out-alt"></i> Salir</button>
+            </div>
+            <button class="nav-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <section class="page-hero" style="background:linear-gradient(135deg,var(--dark-brown),var(--dark-brown-light))">
+        <div class="container">
+            <h1><i class="fas fa-users-cog"></i> Administración de Usuarios</h1>
+            <p>Gestiona los usuarios y roles del sistema</p>
+        </div>
+    </section>
+
+    <section class="page-content">
+        <div class="container">
+            <!-- Stats -->
+            <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+                <div class="stat-card">
+                    <div class="stat-card-icon orange"><i class="fas fa-user-shield"></i></div>
+                    <div><div class="stat-card-value" id="countSuper">0</div><div class="stat-card-label">SuperUsuarios</div></div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-card-icon yellow"><i class="fas fa-user-tie"></i></div>
+                    <div><div class="stat-card-value" id="countOperador">0</div><div class="stat-card-label">Operadores</div></div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-card-icon green"><i class="fas fa-user"></i></div>
+                    <div><div class="stat-card-value" id="countUsuario">0</div><div class="stat-card-label">Usuarios</div></div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px">
+                <h3 style="display:flex;align-items:center;gap:10px"><i class="fas fa-list" style="color:var(--orange)"></i> Lista de Usuarios</h3>
+                <button class="btn btn-primary" onclick="openModal('userModal')"><i class="fas fa-user-plus"></i> Nuevo Usuario</button>
+            </div>
+
+            <!-- Users Table -->
+            <div class="inv-table-wrap">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Teléfono</th>
+                            <th>Último Acceso</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                        <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--gray)"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Activity Log -->
+            <div style="margin-top:40px">
+                <h3 style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><i class="fas fa-history" style="color:var(--orange)"></i> Registro de Actividad</h3>
+                <div class="inv-table-wrap">
+                    <table class="inv-table">
+                        <thead>
+                            <tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>IP</th></tr>
+                        </thead>
+                        <tbody id="logBody">
+                            <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray)"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Nuevo Usuario -->
+    <div class="modal" id="userModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:center;justify-content:center">
+        <div style="background:var(--white);border-radius:var(--radius);width:500px;max-width:95%;max-height:90vh;overflow-y:auto">
+            <div style="padding:24px;border-bottom:1px solid var(--cream);display:flex;justify-content:space-between;align-items:center">
+                <h3 style="display:flex;align-items:center;gap:10px"><i class="fas fa-user-plus" style="color:var(--orange)"></i> <span id="modalTitle">Nuevo Usuario</span></h3>
+                <button onclick="closeModal('userModal')" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--gray)">&times;</button>
+            </div>
+            <div style="padding:24px">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Nombre Completo *</label>
+                        <input type="text" id="userName" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> Correo Electrónico *</label>
+                        <input type="email" id="userEmail" required>
+                    </div>
+                    <div class="form-group" id="passwordGroup">
+                        <label><i class="fas fa-lock"></i> Contraseña * <small style="color:var(--gray)">(mín. 6 caracteres)</small></label>
+                        <input type="password" id="userPassword" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-phone"></i> Teléfono</label>
+                        <input type="tel" id="userPhone" placeholder="+58 412-1234567">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-user-tag"></i> Rol *</label>
+                        <select id="userRole" required>
+                            <option value="usuario">Usuario</option>
+                            <option value="operador">Operador</option>
+                            <option value="super_usuario">SuperUsuario</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:20px">
+                        <button type="button" class="btn" style="flex:1;background:var(--cream);color:var(--dark-brown)" onclick="closeModal('userModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom"><p>&copy; 2026 Inversiones Duri C.A. Maracay, Estado Aragua.</p></div>
+        </div>
+    </footer>
+
+    <script>
+    const API = '../backend/api/usuarios.php';
+    let currentUser = null;
+
+    // Verificar sesión
+    document.addEventListener('DOMContentLoaded', function(){
+        const userData = localStorage.getItem('userDuri');
+        if(!userData){
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Rubik,sans-serif;text-align:center"><div><h1 style="color:var(--orange);font-size:3rem"><i class="fas fa-user-lock"></i></h1><h2>Inicia Sesión Requerido</h2><p>Debes iniciar sesión como SuperUsuario para acceder.</p><a href="../login.html" class="btn btn-primary" style="margin-top:20px"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a></div></div>';
+            return;
+        }
+        currentUser = JSON.parse(userData);
+        
+        if(currentUser.rol !== 'super_usuario'){
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:Rubik,sans-serif;text-align:center"><div><h1 style="color:#dc3545;font-size:3rem"><i class="fas fa-lock"></i></h1><h2>Acceso Denegado</h2><p>Solo el SuperUsuario puede administrar usuarios. Tu rol: ' + currentUser.rol + '</p><a href="../index.html" class="btn btn-primary" style="margin-top:20px">Volver al Inicio</a></div></div>';
+            return;
+        }
+        
+        document.getElementById('userDisplay').innerHTML = '<i class="fas fa-user"></i> ' + currentUser.nombre;
+        loadUsers();
+        loadLog();
+    });
+
+    async function loadUsers(){
+        try{
+            const res = await fetch(API);
+            const data = await res.json();
+            if(data.status === 'success') renderUsers(data.data);
+        }catch(err){ console.error(err); }
+    }
+
+    function renderUsers(usuarios){
+        const tbody = document.getElementById('usersBody');
+        const roles = {super_usuario:'SuperUsuario', operador:'Operador', usuario:'Usuario'};
+        const roleColors = {super_usuario:'background:rgba(239,126,38,0.15);color:var(--orange)', operador:'background:rgba(243,199,58,0.25);color:#B8960A', usuario:'background:rgba(40,167,69,0.15);color:var(--green)'};
+        
+        let counts = {super_usuario:0, operador:0, usuario:0};
+        usuarios.forEach(u => counts[u.rol]++);
+        document.getElementById('countSuper').textContent = counts.super_usuario;
+        document.getElementById('countOperador').textContent = counts.operador;
+        document.getElementById('countUsuario').textContent = counts.usuario;
+        
+        tbody.innerHTML = usuarios.map(u => `
+            <tr>
+                <td><strong>${u.nombre}</strong></td>
+                <td>${u.email}</td>
+                <td><span style="padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;${roleColors[u.rol]}">${roles[u.rol]}</span></td>
+                <td>${u.telefono || '-'}</td>
+                <td>${u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-VE') : 'Nunca'}</td>
+                <td><span class="status ${u.activo ? 'available' : 'out'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                <td>
+                    <button class="btn btn-sm" style="background:var(--cream)" onclick='editUser(${JSON.stringify(u)})'><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm" style="background:${u.activo ? 'rgba(220,53,69,0.15)' : 'rgba(40,167,69,0.15)'};color:${u.activo ? '#dc3545' : '#28a745'}" onclick="toggleUser(${u.id},${u.activo})"><i class="fas fa-${u.activo ? 'ban' : 'check'}"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function loadLog(){
+        try{
+            const res = await fetch(API + '?action=log');
+            const data = await res.json();
+            if(data.status === 'success'){
+                document.getElementById('logBody').innerHTML = data.data.map(l => `
+                    <tr>
+                        <td>${new Date(l.created_at).toLocaleString('es-VE')}</td>
+                        <td>${l.usuario_nombre || 'Sistema'}</td>
+                        <td>${l.accion}</td>
+                        <td>${l.ip_address || '-'}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray)">Sin actividad</td></tr>';
+            }
+        }catch(err){ console.error(err); }
+    }
+
+    function editUser(user){
+        document.getElementById('modalTitle').textContent = 'Editar Usuario';
+        document.getElementById('userId').value = user.id;
+        document.getElementById('userName').value = user.nombre;
+        document.getElementById('userEmail').value = user.email;
+        document.getElementById('userPhone').value = user.telefono || '';
+        document.getElementById('userRole').value = user.rol;
+        document.getElementById('passwordGroup').style.display = 'none';
+        openModal('userModal');
+    }
+
+    async function toggleUser(id, activo){
+        const action = activo ? 'desactivar' : 'activar';
+        if(!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este usuario?`)) return;
+        
+        try{
+            await fetch(API + '?id=' + id, {
+                method:'PUT',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({activo: activo ? 0 : 1})
+            });
+            loadUsers();
+        }catch(err){ console.error(err); }
+    }
+
+    document.getElementById('userForm').addEventListener('submit', async function(e){
+        e.preventDefault();
+        
+        const id = document.getElementById('userId').value;
+        const password = document.getElementById('userPassword').value;
+        
+        // Validaciones
+        const name = document.getElementById('userName').value.trim();
+        const email = document.getElementById('userEmail').value.trim();
+        
+        if(name.length < 3){ alert('El nombre debe tener al menos 3 caracteres'); return; }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('Email no válido'); return; }
+        if(!id && password.length < 6){ alert('La contraseña debe tener al menos 6 caracteres'); return; }
+        
+        const userData = {
+            nombre: name,
+            email: email,
+            telefono: document.getElementById('userPhone').value,
+            rol: document.getElementById('userRole').value
+        };
+        
+        if(password) userData.password = password;
+        
+        try{
+            const url = id ? API + '?id=' + id : API;
+            await fetch(url, {
+                method: id ? 'PUT' : 'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(userData)
+            });
+            closeModal('userModal');
+            this.reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('passwordGroup').style.display = 'block';
+            document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
+            loadUsers();
+        }catch(err){ console.error(err); }
+    });
+
+    function logout(){
+        localStorage.removeItem('userDuri');
+        window.location.href = '../login.html';
+    }
+
+    function openModal(id){ document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id){ document.getElementById(id).style.display = 'none'; }
+    </script>
+</body>
+</html>

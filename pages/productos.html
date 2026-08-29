@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos - Inversiones Duri C.A</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body data-page="productos">
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html" class="nav-link">Inicio</a></li>
+                <li><a href="productos.html" class="nav-link active">Productos</a></li>
+                <li><a href="pedidos.html" class="nav-link">Pedidos</a></li>
+                <li><a href="servicios.html" class="nav-link">Servicios</a></li>
+                <li><a href="nosotros.html" class="nav-link">Nosotros</a></li>
+                <li><a href="contacto.html" class="nav-link">Contacto</a></li>
+            </ul>
+            <button class="nav-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="container">
+            <h1><i class="fas fa-shopping-bag"></i> Nuestros Productos</h1>
+            <p>Explora nuestra amplia variedad de productos de calidad</p>
+        </div>
+    </section>
+
+    <section class="page-content">
+        <div class="container">
+            <div class="filters-bar">
+                <button class="filter-btn active" onclick="filterProducts('all',this)">Todos</button>
+                <button class="filter-btn" onclick="filterProducts('Útiles Escolares',this)">Útiles Escolares</button>
+                <button class="filter-btn" onclick="filterProducts('Papelería',this)">Papelería</button>
+                <button class="filter-btn" onclick="filterProducts('Tecnología',this)">Tecnología</button>
+                <button class="filter-btn" onclick="filterProducts('Accesorios',this)">Accesorios</button>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <div style="text-align:center;padding:60px;color:var(--gray)">
+                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--orange)"></i>
+                    <p style="margin-top:15px">Cargando productos...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom"><p>&copy; 2026 Inversiones Duri C.A. Maracay, Estado Aragua.</p></div>
+        </div>
+    </footer>
+    <script src="../js/app.js"></script>
+</body>
+</html>
