@@ -107,11 +107,14 @@ function showUserBadge() {
     if (user) {
         const rolLabels = { super_usuario: 'Super Admin', operador: 'Operador', usuario: 'Usuario' };
         const rolColors = { super_usuario: '#EF7E26', operador: '#28a745', usuario: '#6c757d' };
+        const rolEmoji = { super_usuario: '👑', operador: '⚙️', usuario: '👤' };
+        
+        // Badge en navbar
         const badge = document.createElement('li');
         badge.id = 'userBadge';
         badge.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:10px;padding:6px 14px;border-radius:10px;font-size:0.82rem;font-weight:600;color:white;background:' + rolColors[user.rol] + ';cursor:pointer;list-style:none';
         badge.innerHTML = '<i class="fas fa-user-circle"></i> ' + user.nombre.split(' ')[0] + ' <span style="background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:8px;font-size:0.7rem">' + rolLabels[user.rol] + '</span>';
-        badge.title = 'Rol: ' + rolLabels[user.rol] + '\nClick para cerrar sesión';
+        badge.title = 'Click para cerrar sesión';
         badge.onclick = function() {
             if (confirm('¿Cerrar sesión de ' + user.nombre + '?')) {
                 localStorage.removeItem('userDuri');
@@ -119,6 +122,16 @@ function showUserBadge() {
             }
         };
         nav.appendChild(badge);
+
+        // Banner de bienvenida
+        if (!sessionStorage.getItem('welcomeShown')) {
+            const welcome = document.createElement('div');
+            welcome.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:' + rolColors[user.rol] + ';color:white;padding:14px 28px;border-radius:12px;font-family:Rubik,sans-serif;font-size:0.95rem;font-weight:500;z-index:1500;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:slideDown 0.5s ease';
+            welcome.innerHTML = '<span style="font-size:1.3rem">' + rolEmoji[user.rol] + '</span> ¡Bienvenido ' + rolLabels[user.rol] + '! <span style="opacity:0.8;font-size:0.85rem">(' + user.nombre + ')</span>';
+            document.body.appendChild(welcome);
+            sessionStorage.setItem('welcomeShown', '1');
+            setTimeout(() => { welcome.style.opacity = '0'; welcome.style.transition = 'opacity 0.5s'; setTimeout(() => welcome.remove(), 500); }, 4000);
+        }
     } else {
         const isInPages = window.location.pathname.includes('/pages/');
         const loginLink = document.createElement('li');
