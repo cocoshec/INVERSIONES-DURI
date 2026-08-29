@@ -31,19 +31,19 @@ img { max-width:100%; }
 .mt-4 { margin-top:40px; }
 
 /* Navbar */
-.navbar { position:fixed; top:0; left:0; right:0; background:rgba(255,255,255,0.97); backdrop-filter:blur(10px); z-index:1000; padding:12px 0; transition:var(--transition); }
+.navbar { position:fixed; top:0; left:0; right:0; background:rgba(255,255,255,0.97); backdrop-filter:blur(10px); z-index:1000; padding:16px 0; transition:var(--transition); }
 .navbar.scrolled { box-shadow:var(--shadow); }
-.nav-container { max-width:1200px; margin:0 auto; padding:0 20px; display:flex; align-items:center; justify-content:space-between; }
-.nav-logo { display:flex; align-items:center; gap:10px; }
-.nav-logo img { height:42px; }
-.nav-logo span { font-family:'Bree Serif',serif; font-size:1.4rem; color:var(--orange); }
-.nav-menu { display:flex; list-style:none; gap:8px; }
-.nav-link { padding:8px 16px; border-radius:var(--radius-sm); font-weight:500; font-size:0.95rem; transition:var(--transition); }
+.nav-container { max-width:1200px; margin:0 auto; padding:0 30px; display:flex; align-items:center; justify-content:space-between; }
+.nav-logo { display:flex; align-items:center; gap:12px; }
+.nav-logo img { height:46px; }
+.nav-logo span { font-family:'Bree Serif',serif; font-size:1.5rem; color:var(--orange); }
+.nav-menu { display:flex; list-style:none; gap:4px; align-items:center; }
+.nav-link { padding:10px 18px; border-radius:var(--radius-sm); font-weight:500; font-size:1rem; transition:var(--transition); white-space:nowrap; }
 .nav-link:hover, .nav-link.active { background:var(--orange); color:var(--white); }
 .nav-toggle { display:none; background:none; border:none; font-size:1.5rem; color:var(--dark-brown); cursor:pointer; }
 
 /* Hero */
-.hero { min-height:100vh; background:linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 50%, var(--dark-brown) 100%); display:flex; align-items:center; padding:120px 20px 80px; position:relative; overflow:hidden; }
+.hero { min-height:100vh; background:linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 50%, var(--dark-brown) 100%); display:flex; align-items:center; padding:130px 30px 80px; position:relative; overflow:hidden; }
 .hero-shapes { position:absolute; inset:0; }
 .shape { position:absolute; border-radius:50%; opacity:0.1; }
 .shape-1 { width:400px; height:400px; background:var(--yellow); top:-100px; right:-100px; animation:float 6s ease-in-out infinite; }
