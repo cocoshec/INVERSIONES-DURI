@@ -93,8 +93,34 @@ function logout() {
 document.addEventListener('DOMContentLoaded', function() {
     try { initNav(); } catch(e) {}
     try { initPage(); } catch(e) {}
-    try { showUserBadge(); } catch(e) { console.error('Badge error:', e); }
+    try { showUserBadge(); } catch(e) {}
+    try { showInventoryLink(); } catch(e) {}
 });
+
+function showInventoryLink() {
+    const user = JSON.parse(localStorage.getItem('userDuri') || 'null');
+    const nav = document.querySelector('.nav-menu');
+    if (!nav || !user) return;
+    
+    // Agregar link de inventario solo para super_usuario
+    if (user.rol === 'super_usuario') {
+        const existing = document.getElementById('invNavLink');
+        if (existing) return;
+        const isInPages = window.location.pathname.includes('/pages/');
+        const li = document.createElement('li');
+        li.id = 'invNavLink';
+        const a = document.createElement('a');
+        a.href = isInPages ? 'inventario.html' : 'pages/inventario.html';
+        a.className = 'nav-link';
+        a.innerHTML = '<i class="fas fa-warehouse"></i> Inventario';
+        if (window.location.pathname.includes('inventario')) a.classList.add('active');
+        li.appendChild(a);
+        // Insertar después de Pedidos
+        const pedidosLink = nav.querySelector('a[href*="pedidos"]');
+        if (pedidosLink) pedidosLink.parentElement.after(li);
+        else nav.appendChild(li);
+    }
+}
 
 function showUserBadge() {
     const raw = localStorage.getItem('userDuri');
