@@ -102,6 +102,16 @@ function initNav() {
             nav.classList.toggle('scrolled', window.scrollY > 50);
         });
     }
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    if (toggle && menu) {
+        toggle.addEventListener('click', () => {
+            menu.classList.toggle('active');
+        });
+        menu.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => menu.classList.remove('active'));
+        });
+    }
 }
 
 function initPage() {
