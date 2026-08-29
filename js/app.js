@@ -93,7 +93,40 @@ function logout() {
 document.addEventListener('DOMContentLoaded', function() {
     initNav();
     initPage();
+    showUserBadge();
 });
+
+function showUserBadge() {
+    const user = JSON.parse(localStorage.getItem('userDuri') || 'null');
+    const nav = document.querySelector('.nav-menu');
+    if (!nav) return;
+
+    const existing = document.getElementById('userBadge');
+    if (existing) existing.remove();
+
+    if (user) {
+        const rolLabels = { super_usuario: 'Super Admin', operador: 'Operador', usuario: 'Usuario' };
+        const rolColors = { super_usuario: '#EF7E26', operador: '#28a745', usuario: '#6c757d' };
+        const badge = document.createElement('li');
+        badge.id = 'userBadge';
+        badge.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:10px;padding:6px 14px;border-radius:10px;font-size:0.82rem;font-weight:600;color:white;background:' + rolColors[user.rol] + ';cursor:pointer;list-style:none';
+        badge.innerHTML = '<i class="fas fa-user-circle"></i> ' + user.nombre.split(' ')[0] + ' <span style="background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:8px;font-size:0.7rem">' + rolLabels[user.rol] + '</span>';
+        badge.title = 'Rol: ' + rolLabels[user.rol] + '\nClick para cerrar sesión';
+        badge.onclick = function() {
+            if (confirm('¿Cerrar sesión de ' + user.nombre + '?')) {
+                localStorage.removeItem('userDuri');
+                window.location.reload();
+            }
+        };
+        nav.appendChild(badge);
+    } else {
+        const isInPages = window.location.pathname.includes('/pages/');
+        const loginLink = document.createElement('li');
+        loginLink.id = 'userBadge';
+        loginLink.innerHTML = '<a href="' + (isInPages ? '../login.html' : 'login.html') + '" class="nav-link" style="background:var(--orange);color:white;display:flex;align-items:center;gap:6px"><i class="fas fa-lock"></i> Admin</a>';
+        nav.appendChild(loginLink);
+    }
+}
 
 function initNav() {
     const nav = document.querySelector('.navbar');
