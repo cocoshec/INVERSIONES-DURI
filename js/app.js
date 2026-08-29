@@ -124,14 +124,12 @@ function showUserBadge() {
         nav.appendChild(badge);
 
         // Banner de bienvenida
-        if (!sessionStorage.getItem('welcomeShown')) {
-            const welcome = document.createElement('div');
-            welcome.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:' + rolColors[user.rol] + ';color:white;padding:14px 28px;border-radius:12px;font-family:Rubik,sans-serif;font-size:0.95rem;font-weight:500;z-index:1500;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:slideDown 0.5s ease';
-            welcome.innerHTML = '<span style="font-size:1.3rem">' + rolEmoji[user.rol] + '</span> ¡Bienvenido ' + rolLabels[user.rol] + '! <span style="opacity:0.8;font-size:0.85rem">(' + user.nombre + ')</span>';
-            document.body.appendChild(welcome);
-            sessionStorage.setItem('welcomeShown', '1');
-            setTimeout(() => { welcome.style.opacity = '0'; welcome.style.transition = 'opacity 0.5s'; setTimeout(() => welcome.remove(), 500); }, 4000);
-        }
+        const welcome = document.createElement('div');
+        welcome.style.cssText = 'position:fixed;top:0;left:0;right:0;background:' + rolColors[user.rol] + ';color:white;padding:16px 20px;font-family:Rubik,sans-serif;font-size:1rem;font-weight:500;z-index:1500;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.2)';
+        welcome.innerHTML = '<span style="font-size:1.4rem">' + rolEmoji[user.rol] + '</span> ¡Bienvenido <strong>' + rolLabels[user.rol] + '</strong>! — ' + user.nombre + ' <span onclick="this.parentElement.remove()" style="margin-left:20px;cursor:pointer;opacity:0.7;font-size:1.2rem">&times;</span>';
+        document.body.appendChild(welcome);
+        document.body.style.paddingTop = '60px';
+        setTimeout(() => { welcome.style.opacity = '0'; welcome.style.transition = 'opacity 0.5s'; setTimeout(() => { welcome.remove(); document.body.style.paddingTop = ''; }, 500); }, 5000);
     } else {
         const isInPages = window.location.pathname.includes('/pages/');
         const loginLink = document.createElement('li');
