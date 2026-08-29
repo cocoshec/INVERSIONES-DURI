@@ -183,10 +183,16 @@ async function loadProductos(categoria = null) {
     } catch (err) { console.error('Error:', err); }
 }
 
+function getUser() {
+    try { return JSON.parse(localStorage.getItem('userDuri')); } catch(e) { return null; }
+}
+
 function renderProductos(productos) {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
     
+    const user = getUser();
+    const canEdit = user && (user.rol === 'super_usuario' || user.rol === 'operador');
     const colores = ['gradient-orange', 'gradient-yellow', 'gradient-brown', 'gradient-green'];
     const icons = {'Útiles Escolares':'fa-pencil','Papelería':'fa-book','Tecnología':'fa-print','Accesorios':'fa-paperclip'};
     
@@ -195,6 +201,15 @@ function renderProductos(productos) {
         const badge = p.stock_actual <= 0 ? '<div class="product-badge out">Agotado</div>' : 
                      (p.stock_actual <= p.stock_minimo ? '<div class="product-badge low">Stock Bajo</div>' : 
                      (i < 3 ? '<div class="product-badge popular">Popular</div>' : ''));
+        
+        let actions = '';
+        if (canEdit) {
+            actions = '<div style="display:flex;gap:6px;margin-top:8px"><button onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" style="flex:1"><i class="fas fa-edit"></i> Editar</button><button onclick="deleteProduct(\'' + p.id + '\')" class="btn btn-sm" style="flex:0;background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3)"><i class="fas fa-trash"></i></button></div>';
+        } else if (!user) {
+            actions = '<a href="pedidos.html" class="btn btn-primary btn-block" style="margin-top:8px"' + (p.stock_actual <= 0 ? ' disabled' : '') + '><i class="fas fa-cart-plus"></i> ' + (p.stock_actual <= 0 ? 'No Disponible' : 'Pedir Ahora') + '</a>';
+        } else {
+            actions = '<a href="pedidos.html" class="btn btn-primary btn-block" style="margin-top:8px"' + (p.stock_actual <= 0 ? ' disabled' : '') + '><i class="fas fa-cart-plus"></i> Pedir</a>';
+        }
         
         return `
         <div class="product-card" data-category="${p.categoria_nombre}">
@@ -208,12 +223,24 @@ function renderProductos(productos) {
                     <span class="product-price">$${parseFloat(p.precio_venta).toFixed(2)}</span>
                     <span class="product-stock ${stockClass}"><i class="fas ${p.stock_actual <= 0 ? 'fa-times-circle' : (p.stock_actual <= p.stock_minimo ? 'fa-exclamation-triangle' : 'fa-check')}"></i> ${p.stock_actual} u</span>
                 </div>
-                <a href="pedidos.html" class="btn btn-primary btn-block" ${p.stock_actual <= 0 ? 'disabled' : ''}>
-                    <i class="fas fa-cart-plus"></i> ${p.stock_actual <= 0 ? 'No Disponible' : 'Pedir Ahora'}
-                </a>
+                ${actions}
             </div>
         </div>`;
     }).join('');
+    
+    if (canEdit) {
+        const header = document.querySelector('.page-hero .container');
+        if (header && !document.getElementById('addProductBtn')) {
+            const btn = document.createElement('a');
+            btn.id = 'addProductBtn';
+            btn.href = '#';
+            btn.className = 'btn btn-accent';
+            btn.style.cssText = 'margin-top:15px';
+            btn.innerHTML = '<i class="fas fa-plus"></i> Agregar Producto';
+            btn.onclick = function(e) { e.preventDefault(); showToast('Formulario de agregar producto - Próximamente'); };
+            header.appendChild(btn);
+        }
+    }
 }
 
 function filterProducts(cat, btn) {
@@ -252,16 +279,32 @@ function renderInventarioStats(stats) {
 function renderInventarioTable(productos) {
     const tbody = document.getElementById('invBody');
     if (!tbody) return;
+    const user = getUser();
+    const canEdit = user && (user.rol === 'super_usuario' || user.rol === 'operador');
+    const canOrder = user && user.rol !== 'super_usuario';
+    
     tbody.innerHTML = productos.map(p => {
         const stockClass = p.stock_actual <= 0 ? 'out-stock' : (p.stock_actual <= p.stock_minimo ? 'low-stock' : '');
         let statusClass = 'available', statusText = 'Disponible';
         if (p.stock_actual <= 0) { statusClass = 'out'; statusText = 'Agotado'; }
         else if (p.stock_actual <= p.stock_minimo) { statusClass = 'low'; statusText = 'Stock Bajo'; }
+        
+        let actionBtn = '';
+        if (canEdit) {
+            actionBtn = '<button onclick="showToast(\'Editar: ' + p.nombre + '\')" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>';
+        } else if (canOrder && p.stock_actual > 0) {
+            actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
+        } else if (p.stock_actual <= 0) {
+            actionBtn = '<button class="btn btn-sm" disabled><i class="fas fa-ban"></i></button>';
+        } else {
+            actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
+        }
+        
         return `<tr>
             <td><strong>${p.codigo}</strong></td><td>${p.nombre}</td><td>${p.categoria_nombre}</td>
             <td>$${parseFloat(p.precio_venta).toFixed(2)}</td><td class="${stockClass}">${p.stock_actual}</td><td>${p.stock_minimo}</td>
             <td><span class="status ${statusClass}">${statusText}</span></td>
-            <td>${p.stock_actual > 0 ? `<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>` : `<button class="btn btn-sm" disabled><i class="fas fa-ban"></i></button>`}</td>
+            <td>${actionBtn}</td>
         </tr>`;
     }).join('');
 }
