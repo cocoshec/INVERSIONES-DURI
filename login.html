@@ -10,23 +10,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body style="background:linear-gradient(135deg,var(--orange),var(--dark-brown));min-height:100vh;display:flex;align-items:center;justify-content:center">
-    <div style="background:var(--white);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);display:flex;width:900px;max-width:95%;overflow:hidden">
-        <!-- Left -->
-        <div style="flex:1;background:linear-gradient(135deg,var(--orange),var(--orange-dark));padding:50px 40px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--white);text-align:center">
-            <img src="img/logo-duri.png" alt="Duri" style="width:150px;margin-bottom:20px;filter:drop-shadow(0 5px 15px rgba(0,0,0,0.2))">
-            <h1 style="font-family:'Bree Serif',serif;font-size:2rem;margin-bottom:10px">Inversiones Duri</h1>
-            <p style="opacity:0.9;font-size:1rem">Sistema de Gestión de Pedidos e Inventario</p>
-            <div style="margin-top:30px;padding:15px;background:rgba(255,255,255,0.15);border-radius:12px">
-                <p style="font-size:0.9rem;opacity:0.8"><i class="fas fa-map-marker-alt"></i> Maracay, Estado Aragua</p>
+<body style="background:linear-gradient(135deg,var(--orange),var(--dark-brown));min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div class="login-wrapper">
+        <!-- Left Panel -->
+        <div class="login-left">
+            <img src="img/logo-duri.png" alt="Duri" style="filter:drop-shadow(0 5px 15px rgba(0,0,0,0.2))">
+            <h1 style="font-family:'Bree Serif',serif;margin-bottom:8px">Inversiones Duri</h1>
+            <p style="opacity:0.9;margin-bottom:25px">Sistema de Gestión de Pedidos e Inventario</p>
+            <div style="padding:12px 20px;background:rgba(255,255,255,0.15);border-radius:12px">
+                <p style="font-size:0.85rem;opacity:0.8"><i class="fas fa-map-marker-alt"></i> Maracay, Estado Aragua</p>
             </div>
         </div>
-        <!-- Right -->
-        <div style="flex:1;padding:50px 40px">
-            <h2 style="font-family:'Bree Serif',serif;font-size:1.8rem;margin-bottom:8px;color:var(--dark-brown)">Iniciar Sesión</h2>
-            <p style="color:var(--gray);margin-bottom:30px">Ingresa tus credenciales para acceder</p>
+        <!-- Right Panel -->
+        <div class="login-right">
+            <h2 style="font-family:'Bree Serif',serif;margin-bottom:6px;color:var(--dark-brown)">Iniciar Sesión</h2>
+            <p style="color:var(--gray);margin-bottom:25px">Ingresa tus credenciales para acceder</p>
             
-            <div id="error-msg" style="display:none;background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px;border-radius:10px;margin-bottom:20px;font-size:0.9rem"></div>
+            <div id="error-msg" style="display:none;background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px;border-radius:10px;margin-bottom:20px;font-size:0.88rem"></div>
             
             <form id="loginForm">
                 <div class="form-group">
@@ -36,26 +36,26 @@
                 <div class="form-group">
                     <label><i class="fas fa-lock"></i> Contraseña</label>
                     <div style="position:relative">
-                        <input type="password" id="password" placeholder="••••••••" required>
-                        <button type="button" onclick="togglePass()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer">
+                        <input type="password" id="password" placeholder="••••••••" required style="padding-right:40px">
+                        <button type="button" onclick="togglePass()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer;font-size:1rem">
                             <i class="fas fa-eye" id="eyeIcon"></i>
                         </button>
                     </div>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;font-size:0.9rem">
-                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--gray-dark)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;font-size:0.88rem;flex-wrap:wrap;gap:8px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--gray)">
                         <input type="checkbox" style="accent-color:var(--orange)"> Recordarme
                     </label>
-                    <a href="#" style="color:var(--orange)">¿Olvidaste tu contraseña?</a>
+                    <a href="#" style="color:var(--orange);font-size:0.85rem">¿Olvidaste tu contraseña?</a>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
                 </button>
             </form>
             
-            <div style="margin-top:30px;padding-top:20px;border-top:1px solid var(--cream);text-align:center">
-                <p style="color:var(--gray);font-size:0.85rem">Credenciales de prueba:</p>
-                <p style="color:var(--gray);font-size:0.8rem;margin-top:5px">
+            <div style="margin-top:25px;padding-top:18px;border-top:1px solid var(--cream);text-align:center">
+                <p style="color:var(--gray);font-size:0.82rem;margin-bottom:6px">Credenciales de prueba:</p>
+                <p style="color:var(--gray);font-size:0.78rem;line-height:1.6">
                     <strong>Super:</strong> admin@inversionesduri.com<br>
                     <strong>Operador:</strong> operador@inversionesduri.com<br>
                     <strong>Usuario:</strong> usuario@inversionesduri.com<br>
@@ -109,7 +109,6 @@
         btn.disabled=false;
     });
     
-    // Redirigir si ya está logueado
     if(localStorage.getItem('userDuri')){
         window.location.href='index.html';
     }
