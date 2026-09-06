@@ -96,7 +96,81 @@ document.addEventListener('DOMContentLoaded', function() {
     try { showUserBadge(); } catch(e) {}
     try { showInventoryLink(); } catch(e) {}
     try { initCinematicEffects(); } catch(e) {}
+    try { initFloatingCart(); } catch(e) {}
+    try { initWhatsApp(); } catch(e) {}
 });
+
+function initWhatsApp() {
+    const div = document.createElement('div');
+    div.className = 'whatsapp-float';
+    div.innerHTML = '<a href="https://wa.me/584121234567?text=Hola%2C%20me%20interesa%20hacer%20un%20pedido%20en%20Inversiones%20Duri" target="_blank"><i class="fab fa-whatsapp"></i> Escríbenos</a><div class="wa-tooltip">¿Necesitas ayuda? Chatea con nosotros</div>';
+    document.body.appendChild(div);
+}
+
+function initFloatingCart() {
+    const html = `
+    <div class="floating-cart">
+        <div class="cart-panel" id="cartPanel">
+            <div class="cart-panel-header">
+                <h4><i class="fas fa-shopping-cart"></i> Mi Pedido</h4>
+                <button onclick="toggleCartPanel()">&times;</button>
+            </div>
+            <div class="cart-panel-body" id="cartPanelBody">
+                <div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>
+            </div>
+            <div class="cart-panel-footer">
+                <div class="cart-panel-total"><span>Total:</span><strong id="cartPanelTotal">$0.00</strong></div>
+                <a href="pedidos.html" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Ver Pedido</a>
+            </div>
+        </div>
+        <button class="floating-cart-btn" onclick="toggleCartPanel()">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="cart-count" id="floatingCartCount" style="display:none">0</span>
+        </button>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+    updateFloatingCart();
+}
+
+function toggleCartPanel() {
+    const panel = document.getElementById('cartPanel');
+    if (panel) panel.classList.toggle('show');
+}
+
+function updateFloatingCart() {
+    const count = cart.reduce((sum, it) => sum + it.qty, 0);
+    const total = cart.reduce((sum, it) => sum + (it.price * it.qty), 0);
+    const countEl = document.getElementById('floatingCartCount');
+    const body = document.getElementById('cartPanelBody');
+    const totalEl = document.getElementById('cartPanelTotal');
+    
+    if (countEl) {
+        countEl.style.display = count > 0 ? 'flex' : 'none';
+        countEl.textContent = count;
+    }
+    
+    if (!body) return;
+    
+    if (cart.length === 0) {
+        body.innerHTML = '<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>';
+    } else {
+        body.innerHTML = cart.map((it, i) => `
+            <div class="cart-panel-item">
+                <div class="cart-panel-item-info">
+                    <div class="cart-panel-item-name">${it.name}</div>
+                    <div class="cart-panel-item-price">$${it.price.toFixed(2)} c/u</div>
+                </div>
+                <div class="cart-panel-item-qty">
+                    <button onclick="updateQty(${i},-1)">-</button>
+                    <span>${it.qty}</span>
+                    <button onclick="updateQty(${i},1)">+</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    if (totalEl) totalEl.textContent = '$' + total.toFixed(2);
+}
 
 function initCinematicEffects() {
     // Scroll Reveal - observer para elementos existentes Y futuros
@@ -464,6 +538,10 @@ function updateCart() {
     const items = document.getElementById('orderItems');
     const total = document.getElementById('orderTotal');
     const btn = document.getElementById('submitBtn');
+    
+    // Actualizar carrito flotante siempre
+    try { updateFloatingCart(); } catch(e) {}
+    
     if (!items) return;
     if (!cart.length) {
         items.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-basket"></i><p>Tu pedido está vacío</p></div>';
