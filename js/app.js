@@ -109,7 +109,7 @@ function initCinematicEffects() {
     }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
     
     function observeReveals() {
-        document.querySelectorAll('.feature-card, .product-card, .service-card, .stat-card, .contact-item, .order-row, .category-card, .cta-content, .about-grid, .contact-grid, .section-header').forEach(el => {
+        document.querySelectorAll('.feature-card, .service-card, .stat-card, .contact-item, .order-row, .category-card, .cta-content, .about-grid, .contact-grid, .section-header').forEach(el => {
             if (!el.classList.contains('reveal')) {
                 el.classList.add('reveal');
                 observer.observe(el);
