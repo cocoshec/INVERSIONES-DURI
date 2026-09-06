@@ -95,7 +95,51 @@ document.addEventListener('DOMContentLoaded', function() {
     try { initPage(); } catch(e) {}
     try { showUserBadge(); } catch(e) {}
     try { showInventoryLink(); } catch(e) {}
+    try { initCinematicEffects(); } catch(e) {}
 });
+
+function initCinematicEffects() {
+    // Scroll Reveal
+    const revealElements = document.querySelectorAll('.feature-card, .product-card, .service-card, .stat-card, .contact-item, .order-row, .category-card, .cta-content, .about-grid, .contact-grid, .section-header');
+    revealElements.forEach(el => el.classList.add('reveal'));
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    
+    revealElements.forEach(el => observer.observe(el));
+    
+    // Particles in hero
+    const hero = document.querySelector('.hero');
+    if (hero) {
+        const particlesDiv = document.createElement('div');
+        particlesDiv.className = 'particles';
+        for (let i = 0; i < 20; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (Math.random() * 10 + 8) + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            p.style.width = p.style.height = (Math.random() * 4 + 3) + 'px';
+            particlesDiv.appendChild(p);
+        }
+        hero.appendChild(particlesDiv);
+    }
+    
+    // Smooth parallax for hero shapes
+    window.addEventListener('scroll', () => {
+        const shapes = document.querySelectorAll('.shape');
+        const scrollY = window.scrollY;
+        shapes.forEach((shape, i) => {
+            const speed = (i + 1) * 0.15;
+            shape.style.transform = 'translateY(' + (scrollY * speed) + 'px)';
+        });
+    });
+}
 
 function showInventoryLink() {
     const user = JSON.parse(localStorage.getItem('userDuri') || 'null');
