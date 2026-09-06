@@ -99,10 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initCinematicEffects() {
-    // Scroll Reveal
-    const revealElements = document.querySelectorAll('.feature-card, .product-card, .service-card, .stat-card, .contact-item, .order-row, .category-card, .cta-content, .about-grid, .contact-grid, .section-header');
-    revealElements.forEach(el => el.classList.add('reveal'));
-    
+    // Scroll Reveal - observer para elementos existentes Y futuros
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -111,11 +108,22 @@ function initCinematicEffects() {
         });
     }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
     
-    revealElements.forEach(el => observer.observe(el));
+    function observeReveals() {
+        document.querySelectorAll('.feature-card, .product-card, .service-card, .stat-card, .contact-item, .order-row, .category-card, .cta-content, .about-grid, .contact-grid, .section-header').forEach(el => {
+            if (!el.classList.contains('reveal')) {
+                el.classList.add('reveal');
+                observer.observe(el);
+            }
+        });
+    }
+    
+    observeReveals();
+    // Re-observar cada 500ms por si se cargan contenido dinámico
+    setInterval(observeReveals, 500);
     
     // Particles in hero
     const hero = document.querySelector('.hero');
-    if (hero) {
+    if (hero && !hero.querySelector('.particles')) {
         const particlesDiv = document.createElement('div');
         particlesDiv.className = 'particles';
         for (let i = 0; i < 20; i++) {
