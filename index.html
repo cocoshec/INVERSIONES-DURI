@@ -6,11 +6,26 @@
     <title>Inversiones Duri C.A - ¡Donde imaginar es crear!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-bar-left">
+                <a href="tel:+584121234567"><i class="fas fa-phone"></i> +58 412-1234567</a>
+                <a href="mailto:info@inversionesduri.com"><i class="fas fa-envelope"></i> info@inversionesduri.com</a>
+            </div>
+            <div class="top-bar-right">
+                <a href="#"><i class="fab fa-facebook-f"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
@@ -26,17 +41,18 @@
                 <li><a href="pages/nosotros.html" class="nav-link">Nosotros</a></li>
                 <li><a href="pages/contacto.html" class="nav-link">Contacto</a></li>
             </ul>
+            <a href="pages/pedidos.html" class="btn btn-primary btn-sm nav-cta" style="display:none" id="navCta">Hacer Pedido</a>
             <button class="nav-toggle" id="navToggle"><i class="fas fa-bars"></i></button>
         </div>
     </nav>
 
     <!-- Hero Section -->
     <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-overlay"></div>
         <div class="hero-shapes">
             <div class="shape shape-1"></div>
             <div class="shape shape-2"></div>
-            <div class="shape shape-3"></div>
-            <div class="shape shape-4"></div>
         </div>
         <div class="hero-content">
             <div class="hero-text">
@@ -49,7 +65,7 @@
                     <a href="pages/productos.html" class="btn btn-primary btn-lg">
                         <i class="fas fa-shopping-bag"></i> Ver Productos
                     </a>
-                    <a href="pages/pedidos.html" class="btn btn-accent btn-lg">
+                    <a href="pages/pedidos.html" class="btn btn-white btn-lg">
                         <i class="fas fa-cart-plus"></i> Hacer Pedido
                     </a>
                 </div>
@@ -78,62 +94,107 @@
                 </div>
             </div>
             <div class="hero-image">
-                <div class="hero-image-bg"></div>
                 <img src="img/logo-duri.png" alt="Inversiones Duri">
             </div>
         </div>
     </section>
 
-    <!-- Features Section -->
-    <section class="features-section">
+    <!-- Icons Row -->
+    <section class="icons-row">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag"><i class="fas fa-star"></i> ¿Por qué nosotros?</span>
-                <h2>La mejor experiencia de compra</h2>
-                <p>Ofrecemos soluciones completas para tu negocio y hogar</p>
+            <div class="icons-grid">
+                <div class="icon-item">
+                    <div class="icon-circle"><i class="fas fa-truck-fast"></i></div>
+                    <span>Entrega Rápida</span>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-circle"><i class="fas fa-shield-halved"></i></div>
+                    <span>Calidad Garantizada</span>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-circle"><i class="fas fa-headset"></i></div>
+                    <span>Soporte 24/7</span>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-circle"><i class="fas fa-tags"></i></div>
+                    <span>Mejores Precios</span>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-circle"><i class="fas fa-credit-card"></i></div>
+                    <span>Facilidades de Pago</span>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-circle"><i class="fas fa-file-invoice"></i></div>
+                    <span>Facturación Electrónica</span>
+                </div>
             </div>
-            <div class="features-grid">
-                <div class="feature-card orange">
-                    <div class="feature-icon">
-                        <i class="fas fa-truck-fast"></i>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section about-section">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-image-wrap">
+                    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80" alt="Sobre nosotros">
+                    <div class="about-image-badge">
+                        <i class="fas fa-award"></i> Desde 2020
                     </div>
-                    <h3>Entrega Rápida</h3>
-                    <p>Recibe tus pedidos en tiempo récord</p>
                 </div>
-                <div class="feature-card yellow">
-                    <div class="feature-icon">
-                        <i class="fas fa-shield-halved"></i>
-                    </div>
-                    <h3>Calidad Garantizada</h3>
-                    <p>Solo los mejores productos</p>
+                <div class="about-text">
+                    <span class="section-tag"><i class="fas fa-building"></i> Quiénes somos</span>
+                    <h2>Comprometidos en ofrecer la mejor variedad de productos</h2>
+                    <p>En Inversiones Duri, estamos comprometidos a ofrecerte la mejor experiencia de compra en papelería, útiles escolares y artículos de oficina.</p>
+                    <p>Con variedad de productos de calidad, un servicio cercano y precios competitivos, garantizamos que siempre encuentres lo que necesitas.</p>
+                    <ul class="about-list">
+                        <li><i class="fas fa-check-circle"></i> Productos de alta calidad</li>
+                        <li><i class="fas fa-check-circle"></i> Precios competitivos</li>
+                        <li><i class="fas fa-check-circle"></i> Entrega rápida</li>
+                        <li><i class="fas fa-check-circle"></i> Atención personalizada</li>
+                        <li><i class="fas fa-check-circle"></i> Facturación electrónica</li>
+                        <li><i class="fas fa-check-circle"></i> Facilidades de pago</li>
+                    </ul>
                 </div>
-                <div class="feature-card brown">
-                    <div class="feature-icon">
-                        <i class="fas fa-headset"></i>
-                    </div>
-                    <h3>Soporte 24/7</h3>
-                    <p>Siempre estamos para ti</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process Steps -->
+    <section class="process-section">
+        <div class="container">
+            <div class="process-header">
+                <span class="section-tag" style="background:rgba(232,93,38,0.2);color:var(--accent);border:1px solid rgba(232,93,38,0.3)"><i class="fas fa-list-ol"></i> ¿Cómo funciona?</span>
+                <h2>Realiza tu pedido en 3 pasos</h2>
+                <p>Tres simples pasos para recibir tus productos favoritos</p>
+            </div>
+            <div class="process-grid">
+                <div class="process-card">
+                    <div class="process-number">1</div>
+                    <h3>Explora</h3>
+                    <p>Navega por nuestro catálogo y encuentra los productos que necesitas</p>
                 </div>
-                <div class="feature-card green">
-                    <div class="feature-icon">
-                        <i class="fas fa-tags"></i>
-                    </div>
-                    <h3>Mejores Precios</h3>
-                    <p>Calidad sin romper tu bolsillo</p>
+                <div class="process-card">
+                    <div class="process-number">2</div>
+                    <h3>Agrega al Carrito</h3>
+                    <p>Selecciona las cantidades y agrega tus productos al carrito de compras</p>
+                </div>
+                <div class="process-card">
+                    <div class="process-number">3</div>
+                    <h3>Recibe tu Pedido</h3>
+                    <p>Confirma tu pedido y lo recibes en la comodidad de tu hogar u oficina</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Products Preview -->
-    <section class="products-preview">
+    <section class="section products-section">
         <div class="container">
             <div class="section-header">
                 <span class="section-tag"><i class="fas fa-fire"></i> Destacados</span>
                 <h2>Nuestros Productos</h2>
                 <p>Descubre nuestra amplia variedad de productos de calidad</p>
             </div>
-            
             <div class="products-grid">
                 <div class="product-card">
                     <div class="product-badge popular">Popular</div>
@@ -152,7 +213,6 @@
                         </a>
                     </div>
                 </div>
-                
                 <div class="product-card">
                     <div class="product-image gradient-yellow">
                         <i class="fas fa-book"></i>
@@ -169,7 +229,6 @@
                         </a>
                     </div>
                 </div>
-                
                 <div class="product-card">
                     <div class="product-image gradient-brown">
                         <i class="fas fa-print"></i>
@@ -187,32 +246,57 @@
                     </div>
                 </div>
             </div>
-            
             <div class="text-center mt-4">
-                <a href="pages/productos.html" class="btn btn-outline-primary btn-lg">
+                <a href="pages/productos.html" class="btn btn-outline btn-lg">
                     Ver Todos los Productos <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="cta-shapes">
-            <div class="cta-shape"></div>
-            <div class="cta-shape"></div>
-        </div>
+    <!-- CTA Banner -->
+    <section class="cta-banner">
+        <div class="cta-banner-bg"></div>
+        <div class="cta-banner-overlay"></div>
         <div class="container">
             <div class="cta-content">
                 <h2>¿Necesitas hacer un pedido?</h2>
-                <p>Realiza tu pedido de manera fácil y rápida desde nuestro catálogo</p>
+                <p>Realiza tu pedido de manera fácil y rápida desde nuestro catálogo. Envíos a todo Maracay.</p>
                 <div class="cta-buttons">
                     <a href="pages/productos.html" class="btn btn-white btn-lg">
                         <i class="fas fa-box"></i> Ver Productos
                     </a>
-                    <a href="pages/pedidos.html" class="btn btn-dark btn-lg">
+                    <a href="pages/pedidos.html" class="btn btn-primary btn-lg">
                         <i class="fas fa-shopping-cart"></i> Crear Pedido
                     </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services -->
+    <section class="section services-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag"><i class="fas fa-cog"></i> Nuestros Servicios</span>
+                <h2>Soluciones completas para ti</h2>
+                <p>Ofrecemos una variedad de servicios diseñados para satisfacer tus necesidades</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <h3>Gestión de Pedidos</h3>
+                    <p>Realiza y gestiona tus pedidos de manera fácil y rápida desde nuestra plataforma</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon yellow"><i class="fas fa-truck"></i></div>
+                    <h3>Entrega a Domicilio</h3>
+                    <p>Recibe tus productos directamente en la comodidad de tu hogar u oficina</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon brown"><i class="fas fa-building"></i></div>
+                    <h3>Venta Mayorista</h3>
+                    <p>Soluciones especiales para empresas y compras al por mayor con precios preferenciales</p>
                 </div>
             </div>
         </div>
@@ -251,11 +335,17 @@
             </div>
             <div class="footer-bottom">
                 <p>&copy; 2026 Inversiones Duri C.A. Todos los derechos reservados.</p>
-                <a href="login.html" style="font-size:0.75rem;color:var(--text-tertiary);text-decoration:none;margin-top:6px;display:inline-block" title="Acceso administrativo"><i class="fas fa-lock"></i></a>
+                <a href="login.html" class="admin-login-link" title="Acceso administrativo"><i class="fas fa-lock"></i></a>
             </div>
         </div>
     </footer>
 
     <script src="js/app.js"></script>
+    <script>
+        // Show nav CTA on desktop
+        if(window.innerWidth > 768) {
+            document.getElementById('navCta').style.display = 'inline-flex';
+        }
+    </script>
 </body>
 </html>
