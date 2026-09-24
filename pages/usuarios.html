@@ -301,7 +301,8 @@
 
     function logout(){
         localStorage.removeItem('userDuri');
-        window.location.href = '../login.html';
+        sessionStorage.removeItem('welcomeShown');
+        window.location.href = '../index.html';
     }
 
     function openModal(id){ document.getElementById(id).style.display = 'flex'; }

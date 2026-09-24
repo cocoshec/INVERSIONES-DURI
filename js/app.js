@@ -84,7 +84,9 @@ function isSuperUsuario() {
 
 function logout() {
     localStorage.removeItem('userDuri');
-    window.location.reload();
+    sessionStorage.removeItem('welcomeShown');
+    const home = window.location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
+    window.location.href = home;
 }
 
 // ============================================
@@ -270,9 +272,7 @@ function showUserBadge() {
         badge.title = 'Click para cerrar sesión';
         badge.onclick = function() {
             if (confirm('¿Cerrar sesión de ' + user.nombre + '?')) {
-                localStorage.removeItem('userDuri');
-                sessionStorage.removeItem('welcomeShown');
-                window.location.reload();
+                logout();
             }
         };
         nav.appendChild(badge);
