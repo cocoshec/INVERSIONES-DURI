@@ -484,6 +484,30 @@ img { max-width:100%; }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
 /* ============================================
+   PRODUCT SEARCH
+   ============================================ */
+.product-search-box { position:relative; display:flex; align-items:center; }
+.product-search-box i { position:absolute; left:14px; color:var(--text-tertiary); font-size:0.9rem; pointer-events:none; }
+.product-search-box input { width:100%; padding:13px 14px 13px 40px; border:2px solid var(--border-light); border-radius:12px; font-family:var(--font); font-size:0.95rem; transition:var(--transition); background:var(--bg); }
+.product-search-box input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(232,93,38,0.08); background:var(--bg-white); }
+
+.product-results { display:none; position:absolute; top:100%; left:0; right:0; z-index:30; background:var(--bg-white); border:1px solid var(--border-light); border-radius:12px; max-height:280px; overflow-y:auto; box-shadow:0 16px 48px rgba(0,0,0,0.15); margin-top:6px; }
+.product-results.show { display:block; }
+.pr-item { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; cursor:pointer; border-bottom:1px solid var(--border-light); transition:var(--transition); }
+.pr-item:last-child { border-bottom:none; }
+.pr-item:hover { background:var(--accent-subtle); }
+.pr-item-info { display:flex; flex-direction:column; gap:2px; }
+.pr-item-info strong { font-size:0.9rem; color:var(--text-primary); }
+.pr-item-info span { font-size:0.78rem; color:var(--text-tertiary); }
+.pr-item-price { font-weight:700; color:var(--accent); font-size:1rem; }
+.pr-empty { padding:18px; text-align:center; color:var(--text-tertiary); font-size:0.88rem; }
+
+.product-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.product-chip { display:inline-flex; align-items:center; gap:6px; background:var(--accent-subtle); color:var(--accent); border:1px solid rgba(232,93,38,0.25); padding:6px 12px; border-radius:100px; font-size:0.82rem; font-weight:600; animation:fadeIn 0.2s ease; }
+.product-chip button { background:none; border:none; color:var(--accent); cursor:pointer; font-size:1.1rem; line-height:1; padding:0; width:18px; height:18px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:var(--transition); }
+.product-chip button:hover { background:var(--accent); color:var(--white); }
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media(max-width:1024px) {

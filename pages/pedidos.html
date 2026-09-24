@@ -55,33 +55,23 @@
                     <h3><i class="fas fa-file-invoice"></i> Nuevo Pedido</h3>
                     <form id="orderForm">
                         <div class="form-group">
-                            <label><i class="fas fa-user"></i> Cliente</label>
-                            <select id="clientSelect">
-                                <option value="">Cargando clientes...</option>
-                            </select>
+                            <label><i class="fas fa-user"></i> Tu Nombre</label>
+                            <input type="text" id="newClientName" placeholder="Escribe tu nombre completo..." required>
                         </div>
-
-                        <div id="newClientFields" style="display:none">
-                            <div class="form-group">
-                                <label><i class="fas fa-user-plus"></i> Nombre del Cliente</label>
-                                <input type="text" id="newClientName" placeholder="Escribe tu nombre completo...">
-                            </div>
-                            <div class="form-group">
-                                <label><i class="fas fa-phone"></i> Teléfono</label>
-                                <input type="tel" id="newClientPhone" placeholder="Ej: +58 412-1234567">
-                            </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-phone"></i> Teléfono</label>
+                            <input type="tel" id="newClientPhone" placeholder="Ej: +58 412-1234567">
                         </div>
+                        <input type="hidden" id="clientSelect" value="nuevo">
 
-                        <div class="form-group" style="position:relative">
+                        <div class="form-group">
                             <label><i class="fas fa-box"></i> Buscar Producto</label>
-                            <input type="text" id="productSearch" placeholder="🔍 Escribe para buscar..." autocomplete="off" style="padding:12px;border:2px solid var(--cream);border-radius:var(--radius-sm);width:100%">
-                            <div id="productResults" style="display:none;position:absolute;z-index:10;background:#fff;border:1px solid #ddd;border-radius:8px;max-height:250px;overflow-y:auto;width:100%;box-shadow:0 8px 24px rgba(0,0,0,0.15)"></div>
-                            <div class="form-group" style="margin-top:8px">
-                                <select id="productSelect" style="width:100%;padding:12px;border:2px solid var(--cream);border-radius:var(--radius-sm)">
-                                    <option value="">-- o elige de la lista --</option>
-                                </select>
+                            <div class="product-search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="productSearch" placeholder="Escribe para buscar..." autocomplete="off">
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="addProductToCart()" style="width:100%;margin-top:6px"><i class="fas fa-plus"></i> Agregar al Pedido</button>
+                            <div id="productResults" class="product-results"></div>
+                            <div id="productChips" class="product-chips"></div>
                         </div>
 
                         <div class="form-group">
@@ -102,6 +92,10 @@
                             <label><i class="fas fa-sticky-note"></i> Notas</label>
                             <textarea id="orderNotes" rows="2" placeholder="Instrucciones especiales..."></textarea>
                         </div>
+
+                        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="addProductToCart()" style="margin-top:4px">
+                            <i class="fas fa-plus-circle"></i> Agregar al Pedido
+                        </button>
                     </form>
                 </div>
 
@@ -139,65 +133,44 @@
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             const API = '../backend/api';
-
-            // Cargar clientes
-            try {
-                const res = await fetch(API + '/clientes.php');
-                const data = await res.json();
-                const clientSelect = document.getElementById('clientSelect');
-                if (data.status === 'success') {
-                    clientSelect.innerHTML = '<option value="">-- Seleccionar cliente --</option>' +
-                        '<option value="nuevo">✏️ Soy nuevo / Escribir mi nombre</option>' +
-                        data.data.map(c => `<option value="${c.id}">${c.nombre}${c.telefono ? ' - ' + c.telefono : ''}</option>`).join('');
-                }
-            } catch(err) { console.error(err); }
-
-            // Mostrar/ocultar campos de cliente nuevo
-            document.getElementById('clientSelect').addEventListener('change', function() {
-                const show = this.value === 'nuevo';
-                document.getElementById('newClientFields').style.display = show ? 'block' : 'none';
-                if (show) document.getElementById('newClientName').focus();
-            });
-
-            // Cargar productos
             let allProducts = [];
+
             try {
                 const res = await fetch(API + '/productos.php');
                 const data = await res.json();
                 if (data.status === 'success') {
                     allProducts = data.data.filter(p => p.stock_actual > 0);
-                    const select = document.getElementById('productSelect');
-                    select.innerHTML = '<option value="">-- o elige de la lista --</option>' +
-                        allProducts.map(p =>
-                            `<option value="${p.id}|${p.nombre}|${p.precio_venta}|${p.stock_actual}">${p.nombre} — $${parseFloat(p.precio_venta).toFixed(2)} (${p.stock_actual} u)</option>`
-                        ).join('');
                 }
             } catch(err) { console.error(err); }
 
-            // Búsqueda en tiempo real
             const searchInput = document.getElementById('productSearch');
             const resultsBox = document.getElementById('productResults');
+
             searchInput.addEventListener('input', function() {
                 const q = this.value.toLowerCase().trim();
-                if (!q) { resultsBox.style.display = 'none'; return; }
+                if (!q) { resultsBox.classList.remove('show'); resultsBox.innerHTML = ''; return; }
                 const matches = allProducts.filter(p =>
                     p.nombre.toLowerCase().includes(q) ||
                     (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
                     (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(q))
                 );
                 if (!matches.length) {
-                    resultsBox.innerHTML = '<div style="padding:14px;color:#888;text-align:center">No se encontraron productos</div>';
+                    resultsBox.innerHTML = '<div class="pr-empty">No se encontraron productos</div>';
                 } else {
                     resultsBox.innerHTML = matches.map(p => `
-                        <div onclick="quickAdd(${p.id},'${p.nombre.replace(/'/g,"\\'")}',${p.precio_venta},${p.stock_actual})" style="padding:12px 14px;border-bottom:1px solid #eee;cursor:pointer;display:flex;justify-content:space-between;align-items:center">
-                            <div><strong>${p.nombre}</strong><br><small style="color:#888">${p.categoria_nombre} · Stock: ${p.stock_actual}</small></div>
-                            <strong style="color:#E85D26">$${parseFloat(p.precio_venta).toFixed(2)}</strong>
+                        <div class="pr-item" onclick="quickAdd(${p.id},'${p.nombre.replace(/'/g,"\\'").replace(/"/g,"&quot;")}',${p.precio_venta},${p.stock_actual})">
+                            <div class="pr-item-info">
+                                <strong>${p.nombre}</strong>
+                                <span>${p.categoria_nombre} · Stock: ${p.stock_actual}</span>
+                            </div>
+                            <span class="pr-item-price">$${parseFloat(p.precio_venta).toFixed(2)}</span>
                         </div>`).join('');
                 }
-                resultsBox.style.display = 'block';
+                resultsBox.classList.add('show');
             });
+
             searchInput.addEventListener('blur', function() {
-                setTimeout(() => { resultsBox.style.display = 'none'; }, 250);
+                setTimeout(() => resultsBox.classList.remove('show'), 200);
             });
             searchInput.addEventListener('focus', function() {
                 if (this.value.trim()) this.dispatchEvent(new Event('input'));
@@ -206,9 +179,33 @@
 
         function quickAdd(id, name, price, stock) {
             document.getElementById('productSearch').value = '';
-            document.getElementById('productResults').style.display = 'none';
+            document.getElementById('productResults').classList.remove('show');
             addToCartById(id, name, price, stock);
+            renderChips();
         }
+
+        function renderChips() {
+            const box = document.getElementById('productChips');
+            if (!box) return;
+            box.innerHTML = cart.map((it, i) => `
+                <span class="product-chip">
+                    ${it.name} ×${it.qty}
+                    <button onclick="removeChip(${i})">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        function removeChip(i) {
+            removeFromCart(i);
+            renderChips();
+        }
+
+        // Render chips cuando cambia el carrito
+        const origUpdateCart = window.updateCart;
+        window.updateCart = function() {
+            if (origUpdateCart) origUpdateCart();
+            renderChips();
+        };
     </script>
 </body>
 </html>

@@ -597,8 +597,7 @@ async function submitOrder() {
         if (!newName || !newName.value.trim()) { showToast('Escribe tu nombre', 'error'); return; }
         clientName = newName.value.trim();
     } else {
-        const opt = clientSelect.options[clientSelect.selectedIndex];
-        clientName = opt ? opt.text.split(' - ')[0] : '';
+        clientName = newName ? newName.value.trim() : '';
     }
     
     const paymentLabels = { efectivo: 'Efectivo', pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria', tarjeta: 'Tarjeta' };
@@ -744,8 +743,6 @@ async function confirmAndSend() {
             // Limpiar
             cart = []; saveCart(); updateCart();
             document.getElementById('orderForm').reset();
-            const nf = document.getElementById('newClientFields');
-            if (nf) nf.style.display = 'none';
             loadPedidosRecientes();
             closeConfirmModal();
             window._pendingOrder = null;
