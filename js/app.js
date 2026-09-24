@@ -357,9 +357,13 @@ function renderProductos(productos) {
         if (canEdit) {
             actions = '<div style="display:flex;gap:6px;margin-top:8px"><button onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" style="flex:1"><i class="fas fa-edit"></i> Editar</button><button onclick="deleteProduct(\'' + p.id + '\')" class="btn btn-sm" style="flex:0;background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3)"><i class="fas fa-trash"></i></button></div>';
         } else if (!user) {
-            actions = '<a href="pedidos.html" class="btn btn-primary btn-block" style="margin-top:8px"' + (p.stock_actual <= 0 ? ' disabled' : '') + '><i class="fas fa-cart-plus"></i> ' + (p.stock_actual <= 0 ? 'No Disponible' : 'Pedir Ahora') + '</a>';
+            actions = p.stock_actual <= 0
+                ? '<button class="btn btn-primary btn-block" style="margin-top:8px" disabled><i class="fas fa-times-circle"></i> No Disponible</button>'
+                : '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="buyNow(\'' + p.id + '\',\'' + p.nombre.replace(/'/g, "\\'") + '\',' + p.precio_venta + ',' + p.stock_actual + ')"><i class="fas fa-cart-plus"></i> Pedir Ahora</button>';
         } else {
-            actions = '<a href="pedidos.html" class="btn btn-primary btn-block" style="margin-top:8px"' + (p.stock_actual <= 0 ? ' disabled' : '') + '><i class="fas fa-cart-plus"></i> Pedir</a>';
+            actions = p.stock_actual <= 0
+                ? '<button class="btn btn-primary btn-block" style="margin-top:8px" disabled><i class="fas fa-times-circle"></i> Agotado</button>'
+                : '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="buyNow(\'' + p.id + '\',\'' + p.nombre.replace(/'/g, "\\'") + '\',' + p.precio_venta + ',' + p.stock_actual + ')"><i class="fas fa-cart-plus"></i> Pedir</button>';
         }
         
         return `
@@ -398,6 +402,13 @@ function filterProducts(cat, btn) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
     loadProductos(cat);
+}
+
+function buyNow(id, name, price, stock) {
+    addToCartById(id, name, price, stock);
+    setTimeout(() => {
+        window.location.href = isInPages ? 'pedidos.html' : 'pages/pedidos.html';
+    }, 600);
 }
 
 // ============================================
