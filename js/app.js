@@ -453,7 +453,7 @@ function renderInventarioTable(productos) {
         
         let actionBtn = '';
         if (canEdit) {
-            actionBtn = '<button onclick="showToast(\'Editar: ' + p.nombre + '\')" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>';
+            actionBtn = '<div style="display:flex;gap:4px"><button onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button><button onclick="deleteProduct(\'' + p.id + '\')" class="btn btn-sm" style="background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3)" title="Eliminar"><i class="fas fa-trash"></i></button></div>';
         } else if (canOrder && p.stock_actual > 0) {
             actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
         } else if (p.stock_actual <= 0) {
@@ -476,6 +476,149 @@ function filterInventory(val) {
     document.querySelectorAll('#invBody tr').forEach(row => {
         row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
     });
+}
+
+// ============================================
+// EDITAR / ELIMINAR PRODUCTO
+// ============================================
+let _editingProductId = null;
+
+async function editProduct(id) {
+    try {
+        const res = await fetch(`${API_BASE}/productos.php?id=${id}`);
+        const data = await res.json();
+        if (data.status !== 'success') { showToast('Producto no encontrado', 'error'); return; }
+        const p = data.data;
+
+        // Obtener categorías
+        let cats = [];
+        try {
+            const catRes = await fetch(`${API_BASE}/productos.php`);
+            // No hay API de categorías, usamos las fijas
+        } catch(e) {}
+        const catList = [
+            {id:1, nombre:'Útiles Escolares'},
+            {id:2, nombre:'Papelería'},
+            {id:3, nombre:'Tecnología'},
+            {id:4, nombre:'Accesorios'}
+        ];
+
+        _editingProductId = id;
+        const old = document.getElementById('editModal');
+        if (old) old.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'editModal';
+        modal.className = 'modal show';
+        modal.innerHTML = `
+            <div style="width:440px;max-width:95%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
+                <div style="background:linear-gradient(135deg,var(--dark),#2a1a4a);color:#fff;padding:20px 24px">
+                    <h3 style="margin:0;font-size:1.1rem"><i class="fas fa-edit" style="color:var(--accent)"></i> Editar Producto</h3>
+                    <p style="margin:4px 0 0;font-size:0.82rem;opacity:0.6">${p.codigo}</p>
+                </div>
+                <div style="padding:24px">
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" id="editNombre" value="${p.nombre.replace(/"/g, '&quot;')}">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="editDesc" rows="2">${p.descripcion || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="editCat">
+                            ${catList.map(c => `<option value="${c.id}" ${c.id == p.categoria_id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:12px">
+                        <div class="form-group" style="flex:1">
+                            <label>Precio ($)</label>
+                            <input type="number" id="editPrecio" step="0.01" min="0" value="${p.precio_venta}">
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Stock Actual</label>
+                            <input type="number" id="editStock" min="0" value="${p.stock_actual}">
+                        </div>
+                        <div class="form-group" style="flex:1">
+                            <label>Stock Mínimo</label>
+                            <input type="number" id="editStockMin" min="0" value="${p.stock_minimo}">
+                        </div>
+                    </div>
+                </div>
+                <div style="padding:16px 24px 24px;display:flex;gap:10px;border-top:1px solid #eee">
+                    <button onclick="closeEditModal()" style="flex:1;padding:12px;border:2px solid #ddd;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#666">Cancelar</button>
+                    <button onclick="saveEditProduct()" style="flex:2;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer"><i class="fas fa-save"></i> Guardar Cambios</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) { if (e.target === modal) closeEditModal(); });
+    } catch (err) {
+        showToast('Error al cargar producto', 'error');
+    }
+}
+
+function closeEditModal() {
+    const m = document.getElementById('editModal');
+    if (m) m.remove();
+    _editingProductId = null;
+}
+
+async function saveEditProduct() {
+    if (!_editingProductId) return;
+    const nombre = document.getElementById('editNombre').value.trim();
+    const desc = document.getElementById('editDesc').value.trim();
+    const cat = document.getElementById('editCat').value;
+    const precio = document.getElementById('editPrecio').value;
+    const stock = document.getElementById('editStock').value;
+    const stockMin = document.getElementById('editStockMin').value;
+
+    if (!nombre) { showToast('El nombre es requerido', 'error'); return; }
+    if (!precio || parseFloat(precio) <= 0) { showToast('Precio inválido', 'error'); return; }
+
+    try {
+        const res = await fetch(`${API_BASE}/productos.php?id=${_editingProductId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nombre,
+                descripcion: desc,
+                categoria_id: parseInt(cat),
+                precio_venta: parseFloat(precio),
+                stock_actual: parseInt(stock),
+                stock_minimo: parseInt(stockMin)
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast('Producto actualizado correctamente');
+            closeEditModal();
+            loadInventario();
+        } else {
+            showToast('Error: ' + data.message, 'error');
+        }
+    } catch (err) {
+        showToast('Error de conexión', 'error');
+    }
+}
+
+async function deleteProduct(id) {
+    if (!confirm('¿Seguro que quieres eliminar este producto?')) return;
+    try {
+        const res = await fetch(`${API_BASE}/productos.php?id=${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.status === 'success') {
+            showToast('Producto eliminado');
+            loadInventario();
+            // También recargar productos si estamos en esa página
+            if (document.body.dataset.page === 'productos') loadProductos();
+        } else {
+            showToast('Error: ' + data.message, 'error');
+        }
+    } catch (err) {
+        showToast('Error de conexión', 'error');
+    }
 }
 
 // ============================================
