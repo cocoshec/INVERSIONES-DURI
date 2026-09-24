@@ -511,18 +511,22 @@ function renderPedidosRecientes(pedidos) {
 function addProductToCart() {
     const sel = document.getElementById('productSelect');
     if (!sel || !sel.value) { showToast('Selecciona un producto', 'error'); return; }
-    const [name, price, stock, id] = sel.value.split('|');
+    const [id, name, price, stock] = sel.value.split('|');
     if (parseInt(stock) <= 0) { showToast('Producto agotado', 'error'); return; }
-    const existing = cart.find(i => i.id === id);
+    addToCartById(id, name, price, stock);
+    sel.value = '';
+}
+
+function addToCartById(id, name, price, stock) {
+    const existing = cart.find(i => i.id === String(id));
     if (existing) {
         if (existing.qty >= parseInt(stock)) { showToast('No hay más stock (máx: ' + stock + ')', 'error'); return; }
         existing.qty++;
     } else {
-        cart.push({ id, name, price: parseFloat(price), qty: 1, maxStock: parseInt(stock) });
+        cart.push({ id: String(id), name, price: parseFloat(price), qty: 1, maxStock: parseInt(stock) });
     }
     updateCart();
     showToast(name + ' agregado');
-    sel.value = '';
 }
 
 function removeFromCart(i) { cart.splice(i, 1); updateCart(); }
@@ -568,15 +572,37 @@ async function submitOrder() {
     const clientSelect = document.getElementById('clientSelect');
     const address = document.getElementById('deliveryAddress');
     const notes = document.getElementById('orderNotes');
+    const payment = document.getElementById('paymentMethod');
+    const newName = document.getElementById('newClientName');
+    const newPhone = document.getElementById('newClientPhone');
     
-    if (!clientSelect || !clientSelect.value) { showToast('Selecciona un cliente', 'error'); return; }
+    if (!clientSelect || !clientSelect.value) { showToast('Selecciona o escribe tu nombre', 'error'); return; }
+    
+    let clienteId = clientSelect.value;
+    
+    // Cliente nuevo: crearlo primero
+    if (clienteId === 'nuevo') {
+        if (!newName || !newName.value.trim()) { showToast('Escribe tu nombre', 'error'); return; }
+        try {
+            const resCli = await fetch(`${API_BASE}/clientes.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: newName.value.trim(), telefono: newPhone ? newPhone.value.trim() : '' })
+            });
+            const cliData = await resCli.json();
+            if (cliData.status !== 'success') { showToast('Error al crear cliente: ' + cliData.message, 'error'); return; }
+            clienteId = cliData.id;
+        } catch (err) { showToast('Error de conexión al crear cliente', 'error'); return; }
+    }
+    
     if (!cart.length) { showToast('Agrega productos al pedido', 'error'); return; }
     if (address && address.value && address.value.length < 10) { showToast('Dirección muy corta', 'error'); return; }
     
     const orderData = {
-        cliente_id: clientSelect.value,
+        cliente_id: clienteId,
         direccion_entrega: address ? address.value : '',
         notas: notes ? notes.value : '',
+        forma_pago: payment ? payment.value : 'efectivo',
         productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price }))
     };
     
@@ -591,6 +617,8 @@ async function submitOrder() {
             showToast('¡Pedido ' + data.codigo + ' creado! Total: $' + parseFloat(data.total).toFixed(2));
             cart = []; updateCart();
             document.getElementById('orderForm').reset();
+            const nf = document.getElementById('newClientFields');
+            if (nf) nf.style.display = 'none';
             loadPedidosRecientes();
         } else { showToast('Error: ' + data.message, 'error'); }
     } catch (err) { showToast('Error de conexión', 'error'); }

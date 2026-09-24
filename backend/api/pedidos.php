@@ -63,13 +63,18 @@ switch ($method) {
             $codigo = 'PED-' . str_pad(($row['max_id'] ?? 0) + 1, 3, '0', STR_PAD_LEFT);
 
             // Insertar pedido
-            $stmt = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, subtotal, impuesto, total, estado, direccion_entrega, notas) VALUES (?, ?, ?, ?, ?, 'pendiente', ?, ?)");
+            $formaPago = $data['forma_pago'] ?? 'efectivo';
+            $formasValidas = ['efectivo', 'transferencia', 'pago_movil', 'tarjeta'];
+            if (!in_array($formaPago, $formasValidas)) $formaPago = 'efectivo';
+
+            $stmt = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, subtotal, impuesto, total, estado, forma_pago, direccion_entrega, notas) VALUES (?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)");
             $stmt->execute([
                 $codigo,
                 $data['cliente_id'],
                 $subtotal,
                 $impuesto,
                 $total,
+                $formaPago,
                 $data['direccion_entrega'] ?? '',
                 $data['notas'] ?? ''
             ]);
