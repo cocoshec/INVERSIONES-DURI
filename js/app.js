@@ -553,6 +553,7 @@ function updateCart() {
     const items = document.getElementById('orderItems');
     const total = document.getElementById('orderTotal');
     const btn = document.getElementById('submitBtn');
+    const btnForm = document.getElementById('submitBtnForm');
     
     // Actualizar carrito flotante siempre
     try { updateFloatingCart(); } catch(e) {}
@@ -562,6 +563,7 @@ function updateCart() {
         items.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-basket"></i><p>Tu pedido está vacío</p></div>';
         if (total) total.textContent = '$0.00';
         if (btn) btn.disabled = true;
+        if (btnForm) btnForm.disabled = true;
         return;
     }
     let html = '', sum = 0;
@@ -577,6 +579,7 @@ function updateCart() {
     items.innerHTML = html;
     if (total) total.textContent = '$' + sum.toFixed(2);
     if (btn) btn.disabled = false;
+    if (btnForm) btnForm.disabled = false;
 }
 
 async function submitOrder() {

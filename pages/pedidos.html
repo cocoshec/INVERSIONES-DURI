@@ -66,11 +66,13 @@
 
                         <div class="form-group">
                             <label><i class="fas fa-box"></i> Buscar Producto</label>
-                            <div class="product-search-box">
-                                <i class="fas fa-search"></i>
-                                <input type="text" id="productSearch" placeholder="Escribe para buscar..." autocomplete="off">
+                            <div class="product-search-wrap">
+                                <div class="product-search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="productSearch" placeholder="Escribe para buscar..." autocomplete="off">
+                                </div>
+                                <div id="productResults" class="product-results"></div>
                             </div>
-                            <div id="productResults" class="product-results"></div>
                             <div id="productChips" class="product-chips"></div>
                         </div>
 
@@ -93,8 +95,8 @@
                             <textarea id="orderNotes" rows="2" placeholder="Instrucciones especiales..."></textarea>
                         </div>
 
-                        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="addProductToCart()" style="margin-top:4px">
-                            <i class="fas fa-plus-circle"></i> Agregar al Pedido
+                        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitOrder()" id="submitBtnForm" style="margin-top:4px" disabled>
+                            <i class="fas fa-paper-plane"></i> Agregar Pedido
                         </button>
                     </form>
                 </div>
