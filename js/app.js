@@ -318,7 +318,7 @@ function initPage() {
     const page = document.body.dataset.page;
     if (page === 'productos') loadProductos();
     if (page === 'inventario') loadInventario();
-    if (page === 'pedidos') { loadClientesSelect(); loadPedidosRecientes(); }
+    if (page === 'pedidos') { loadPedidosRecientes(); updateCart(); }
 }
 
 // ============================================
@@ -472,6 +472,16 @@ function filterInventory(val) {
 // ============================================
 let cart = [];
 
+// Cargar carrito guardado (sobrevive recargas)
+try {
+    const savedCart = sessionStorage.getItem('cartDuri');
+    if (savedCart) cart = JSON.parse(savedCart);
+} catch(e) {}
+
+function saveCart() {
+    try { sessionStorage.setItem('cartDuri', JSON.stringify(cart)); } catch(e) {}
+}
+
 async function loadClientesSelect() {
     try {
         const res = await fetch(`${API_BASE}/clientes.php`);
@@ -525,17 +535,18 @@ function addToCartById(id, name, price, stock) {
     } else {
         cart.push({ id: String(id), name, price: parseFloat(price), qty: 1, maxStock: parseInt(stock) });
     }
+    saveCart();
     updateCart();
     showToast(name + ' agregado');
 }
 
-function removeFromCart(i) { cart.splice(i, 1); updateCart(); }
+function removeFromCart(i) { cart.splice(i, 1); saveCart(); updateCart(); }
 
 function updateQty(i, d) {
     cart[i].qty += d;
     if (cart[i].qty <= 0) removeFromCart(i);
-    else if (cart[i].qty > cart[i].maxStock) { showToast('Stock máximo: ' + cart[i].maxStock, 'error'); cart[i].qty = cart[i].maxStock; updateCart(); }
-    else updateCart();
+    else if (cart[i].qty > cart[i].maxStock) { showToast('Stock máximo: ' + cart[i].maxStock, 'error'); cart[i].qty = cart[i].maxStock; saveCart(); updateCart(); }
+    else { saveCart(); updateCart(); }
 }
 
 function updateCart() {
@@ -577,51 +588,175 @@ async function submitOrder() {
     const newPhone = document.getElementById('newClientPhone');
     
     if (!clientSelect || !clientSelect.value) { showToast('Selecciona o escribe tu nombre', 'error'); return; }
+    if (!cart.length) { showToast('Agrega productos al pedido', 'error'); return; }
+    if (address && address.value && address.value.length < 10) { showToast('Dirección muy corta', 'error'); return; }
     
-    let clienteId = clientSelect.value;
-    
-    // Cliente nuevo: crearlo primero
-    if (clienteId === 'nuevo') {
+    // Obtener nombre del cliente para el mensaje
+    let clientName = '';
+    if (clientSelect.value === 'nuevo') {
         if (!newName || !newName.value.trim()) { showToast('Escribe tu nombre', 'error'); return; }
+        clientName = newName.value.trim();
+    } else {
+        const opt = clientSelect.options[clientSelect.selectedIndex];
+        clientName = opt ? opt.text.split(' - ')[0] : '';
+    }
+    
+    const paymentLabels = { efectivo: 'Efectivo', pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria', tarjeta: 'Tarjeta' };
+    const paymentLabel = payment ? (paymentLabels[payment.value] || payment.value) : 'Efectivo';
+    const addr = address ? address.value : '';
+    
+    // Calcular total
+    let subtotal = 0;
+    cart.forEach(it => { subtotal += it.price * it.qty; });
+    const iva = subtotal * 0.16;
+    const total = subtotal + iva;
+    
+    // Construir lista de productos
+    let prodLines = '';
+    cart.forEach(it => {
+        prodLines += `📦 ${it.name} x${it.qty} — $${(it.price * it.qty).toFixed(2)}\n`;
+    });
+    
+    // Mensaje predeterminado
+    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)}\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
+    
+    // Guardar datos temporalmente para el modal
+    window._pendingOrder = {
+        cliente_id: clientSelect.value,
+        direccion_entrega: addr,
+        notas: notes ? notes.value : '',
+        forma_pago: payment ? payment.value : 'efectivo',
+        productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price })),
+        clientName,
+        msg
+    };
+    
+    // Mostrar modal de confirmación
+    showConfirmModal(subtotal, iva, total, prodLines, clientName, paymentLabel, addr, msg);
+}
+
+function showConfirmModal(subtotal, iva, total, prodLines, clientName, paymentLabel, addr, msg) {
+    // Remover modal anterior si existe
+    const old = document.getElementById('confirmModal');
+    if (old) old.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'confirmModal';
+    modal.className = 'modal show';
+    modal.innerHTML = `
+        <div style="width:480px;max-width:95%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
+            <div style="background:linear-gradient(135deg,var(--dark),#2a1a4a);color:#fff;padding:24px 28px">
+                <h3 style="margin:0 0 4px;font-size:1.2rem"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Confirmar Pedido</h3>
+                <p style="margin:0;font-size:0.85rem;opacity:0.7">Revisa tu pedido antes de enviarlo</p>
+            </div>
+            <div style="padding:24px 28px;max-height:50vh;overflow-y:auto">
+                <div style="margin-bottom:16px">
+                    <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Cliente</div>
+                    <div style="font-weight:600">${clientName}</div>
+                </div>
+                <div style="margin-bottom:16px">
+                    <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Productos</div>
+                    <div style="background:#f8f8f8;border-radius:8px;padding:14px;font-size:0.9rem;line-height:1.8;white-space:pre-line">${prodLines}</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;border-bottom:1px solid #eee">
+                    <span>Subtotal</span><span>$${subtotal.toFixed(2)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;border-bottom:1px solid #eee">
+                    <span>IVA (16%)</span><span>$${iva.toFixed(2)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:1.2rem;font-weight:700;color:var(--accent)">
+                    <span>TOTAL</span><span>$${total.toFixed(2)}</span>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:6px;font-size:0.85rem;color:#666">
+                    <span><i class="fas fa-credit-card"></i> ${paymentLabel}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${addr || 'Por confirmar'}</span>
+                </div>
+                <div style="margin-top:18px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:14px;font-size:0.82rem;line-height:1.6;color:#2e7d32">
+                    <strong><i class="fab fa-whatsapp"></i> Mensaje que se enviará:</strong>
+                    <div style="margin-top:8px;white-space:pre-line;font-family:monospace;font-size:0.78rem">${msg.replace(/</g, '&lt;')}</div>
+                </div>
+            </div>
+            <div style="padding:16px 28px 24px;display:flex;gap:10px;border-top:1px solid #eee">
+                <button onclick="closeConfirmModal()" style="flex:1;padding:14px;border:2px solid #ddd;background:#fff;border-radius:10px;font-size:0.95rem;font-weight:600;cursor:pointer;color:#666">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button onclick="confirmAndSend()" id="confirmSendBtn" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:600;cursor:pointer">
+                    <i class="fab fa-whatsapp"></i> Confirmar y Enviar
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) { if (e.target === modal) closeConfirmModal(); });
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.remove();
+}
+
+async function confirmAndSend() {
+    const data = window._pendingOrder;
+    if (!data) { closeConfirmModal(); return; }
+    
+    const btn = document.getElementById('confirmSendBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+    
+    let clienteId = data.cliente_id;
+    
+    // Crear cliente nuevo si aplica
+    if (clienteId === 'nuevo') {
+        const newName = document.getElementById('newClientName');
+        const newPhone = document.getElementById('newClientPhone');
         try {
             const resCli = await fetch(`${API_BASE}/clientes.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre: newName.value.trim(), telefono: newPhone ? newPhone.value.trim() : '' })
+                body: JSON.stringify({ nombre: newName ? newName.value.trim() : data.clientName, telefono: newPhone ? newPhone.value.trim() : '' })
             });
             const cliData = await resCli.json();
-            if (cliData.status !== 'success') { showToast('Error al crear cliente: ' + cliData.message, 'error'); return; }
+            if (cliData.status !== 'success') { showToast('Error al crear cliente: ' + cliData.message, 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } return; }
             clienteId = cliData.id;
-        } catch (err) { showToast('Error de conexión al crear cliente', 'error'); return; }
+        } catch (err) { showToast('Error de conexión', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } return; }
     }
     
-    if (!cart.length) { showToast('Agrega productos al pedido', 'error'); return; }
-    if (address && address.value && address.value.length < 10) { showToast('Dirección muy corta', 'error'); return; }
-    
-    const orderData = {
-        cliente_id: clienteId,
-        direccion_entrega: address ? address.value : '',
-        notas: notes ? notes.value : '',
-        forma_pago: payment ? payment.value : 'efectivo',
-        productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price }))
-    };
-    
+    // Enviar pedido a la BD
     try {
         const res = await fetch(`${API_BASE}/pedidos.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
+            body: JSON.stringify({
+                cliente_id: clienteId,
+                direccion_entrega: data.direccion_entrega,
+                notas: data.notas,
+                forma_pago: data.forma_pago,
+                productos: data.productos
+            })
         });
-        const data = await res.json();
-        if (data.status === 'success') {
-            showToast('¡Pedido ' + data.codigo + ' creado! Total: $' + parseFloat(data.total).toFixed(2));
-            cart = []; updateCart();
+        const result = await res.json();
+        if (result.status === 'success') {
+            // Abrir WhatsApp con el mensaje
+            const waUrl = 'https://wa.me/584121234567?text=' + encodeURIComponent(data.msg);
+            window.open(waUrl, '_blank');
+            
+            showToast('¡Pedido ' + result.codigo + ' creado! Total: $' + parseFloat(result.total).toFixed(2));
+            
+            // Limpiar
+            cart = []; saveCart(); updateCart();
             document.getElementById('orderForm').reset();
             const nf = document.getElementById('newClientFields');
             if (nf) nf.style.display = 'none';
             loadPedidosRecientes();
-        } else { showToast('Error: ' + data.message, 'error'); }
-    } catch (err) { showToast('Error de conexión', 'error'); }
+            closeConfirmModal();
+            window._pendingOrder = null;
+        } else {
+            showToast('Error: ' + result.message, 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; }
+        }
+    } catch (err) {
+        showToast('Error de conexión', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; }
+    }
 }
 
 // ============================================

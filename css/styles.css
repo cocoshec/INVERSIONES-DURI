@@ -478,6 +478,12 @@ img { max-width:100%; }
 ::selection { background:var(--accent-light); color:var(--accent); }
 
 /* ============================================
+   MODAL
+   ============================================ */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:2000; padding:20px; animation:fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media(max-width:1024px) {
