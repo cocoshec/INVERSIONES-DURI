@@ -56,13 +56,21 @@
             </form>
             
             <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);text-align:center">
-                <p style="color:var(--text-tertiary);font-size:0.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;font-weight:500">Credenciales de prueba</p>
-                <p style="color:var(--text-secondary);font-size:0.78rem;line-height:1.7">
-                    <strong>Super:</strong> admin@inversionesduri.com<br>
-                    <strong>Operador:</strong> operador@inversionesduri.com<br>
-                    <strong>Usuario:</strong> usuario@inversionesduri.com<br>
-                    <strong>Contraseña:</strong> admin123
-                </p>
+                <p style="color:var(--text-tertiary);font-size:0.78rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">Credenciales de prueba (haz clic para rellenar)</p>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+                    <button type="button" onclick="fillDemo('admin@inversionesduri.com','admin123')" style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px 10px;font-size:0.78rem;color:#333;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;">
+                        <span>👑 <strong>Super Admin:</strong> admin@inversionesduri.com</span>
+                        <span style="color:#888;font-size:0.72rem">admin123</span>
+                    </button>
+                    <button type="button" onclick="fillDemo('operador@inversionesduri.com','admin123')" style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px 10px;font-size:0.78rem;color:#333;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;">
+                        <span>⚙️ <strong>Operador:</strong> operador@inversionesduri.com</span>
+                        <span style="color:#888;font-size:0.72rem">admin123</span>
+                    </button>
+                    <button type="button" onclick="fillDemo('usuario@inversionesduri.com','admin123')" style="background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px 10px;font-size:0.78rem;color:#333;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;">
+                        <span>👤 <strong>Usuario:</strong> usuario@inversionesduri.com</span>
+                        <span style="color:#888;font-size:0.72rem">admin123</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -74,6 +82,11 @@
         if(inp.type==='password'){inp.type='text';icon.className='fas fa-eye-slash';}
         else{inp.type='password';icon.className='fas fa-eye';}
     }
+
+    function fillDemo(email, pass){
+        document.getElementById('email').value = email;
+        document.getElementById('password').value = pass;
+    }
     
     document.getElementById('loginForm').addEventListener('submit', async function(e){
         e.preventDefault();
@@ -84,9 +97,47 @@
         btn.disabled=true;
         errorDiv.style.display='none';
         
-        const email=document.getElementById('email').value;
+        const email=document.getElementById('email').value.trim().toLowerCase();
         const password=document.getElementById('password').value;
+
+        const isGH = window.location.hostname.includes('github.io');
+
+        // Cuentas demo para GitHub Pages y respaldo local
+        const demoUsers = {
+            'admin@inversionesduri.com': { id: 1, nombre: 'Administrador Duri', email: 'admin@inversionesduri.com', rol: 'super_usuario', pass: 'admin123' },
+            'operador@inversionesduri.com': { id: 2, nombre: 'Operador Duri', email: 'operador@inversionesduri.com', rol: 'operador', pass: 'admin123' },
+            'usuario@inversionesduri.com': { id: 3, nombre: 'Usuario Cliente', email: 'usuario@inversionesduri.com', rol: 'usuario', pass: 'admin123' }
+        };
+
+        function loginLocal(user) {
+            localStorage.setItem('userDuri', JSON.stringify({
+                id: user.id,
+                nombre: user.nombre,
+                email: user.email,
+                rol: user.rol
+            }));
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> ¡Bienvenido ' + user.nombre + '!';
+            btn.style.background = '#10B981';
+            btn.style.borderColor = '#10B981';
+            setTimeout(function(){ window.location.href = 'index.html'; }, 1000);
+        }
+
+        // Si estamos en GitHub Pages (sin servidor PHP)
+        if (isGH) {
+            const demo = demoUsers[email];
+            if (demo && demo.pass === password) {
+                loginLocal(demo);
+                return;
+            } else {
+                errorDiv.textContent = 'Credenciales incorrectas. En GitHub Pages usa las credenciales de prueba abajo.';
+                errorDiv.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+                btn.disabled = false;
+                return;
+            }
+        }
         
+        // Si estamos en servidor local con PHP
         try{
             const res=await fetch('backend/api/usuarios.php?action=login',{
                 method:'POST',
@@ -100,18 +151,25 @@
                 btn.innerHTML='<i class="fas fa-check-circle"></i> ¡Bienvenido ' + data.data.nombre + '!';
                 btn.style.background='#10B981';
                 btn.style.borderColor='#10B981';
-                setTimeout(function(){ window.location.href='index.html'; }, 1500);
+                setTimeout(function(){ window.location.href='index.html'; }, 1000);
             }else{
-                errorDiv.textContent=data.message;
+                errorDiv.textContent=data.message || 'Error al iniciar sesión';
                 errorDiv.style.display='block';
+                btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+                btn.disabled=false;
             }
         }catch(err){
-            errorDiv.textContent='Error de conexión con el servidor';
-            errorDiv.style.display='block';
+            // Fallback a demo si la API PHP no responde
+            const demo = demoUsers[email];
+            if (demo && demo.pass === password) {
+                loginLocal(demo);
+            } else {
+                errorDiv.textContent='Error de conexión. Usa una de las credenciales de prueba.';
+                errorDiv.style.display='block';
+                btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+                btn.disabled=false;
+            }
         }
-        
-        btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
-        btn.disabled=false;
     });
     
     </script>
