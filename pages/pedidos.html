@@ -8,8 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="../css/styles.css?v=5.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -28,23 +31,23 @@
     </div>
     <nav class="navbar">
         <div class="nav-container">
-            <a href="../index.html" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <a href="../index.html?v=4" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="../index.html" class="nav-link">Inicio</a></li>
-                <li><a href="productos.html" class="nav-link">Productos</a></li>
-                <li><a href="pedidos.html" class="nav-link active">Pedidos</a></li>
-                <li><a href="servicios.html" class="nav-link">Servicios</a></li>
-                <li><a href="nosotros.html" class="nav-link">Nosotros</a></li>
-                <li><a href="contacto.html" class="nav-link">Contacto</a></li>
+                <li><a href="../index.html?v=4" class="nav-link"><i class="fas fa-home" style="margin-right:6px; opacity:0.85;"></i> Inicio</a></li>
+                <li><a href="productos.html?v=4" class="nav-link"><i class="fas fa-box-open" style="margin-right:6px; opacity:0.85;"></i> Productos</a></li>
+                <li><a href="pedidos.html?v=4" class="nav-link active"><i class="fas fa-shopping-cart" style="margin-right:6px; opacity:0.85;"></i> Pedidos</a></li>
+                <li><a href="servicios.html?v=4" class="nav-link"><i class="fas fa-tools" style="margin-right:6px; opacity:0.85;"></i> Servicios</a></li>
+                <li><a href="nosotros.html?v=4" class="nav-link"><i class="fas fa-users" style="margin-right:6px; opacity:0.85;"></i> Nosotros</a></li>
+                <li><a href="contacto.html?v=4" class="nav-link"><i class="fas fa-envelope" style="margin-right:6px; opacity:0.85;"></i> Contacto</a></li>
             </ul>
-            <button class="nav-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
         </div>
     </nav>
 
-    <section class="page-hero" style="background:linear-gradient(135deg,var(--yellow),#E6B800)">
-        <div class="container">
+    <section class="page-hero" style="background: linear-gradient(135deg, #130A24 0%, #291248 45%, #E85D26 100%);">
+        <div class="container page-hero-content">
             <h1><i class="fas fa-shopping-cart"></i> Gestión de Pedidos</h1>
-            <p>Crea pedidos y consulta el historial desde la base de datos</p>
+            <p>Selecciona tus productos, ubica tu entrega con GPS y confirma directamente</p>
         </div>
     </section>
 
@@ -56,12 +59,16 @@
                     <h3><i class="fas fa-file-invoice"></i> Nuevo Pedido</h3>
                     <form id="orderForm">
                         <div class="form-group">
-                            <label><i class="fas fa-user"></i> Tu Nombre</label>
-                            <input type="text" id="newClientName" placeholder="Escribe tu nombre completo..." required>
+                            <label><i class="fas fa-user"></i> Tu Nombre Completo <span style="color:#dc3545">*</span></label>
+                            <input type="text" id="newClientName" placeholder="Escribe tu nombre y apellido..." required>
                         </div>
                         <div class="form-group">
-                            <label><i class="fas fa-phone"></i> Teléfono</label>
-                            <input type="tel" id="newClientPhone" placeholder="Ej: +58 412-1234567">
+                            <label><i class="fas fa-id-card"></i> Cédula / RIF <span style="color:#dc3545">*</span></label>
+                            <input type="text" id="newClientCi" placeholder="Ej: V-12345678 o J-12345678" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-phone"></i> Teléfono <span style="color:#dc3545">*</span></label>
+                            <input type="tel" id="newClientPhone" placeholder="Ej: 0412-1234567" required>
                         </div>
                         <input type="hidden" id="clientSelect" value="nuevo">
 
@@ -88,8 +95,35 @@
                         </div>
 
                         <div class="form-group">
-                            <label><i class="fas fa-map-marker-alt"></i> Dirección de Entrega</label>
-                            <textarea id="deliveryAddress" rows="2" placeholder="Dirección completa..."></textarea>
+                            <label><i class="fas fa-map-marker-alt"></i> Dirección de Entrega <span style="color:#dc3545">*</span></label>
+                            
+                            <!-- Botones adaptados para móvil -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="abrirModalMapa(true)" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                    <i class="fas fa-crosshairs"></i> Mi GPS Actual
+                                </button>
+                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                    <i class="fas fa-map-marked-alt"></i> Abrir en Maps
+                                </button>
+                            </div>
+
+                            <!-- Tarjeta de Confirmación de Ubicación fijada con Google Maps -->
+                            <div id="ubicacionConfirmadaCard" style="display:none; margin-bottom:8px; padding:10px 12px; background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:8px; font-size:0.82rem; color:#2e7d32; display:flex; justify-content:space-between; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <i class="fas fa-check-circle" style="font-size:1.3rem; color:#28a745;"></i>
+                                    <div>
+                                        <strong>¡Ubicación fijada con éxito!</strong>
+                                        <span id="ubicacionConfirmadaCoords" style="display:block; font-size:0.75rem; color:#555;"></span>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <a id="ubicacionTestMapsLink" href="#" target="_blank" style="color:#155724; font-size:0.78rem; text-decoration:underline; font-weight:600;"><i class="fas fa-external-link-alt"></i> Ver</a>
+                                    <button type="button" onclick="abrirModalMapa(false)" style="background:#fff; border:1px solid #ccc; padding:3px 7px; border-radius:4px; font-size:0.75rem; cursor:pointer; color:#333;">Cambiar</button>
+                                </div>
+                            </div>
+
+                            <textarea id="deliveryAddress" rows="2" placeholder="Describe tu dirección (Sector, calle, casa/apto y punto de referencia)..." required></textarea>
+                            <input type="hidden" id="geoCoords" value="">
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-sticky-note"></i> Notas</label>
@@ -121,6 +155,17 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Panel de Pedidos Recientes (Solo para Superusuario) -->
+            <div class="order-card" id="adminOrdersCard" style="margin-top: 24px; display: none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                    <h3 style="margin:0"><i class="fas fa-user-shield" style="color:var(--orange,#FF6600);"></i> Panel de Superusuario: Verificación de Pagos</h3>
+                    <span style="font-size:0.85rem; color:var(--gray)"><i class="fas fa-lock"></i> Exclusivo para Superusuario</span>
+                </div>
+                <div id="recentOrders">
+                    <p style="color:var(--gray); text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando pedidos...</p>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -131,8 +176,14 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js"></script>
+    <script src="../js/app.js?v=4.0"></script>
     <script>
+        // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
+        if (!window.isSecureContext && location.hostname.endsWith('.test')) {
+            const targetUrl = location.href.replace(location.host, 'localhost/inversiones-duri');
+            location.replace(targetUrl);
+        }
+
         document.addEventListener('DOMContentLoaded', async function() {
             const API = '../backend/api';
             let allProducts = [];
@@ -208,6 +259,322 @@
             if (origUpdateCart) origUpdateCart();
             renderChips();
         };
+
+        // ============================================
+        // SELECTOR DE UBICACIÓN GOOGLE MAPS (ADAPTATIVO PARA MÓVIL)
+        // ============================================
+        let gmap = null;
+        let gmarker = null;
+        let selectedCoords = null;
+        let selectedAddressText = '';
+        const DEFAULT_MARACAY = [10.2469, -67.5958]; // Maracay centro
+
+        const googlePinIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        function initGoogleMap(coords = DEFAULT_MARACAY, zoom = 15) {
+            if (gmap) {
+                gmap.setView(coords, zoom);
+                if (gmarker) gmarker.setLatLng(coords);
+                actualizarPuntoSeleccionado(coords[0], coords[1]);
+                setTimeout(() => gmap.invalidateSize(), 250);
+                return;
+            }
+
+            const container = document.getElementById('gmapsCanvas');
+            if (!container || typeof L === 'undefined') return;
+
+            gmap = L.map('gmapsCanvas', {
+                zoomControl: true
+            }).setView(coords, zoom);
+
+            // Capa oficial de Calles de Google Maps
+            L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '&copy; Google Maps'
+            }).addTo(gmap);
+
+            // Marcador rojo arrastrable
+            gmarker = L.marker(coords, {
+                draggable: true,
+                icon: googlePinIcon
+            }).addTo(gmap);
+
+            // Evento al arrastrar el marcador
+            gmarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                actualizarPuntoSeleccionado(pos.lat, pos.lng);
+            });
+
+            // Evento al hacer clic en cualquier parte del mapa
+            gmap.on('click', function(e) {
+                gmarker.setLatLng(e.latlng);
+                actualizarPuntoSeleccionado(e.latlng.lat, e.latlng.lng);
+            });
+
+            actualizarPuntoSeleccionado(coords[0], coords[1]);
+            setTimeout(() => gmap.invalidateSize(), 250);
+        }
+
+        function abrirModalMapa(usarGpsAutomatico = false) {
+            const modal = document.getElementById('modalGoogleMaps');
+            if (!modal) return;
+            modal.style.display = 'flex';
+
+            // Si ya teníamos coordenadas previas guardadas, inicializar en ese punto
+            const currentCoordsVal = document.getElementById('geoCoords').value;
+            let coordsToUse = DEFAULT_MARACAY;
+            if (currentCoordsVal && currentCoordsVal.includes(',')) {
+                const parts = currentCoordsVal.split(',');
+                coordsToUse = [parseFloat(parts[0]), parseFloat(parts[1])];
+            }
+
+            initGoogleMap(coordsToUse);
+
+            if (usarGpsAutomatico) {
+                centrarGpsModal(true);
+            }
+        }
+
+        function cerrarModalMapa() {
+            const modal = document.getElementById('modalGoogleMaps');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function mostrarModalPedirPermisoGps() {
+            const modalPermiso = document.getElementById('modalPedirPermisoGps');
+            if (modalPermiso) modalPermiso.style.display = 'flex';
+        }
+
+        function cerrarModalPermisoGps() {
+            const modalPermiso = document.getElementById('modalPedirPermisoGps');
+            if (modalPermiso) modalPermiso.style.display = 'none';
+        }
+
+        function intentarGpsConPermiso() {
+            cerrarModalPermisoGps();
+            const modalMapa = document.getElementById('modalGoogleMaps');
+            if (modalMapa) modalMapa.style.display = 'flex';
+            initGoogleMap();
+            centrarGpsModal(false);
+        }
+
+        function centrarGpsModal(mostrarAlertaSiFalla = true) {
+            const btn = document.getElementById('btnGpsInsideModal');
+            const btnDirect = document.getElementById('btnGpsDirect');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            if (btnDirect) btnDirect.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo GPS...';
+
+            const restaurarBotones = () => {
+                if (btn) btn.innerHTML = origHtml || '<i class="fas fa-crosshairs"></i>';
+                if (btnDirect) btnDirect.innerHTML = '<i class="fas fa-crosshairs"></i> Mi GPS Actual';
+            };
+
+            const onExitoGps = (pos) => {
+                restaurarBotones();
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                if (gmap) {
+                    gmap.setView([lat, lon], 17);
+                    if (gmarker) gmarker.setLatLng([lat, lon]);
+                }
+                actualizarPuntoSeleccionado(lat, lon);
+                if (typeof showToast === 'function') showToast('📍 Ubicación GPS detectada con éxito');
+            };
+
+            const onFallaGps = (err) => {
+                console.warn('GPS primario no disponible:', err);
+                // Intento secundario: menor precisión (red celular o WiFi)
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        onExitoGps,
+                        (err2) => {
+                            console.warn('GPS secundario no disponible:', err2);
+                            // Intento terciario: Geocodificación IP o centro por defecto
+                            fetch('https://ipapi.co/json/')
+                                .then(r => r.json())
+                                .then(data => {
+                                    restaurarBotones();
+                                    if (data && data.latitude && data.longitude) {
+                                        if (gmap) {
+                                            gmap.setView([data.latitude, data.longitude], 15);
+                                            if (gmarker) gmarker.setLatLng([data.latitude, data.longitude]);
+                                        }
+                                        actualizarPuntoSeleccionado(data.latitude, data.longitude);
+                                        if (typeof showToast === 'function') showToast('📍 Ubicación aproximada detectada. Afina tu casa en el mapa.');
+                                    } else {
+                                        throw new Error('Sin coordenadas IP');
+                                    }
+                                })
+                                .catch(() => {
+                                    restaurarBotones();
+                                    if (mostrarAlertaSiFalla) {
+                                        mostrarModalPedirPermisoGps();
+                                    } else {
+                                        if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa 📍', 'info');
+                                    }
+                                });
+                        },
+                        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+                    );
+                } else {
+                    restaurarBotones();
+                    if (mostrarAlertaSiFalla) mostrarModalPedirPermisoGps();
+                }
+            };
+
+            if (!navigator.geolocation) {
+                onFallaGps({ message: 'Geolocation no soportado' });
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                onExitoGps,
+                onFallaGps,
+                { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+            );
+        }
+
+        function actualizarPuntoSeleccionado(lat, lon) {
+            selectedCoords = [lat, lon];
+            const addressBox = document.getElementById('gmapsDetectedAddress');
+            if (addressBox) addressBox.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#007bff;"></i> Identificando calle y sector...';
+
+            // Geocodificación inversa para obtener el nombre de la calle/barrio
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        // Limpiar dirección corta
+                        const parts = data.display_name.split(',');
+                        selectedAddressText = parts.slice(0, 3).join(',').trim();
+                        if (addressBox) addressBox.textContent = selectedAddressText;
+                    } else {
+                        selectedAddressText = `Coordenadas: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                        if (addressBox) addressBox.textContent = selectedAddressText;
+                    }
+                })
+                .catch(() => {
+                    selectedAddressText = `Punto GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                    if (addressBox) addressBox.textContent = selectedAddressText;
+                });
+        }
+
+        function confirmarUbicacionDesdeModal() {
+            if (!selectedCoords) {
+                alert('Por favor selecciona un punto en el mapa primero.');
+                return;
+            }
+
+            const formatted = `${parseFloat(selectedCoords[0]).toFixed(6)},${parseFloat(selectedCoords[1]).toFixed(6)}`;
+            document.getElementById('geoCoords').value = formatted;
+
+            // Rellenar o sugerir dirección en el campo de texto si está vacío
+            const addrInput = document.getElementById('deliveryAddress');
+            if (addrInput && (!addrInput.value.trim() || addrInput.value.startsWith('Punto GPS') || addrInput.value.startsWith('Coordenadas'))) {
+                addrInput.value = selectedAddressText;
+            }
+
+            // Mostrar tarjeta de confirmación en el formulario principal
+            const card = document.getElementById('ubicacionConfirmadaCard');
+            const coordsText = document.getElementById('ubicacionConfirmadaCoords');
+            const testLink = document.getElementById('ubicacionTestMapsLink');
+
+            if (card) card.style.display = 'flex';
+            if (coordsText) coordsText.textContent = `${selectedAddressText} (${formatted})`;
+            if (testLink) testLink.href = `https://maps.google.com/?q=${formatted}`;
+
+            cerrarModalMapa();
+
+            if (typeof showToast === 'function') {
+                showToast('📍 Dirección y GPS fijados con éxito');
+            }
+        }
     </script>
+
+    <!-- MODAL DE SELECCIÓN DE DIRECCIÓN GOOGLE MAPS (RESPONSIVO PARA MÓVIL Y PC) -->
+    <div id="modalGoogleMaps" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div style="background:#fff; width:680px; max-width:96%; height:88vh; max-height:680px; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative;">
+            <!-- Header Modal -->
+            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fab fa-google" style="color:#ea4335; font-size:1.2rem;"></i>
+                    <strong style="font-size:1.05rem; color:#202124;">Ubicar Dirección en Google Maps</strong>
+                </div>
+                <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:34px; height:34px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;">&times;</button>
+            </div>
+
+            <!-- Mapa con Cartografía de Google Maps -->
+            <div style="flex:1; position:relative; width:100%;">
+                <div id="gmapsCanvas" style="width:100%; height:100%; z-index:1;"></div>
+                
+                <!-- Botón flotante para recentrar con GPS del teléfono -->
+                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:16px; right:16px; z-index:999; background:#fff; border:1px solid #dadce0; width:46px; height:46px; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-size:1.2rem;" title="Mi ubicación GPS">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+            </div>
+
+            <!-- Footer con Dirección Detectada y Botón Aceptar -->
+            <div style="background:#fff; border-top:1px solid #e0e0e0; padding:14px 18px; display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; align-items:flex-start; gap:10px;">
+                    <i class="fas fa-map-pin" style="color:#ea4335; font-size:1.2rem; margin-top:2px;"></i>
+                    <div style="flex:1;">
+                        <span style="font-size:0.75rem; color:#5f6368; text-transform:uppercase; font-weight:600;">Dirección detectada en el mapa:</span>
+                        <div id="gmapsDetectedAddress" style="font-size:0.92rem; font-weight:600; color:#202124; line-height:1.3; min-height:22px;">Mueve el marcador rojo a tu casa...</div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
+                    <button type="button" onclick="cerrarModalMapa()" style="padding:12px; background:#f1f3f4; color:#3c4043; border:none; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer;">
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnConfirmarUbicacion" onclick="confirmarUbicacionDesdeModal()" style="padding:12px; background:#28a745; color:#fff; border:none; border-radius:10px; font-weight:700; font-size:0.95rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 12px rgba(40,167,69,0.35);">
+                        <i class="fas fa-check-circle"></i> Aceptar y Usar Dirección
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA PEDIR AL USUARIO QUE ENCIENDA LA UBICACIÓN / GPS -->
+    <div id="modalPedirPermisoGps" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100000; align-items:center; justify-content:center; backdrop-filter:blur(4px); padding:16px;">
+        <div style="background:#fff; width:440px; max-width:96%; border-radius:18px; overflow:hidden; padding:24px; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.35);">
+            <div style="width:70px; height:70px; background:#fee8e7; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                <i class="fas fa-location-arrow" style="font-size:2rem; color:#ea4335;"></i>
+            </div>
+            <h3 style="margin:0 0 8px; font-size:1.25rem; color:#202124;">¡Por favor enciende tu Ubicación!</h3>
+            <p style="font-size:0.88rem; color:#5f6368; line-height:1.5; margin:0 0 16px;">
+                Para ubicar tu casa automáticamente en el mapa y que el repartidor llegue a tu puerta sin problemas:
+            </p>
+            
+            <div style="text-align:left; background:#f8f9fa; border:1px solid #e8eaed; border-radius:12px; padding:14px 16px; margin-bottom:20px; font-size:0.85rem; color:#3c4043; line-height:1.6;">
+                <div style="display:flex; gap:10px; margin-bottom:10px; align-items:flex-start;">
+                    <i class="fas fa-toggle-on" style="color:#28a745; font-size:1.2rem; margin-top:2px;"></i>
+                    <span><strong>1. Enciende la "Ubicación" (GPS)</strong> en tu teléfono (desliza la barra superior de tu celular y presiona el ícono de Ubicación).</span>
+                </div>
+                <div style="display:flex; gap:10px; align-items:flex-start;">
+                    <i class="fas fa-check-circle" style="color:#007bff; font-size:1.2rem; margin-top:2px;"></i>
+                    <span><strong>2. Presiona "Permitir"</strong> cuando el navegador te pregunte si autorizas compartir tu ubicación.</span>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button type="button" onclick="intentarGpsConPermiso()" style="width:100%; padding:14px; background:#28a745; color:#fff; border:none; border-radius:10px; font-weight:700; font-size:0.95rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 12px rgba(40,167,69,0.3);">
+                    <i class="fas fa-crosshairs"></i> Ya la encendí, detectar mi ubicación
+                </button>
+                <button type="button" onclick="cerrarModalPermisoGps(); abrirModalMapa(false);" style="width:100%; padding:12px; background:#f1f3f4; color:#3c4043; border:none; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer;">
+                    Prefiero ubicar mi casa tocando el Mapa
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -77,7 +77,7 @@ function isLoggedIn() {
 
 function isSuperUsuario() {
     const user = getUser();
-    return user && user.rol === 'super_usuario';
+    return user && (user.rol === 'super_usuario' || user.rol === 'admin');
 }
 
 
@@ -297,21 +297,70 @@ function showUserBadge() {
 
 function initNav() {
     const nav = document.querySelector('.navbar');
-    if (nav) {
+    if (nav && !nav._scrollBound) {
+        nav._scrollBound = true;
         window.addEventListener('scroll', () => {
             nav.classList.toggle('scrolled', window.scrollY > 50);
         });
     }
-    const toggle = document.getElementById('navToggle');
-    const menu = document.getElementById('navMenu');
-    if (toggle && menu) {
-        toggle.addEventListener('click', () => {
-            menu.classList.toggle('active');
-        });
-        menu.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => menu.classList.remove('active'));
-        });
+
+    const toggle = document.getElementById('navToggle') || document.querySelector('.nav-toggle');
+    const menu = document.getElementById('navMenu') || document.querySelector('.nav-menu');
+    if (!toggle || !menu) return;
+
+    // Quitar atributo onclick inline heredado para evitar doble alternado
+    if (toggle.hasAttribute('onclick')) {
+        toggle.removeAttribute('onclick');
     }
+
+    if (toggle._navBound) return;
+    toggle._navBound = true;
+
+    function setNavState(isOpen) {
+        menu.classList.toggle('active', isOpen);
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        toggle.setAttribute('aria-label', isOpen ? 'Cerrar menú' : 'Abrir menú');
+        const icon = toggle.querySelector('i');
+        if (icon) {
+            if (isOpen) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        }
+    }
+
+    toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isOpen = menu.classList.contains('active');
+        setNavState(!isOpen);
+    });
+
+    // Cerrar al hacer clic fuera del menú
+    document.addEventListener('click', (e) => {
+        if (menu.classList.contains('active')) {
+            if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+                setNavState(false);
+            }
+        }
+    });
+
+    // Cerrar al presionar la tecla Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && menu.classList.contains('active')) {
+            setNavState(false);
+        }
+    });
+
+    // Cerrar al hacer clic en cualquier enlace del menú (soporta enlaces dinámicos)
+    menu.addEventListener('click', (e) => {
+        if (e.target.closest('a')) {
+            setNavState(false);
+        }
+    });
 }
 
 function initPage() {
@@ -651,25 +700,153 @@ async function loadClientesSelect() {
 }
 
 async function loadPedidosRecientes() {
+    const adminCard = document.getElementById('adminOrdersCard');
+    
+    // Solo el superusuario tiene permiso para ver y verificar los pedidos
+    if (!isSuperUsuario()) {
+        if (adminCard) adminCard.style.display = 'none';
+        return;
+    }
+
+    if (adminCard) adminCard.style.display = 'block';
+
     try {
         const res = await fetch(`${API_BASE}/pedidos.php`);
         const data = await res.json();
-        if (data.status === 'success') renderPedidosRecientes(data.data.slice(0, 5));
+        if (data.status === 'success') renderPedidosRecientes(data.data);
     } catch (err) { console.error(err); }
 }
 
 function renderPedidosRecientes(pedidos) {
     const container = document.getElementById('recentOrders');
     if (!container) return;
+    if (!pedidos || pedidos.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray);text-align:center;padding:15px;">No hay pedidos registrados aún.</p>';
+        return;
+    }
     const estadoClass = {'pendiente':'pending','procesando':'processing','completado':'completed','cancelado':'out'};
-    const estadoText = {'pendiente':'Pendiente','procesando':'En Proceso','completado':'Completado','cancelado':'Cancelado'};
-    container.innerHTML = pedidos.map(p => `
-        <div class="order-row">
-            <div class="order-row-info"><strong>${p.codigo}</strong><span>${p.cliente_nombre}</span></div>
-            <div class="order-row-details"><span>$${parseFloat(p.total).toFixed(2)}</span></div>
-            <span class="status ${estadoClass[p.estado] || 'pending'}">${estadoText[p.estado] || p.estado}</span>
-        </div>
-    `).join('');
+    const estadoText = {'pendiente':'Pendiente de Pago','procesando':'Pago Confirmado / En Proceso','completado':'Completado','cancelado':'Cancelado'};
+    const canManage = isSuperUsuario();
+    
+    container.innerHTML = pedidos.map(p => {
+        let actionButtons = '';
+        if (canManage) {
+            let statusBtn = '';
+            if (p.estado === 'pendiente') {
+                statusBtn = `
+                    <button class="btn btn-sm" style="background:#28a745;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'procesando')">
+                        <i class="fas fa-check"></i> Aprobar Pago
+                    </button>
+                    <button class="btn btn-sm" style="background:#ffc107;color:#212529;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado')">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                `;
+            } else if (p.estado === 'procesando') {
+                statusBtn = `
+                    <button class="btn btn-sm" style="background:#007bff;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'completado')">
+                        <i class="fas fa-box-check"></i> Entregar / Completar
+                    </button>
+                    <button class="btn btn-sm" style="background:#ffc107;color:#212529;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado')">
+                        <i class="fas fa-undo"></i> Cancelar
+                    </button>
+                `;
+            }
+
+            // Botón de eliminar (papelera) para limpiar el historial
+            actionButtons = `
+                ${statusBtn}
+                <button class="btn btn-sm" style="background:#dc3545;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" title="Eliminar del historial permanentemente" onclick="eliminarPedidoHistorial(${p.id}, '${p.codigo}')">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+        }
+
+        return `
+            <div class="order-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:12px; margin-bottom:8px; border:1px solid #eee; border-radius:6px; background:#fff;">
+                <div class="order-row-info" style="display:flex; flex-direction:column; gap:2px;">
+                    <strong style="color:var(--dark-brown,#333); font-size:0.95rem;">${p.codigo} &mdash; ${p.cliente_nombre || 'Cliente'}</strong>
+                    <span style="font-size:0.8rem; color:var(--dark,#444);">
+                        ${p.cliente_ci ? '<i class="fas fa-id-card"></i> <strong>' + p.cliente_ci + '</strong> · ' : ''}
+                        ${p.cliente_telefono ? '<i class="fas fa-phone"></i> ' + p.cliente_telefono + ' · ' : ''}
+                        <strong>Pago:</strong> ${p.forma_pago || 'efectivo'}
+                    </span>
+                    ${p.direccion_entrega ? `<span style="font-size:0.75rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
+                </div>
+                <div class="order-row-details" style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-weight:700; font-size:1rem; color:#28a745;">$${parseFloat(p.total).toFixed(2)}</span>
+                    <span class="status ${estadoClass[p.estado] || 'pending'}" style="padding:4px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">${estadoText[p.estado] || p.estado}</span>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    ${actionButtons}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function eliminarPedidoHistorial(id, codigo) {
+    if (!isSuperUsuario()) {
+        showToast('Acceso restringido: solo el superusuario puede eliminar pedidos', 'error');
+        return;
+    }
+
+    if (!confirm(`¿Deseas eliminar permanentemente el pedido ${codigo} del historial?`)) {
+        return;
+    }
+
+    try {
+        const currentUser = getUser();
+        const usuarioParam = currentUser ? `&usuario_id=${currentUser.id}` : '';
+        const res = await fetch(`${API_BASE}/pedidos.php?id=${id}${usuarioParam}`, {
+            method: 'DELETE'
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            showToast(`Pedido ${codigo} eliminado del historial`);
+            loadPedidosRecientes();
+        } else {
+            showToast('Error: ' + result.message, 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Error de conexión al eliminar pedido', 'error');
+    }
+}
+
+async function actualizarEstadoPedido(id, nuevoEstado) {
+    if (!isSuperUsuario()) {
+        showToast('Acceso restringido: solo el superusuario puede verificar y administrar pagos', 'error');
+        return;
+    }
+
+    const confirmMsg = nuevoEstado === 'procesando' 
+        ? '¿Confirmas que ya verificaste el pago de este pedido? Esto descontará los productos del inventario.' 
+        : (nuevoEstado === 'cancelado' ? '¿Deseas cancelar este pedido?' : '¿Marcar pedido como completado?');
+    
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const currentUser = getUser();
+        const res = await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                estado: nuevoEstado,
+                usuario_id: currentUser ? currentUser.id : null
+            })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            showToast(result.message);
+            loadPedidosRecientes();
+            if (typeof loadProducts === 'function') loadProducts();
+        } else {
+            showToast('Error: ' + result.message, 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Error al actualizar el estado del pedido', 'error');
+    }
 }
 
 function addProductToCart() {
@@ -742,24 +919,35 @@ async function submitOrder() {
     const notes = document.getElementById('orderNotes');
     const payment = document.getElementById('paymentMethod');
     const newName = document.getElementById('newClientName');
+    const newCi = document.getElementById('newClientCi');
     const newPhone = document.getElementById('newClientPhone');
     
     if (!clientSelect || !clientSelect.value) { showToast('Selecciona o escribe tu nombre', 'error'); return; }
     if (!cart.length) { showToast('Agrega productos al pedido', 'error'); return; }
     if (address && address.value && address.value.length < 10) { showToast('Dirección muy corta', 'error'); return; }
     
-    // Obtener nombre del cliente para el mensaje
-    let clientName = '';
-    if (clientSelect.value === 'nuevo') {
-        if (!newName || !newName.value.trim()) { showToast('Escribe tu nombre', 'error'); return; }
-        clientName = newName.value.trim();
-    } else {
-        clientName = newName ? newName.value.trim() : '';
-    }
+    if (!newName || !newName.value.trim()) { showToast('Por favor escribe tu nombre completo', 'error'); return; }
+    if (!newCi || !newCi.value.trim()) { showToast('Por favor ingresa tu número de Cédula o RIF', 'error'); return; }
+    if (!newPhone || !newPhone.value.trim()) { showToast('Por favor ingresa tu número de teléfono', 'error'); return; }
+    
+    const clientName = newName.value.trim();
+    const clientCi = newCi.value.trim().toUpperCase();
+    const clientPhone = newPhone.value.trim();
     
     const paymentLabels = { efectivo: 'Efectivo', pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria', tarjeta: 'Tarjeta' };
     const paymentLabel = payment ? (paymentLabels[payment.value] || payment.value) : 'Efectivo';
-    const addr = address ? address.value : '';
+    const addr = address ? address.value.trim() : '';
+
+    // Obtener coordenadas GPS si el usuario las fijó en el mapa
+    const geoInput = document.getElementById('geoCoords');
+    const geoCoords = geoInput ? geoInput.value.trim() : '';
+    let mapsLink = '';
+    let fullDeliveryAddress = addr;
+
+    if (geoCoords) {
+        mapsLink = `https://maps.google.com/?q=${geoCoords}`;
+        fullDeliveryAddress = addr ? `${addr} | GPS: ${mapsLink}` : `GPS: ${mapsLink}`;
+    }
     
     // Calcular total
     let subtotal = 0;
@@ -773,25 +961,28 @@ async function submitOrder() {
         prodLines += `📦 ${it.name} x${it.qty} — $${(it.price * it.qty).toFixed(2)}\n`;
     });
     
-    // Mensaje predeterminado
-    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)}\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
+    // Mensaje predeterminado con Cédula y Link de Google Maps
+    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)}\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
     
     // Guardar datos temporalmente para el modal
     window._pendingOrder = {
         cliente_id: clientSelect.value,
-        direccion_entrega: addr,
+        direccion_entrega: fullDeliveryAddress,
         notas: notes ? notes.value : '',
         forma_pago: payment ? payment.value : 'efectivo',
         productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price })),
         clientName,
+        clientCi,
+        clientPhone,
+        mapsLink,
         msg
     };
     
     // Mostrar modal de confirmación
-    showConfirmModal(subtotal, iva, total, prodLines, clientName, paymentLabel, addr, msg);
+    showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, paymentLabel, addr, mapsLink, msg);
 }
 
-function showConfirmModal(subtotal, iva, total, prodLines, clientName, paymentLabel, addr, msg) {
+function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, paymentLabel, addr, mapsLink, msg) {
     // Remover modal anterior si existe
     const old = document.getElementById('confirmModal');
     if (old) old.remove();
@@ -801,14 +992,18 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, paymentLa
     modal.className = 'modal show';
     modal.innerHTML = `
         <div style="width:480px;max-width:95%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
-            <div style="background:linear-gradient(135deg,var(--dark),#2a1a4a);color:#fff;padding:24px 28px">
-                <h3 style="margin:0 0 4px;font-size:1.2rem"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Confirmar Pedido</h3>
-                <p style="margin:0;font-size:0.85rem;opacity:0.7">Revisa tu pedido antes de enviarlo</p>
+            <div style="background:linear-gradient(135deg,var(--dark,#111),#2a1a4a);color:#fff;padding:24px 28px">
+                <h3 style="margin:0 0 4px;font-size:1.2rem"><i class="fas fa-clipboard-check" style="color:var(--accent,#FF6600)"></i> Confirmar Pedido</h3>
+                <p style="margin:0;font-size:0.85rem;opacity:0.7">Revisa tus datos y tu pedido antes de enviarlo</p>
             </div>
             <div style="padding:24px 28px;max-height:50vh;overflow-y:auto">
                 <div style="margin-bottom:16px">
-                    <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Cliente</div>
-                    <div style="font-weight:600">${clientName}</div>
+                    <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Datos del Cliente</div>
+                    <div style="font-weight:600;font-size:1.05rem;">${clientName}</div>
+                    <div style="font-size:0.85rem;color:#555;margin-top:2px;">
+                        <span><i class="fas fa-id-card"></i> <strong>C.I / RIF:</strong> ${clientCi}</span>
+                        <span style="margin-left:10px;"><i class="fas fa-phone"></i> ${clientPhone}</span>
+                    </div>
                 </div>
                 <div style="margin-bottom:16px">
                     <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Productos</div>
@@ -820,14 +1015,15 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, paymentLa
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;border-bottom:1px solid #eee">
                     <span>IVA (16%)</span><span>$${iva.toFixed(2)}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:1.2rem;font-weight:700;color:var(--accent)">
+                <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:1.2rem;font-weight:700;color:var(--accent,#FF6600)">
                     <span>TOTAL</span><span>$${total.toFixed(2)}</span>
                 </div>
-                <div style="display:flex;gap:12px;margin-top:6px;font-size:0.85rem;color:#666">
-                    <span><i class="fas fa-credit-card"></i> ${paymentLabel}</span>
-                    <span><i class="fas fa-map-marker-alt"></i> ${addr || 'Por confirmar'}</span>
+                <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:0.85rem;color:#555;background:#f9f9f9;padding:12px;border-radius:8px;">
+                    <div><i class="fas fa-credit-card"></i> <strong>Pago:</strong> ${paymentLabel}</div>
+                    <div><i class="fas fa-map-marker-alt"></i> <strong>Entrega:</strong> ${addr || 'Por confirmar'}</div>
+                    ${mapsLink ? `<div><i class="fas fa-map-marked-alt" style="color:#28a745;"></i> <a href="${mapsLink}" target="_blank" style="color:#28a745;font-weight:600;text-decoration:underline;">Ver punto GPS fijado en Google Maps</a></div>` : ''}
                 </div>
-                <div style="margin-top:18px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:14px;font-size:0.82rem;line-height:1.6;color:#2e7d32">
+                <div style="margin-top:16px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:14px;font-size:0.82rem;line-height:1.6;color:#2e7d32">
                     <strong><i class="fab fa-whatsapp"></i> Mensaje que se enviará:</strong>
                     <div style="margin-top:8px;white-space:pre-line;font-family:monospace;font-size:0.78rem">${msg.replace(/</g, '&lt;')}</div>
                 </div>
@@ -860,20 +1056,31 @@ async function confirmAndSend() {
     
     let clienteId = data.cliente_id;
     
-    // Crear cliente nuevo si aplica
+    // Crear cliente nuevo si aplica guardando su cédula y teléfono
     if (clienteId === 'nuevo') {
-        const newName = document.getElementById('newClientName');
-        const newPhone = document.getElementById('newClientPhone');
         try {
             const resCli = await fetch(`${API_BASE}/clientes.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre: newName ? newName.value.trim() : data.clientName, telefono: newPhone ? newPhone.value.trim() : '' })
+                body: JSON.stringify({ 
+                    nombre: data.clientName, 
+                    ci_rif: data.clientCi,
+                    telefono: data.clientPhone,
+                    direccion: data.direccion_entrega
+                })
             });
             const cliData = await resCli.json();
-            if (cliData.status !== 'success') { showToast('Error al crear cliente: ' + cliData.message, 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } return; }
+            if (cliData.status !== 'success') { 
+                showToast('Error al registrar cliente: ' + cliData.message, 'error'); 
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } 
+                return; 
+            }
             clienteId = cliData.id;
-        } catch (err) { showToast('Error de conexión', 'error'); if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } return; }
+        } catch (err) { 
+            showToast('Error de conexión', 'error'); 
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } 
+            return; 
+        }
     }
     
     // Enviar pedido a la BD

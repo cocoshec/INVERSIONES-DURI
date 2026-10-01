@@ -39,13 +39,29 @@ switch ($method) {
             exit();
         }
 
+        $ci_rif = trim($data['ci_rif'] ?? '');
+
+        // Si ya existe un cliente con esa cédula/RIF, reutilizamos su registro
+        if (!empty($ci_rif)) {
+            $stmtExist = $db->prepare("SELECT id FROM clientes WHERE ci_rif = ?");
+            $stmtExist->execute([$ci_rif]);
+            $exist = $stmtExist->fetch();
+            if ($exist) {
+                // Actualizar datos de contacto si cambiaron
+                $stmtUp = $db->prepare("UPDATE clientes SET nombre = ?, telefono = ?, direccion = COALESCE(NULLIF(?, ''), direccion) WHERE id = ?");
+                $stmtUp->execute([$data['nombre'], $data['telefono'] ?? '', $data['direccion'] ?? '', $exist['id']]);
+                echo json_encode(["status" => "success", "message" => "Cliente existente recuperado", "id" => $exist['id']]);
+                exit();
+            }
+        }
+
         $stmt = $db->prepare("INSERT INTO clientes (nombre, email, telefono, direccion, ci_rif, tipo_cliente) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['nombre'],
             $data['email'] ?? '',
             $data['telefono'] ?? '',
             $data['direccion'] ?? '',
-            $data['ci_rif'] ?? '',
+            $ci_rif,
             $data['tipo_cliente'] ?? 'regular'
         ]);
 

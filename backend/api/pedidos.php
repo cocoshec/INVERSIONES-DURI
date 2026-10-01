@@ -15,7 +15,7 @@ switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
             // Obtener un pedido con sus detalles
-            $stmt = $db->prepare("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono FROM pedidos p JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
+            $stmt = $db->prepare("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
             $stmt->execute([$_GET['id']]);
             $pedido = $stmt->fetch();
 
@@ -31,7 +31,7 @@ switch ($method) {
             }
         } else {
             // Obtener todos los pedidos
-            $stmt = $db->query("SELECT p.*, c.nombre as cliente_nombre FROM pedidos p JOIN clientes c ON p.cliente_id = c.id ORDER BY p.created_at DESC");
+            $stmt = $db->query("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p JOIN clientes c ON p.cliente_id = c.id ORDER BY p.created_at DESC");
             $pedidos = $stmt->fetchAll();
             echo json_encode(["status" => "success", "data" => $pedidos]);
         }
@@ -81,20 +81,12 @@ switch ($method) {
 
             $pedido_id = $db->lastInsertId();
 
-            // Insertar detalles y actualizar stock
+            // Insertar detalles del pedido (el stock NO se descuenta aquí porque el pedido queda 'pendiente' de pago)
             foreach ($data['productos'] as $prod) {
                 $sub = $prod['cantidad'] * $prod['precio_unitario'];
                 
                 $stmt = $db->prepare("INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)");
                 $stmt->execute([$pedido_id, $prod['producto_id'], $prod['cantidad'], $prod['precio_unitario'], $sub]);
-
-                // Actualizar stock
-                $stmt = $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?");
-                $stmt->execute([$prod['cantidad'], $prod['producto_id']]);
-
-                // Registrar movimiento
-                $stmt = $db->prepare("INSERT INTO movimientos_inventario (producto_id, tipo_movimiento, cantidad, motivo, referencia) VALUES (?, 'salida', ?, 'Venta', ?)");
-                $stmt->execute([$prod['producto_id'], $prod['cantidad'], $codigo]);
             }
 
             $db->commit();
@@ -119,34 +111,135 @@ switch ($method) {
             exit();
         }
 
-        $stmt = $db->prepare("UPDATE pedidos SET estado = ? WHERE id = ?");
-        $stmt->execute([$data['estado'], $id]);
+        $nuevoEstado = $data['estado'];
+        $estadosValidos = ['pendiente', 'procesando', 'completado', 'cancelado'];
+        if (!in_array($nuevoEstado, $estadosValidos)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "message" => "Estado no válido"]);
+            exit();
+        }
 
-        echo json_encode(["status" => "success", "message" => "Pedido actualizado"]);
+        // Validar que la acción provenga de un superusuario
+        if (!empty($data['usuario_id'])) {
+            $stmtUser = $db->prepare("SELECT rol FROM usuarios WHERE id = ? AND activo = 1");
+            $stmtUser->execute([$data['usuario_id']]);
+            $u = $stmtUser->fetch();
+            if (!$u || !in_array($u['rol'], ['super_usuario', 'admin'])) {
+                http_response_code(403);
+                echo json_encode(["status" => "error", "message" => "Acceso restringido: solo el superusuario puede verificar pagos y modificar estados"]);
+                exit();
+            }
+        }
+
+        try {
+            $db->beginTransaction();
+
+            // Obtener estado actual y código del pedido
+            $stmt = $db->prepare("SELECT estado, codigo FROM pedidos WHERE id = ?");
+            $stmt->execute([$id]);
+            $pedidoActual = $stmt->fetch();
+
+            if (!$pedidoActual) {
+                $db->rollBack();
+                http_response_code(404);
+                echo json_encode(["status" => "error", "message" => "Pedido no encontrado"]);
+                exit();
+            }
+
+            $estadoAnterior = $pedidoActual['estado'];
+
+            // Obtener productos del pedido
+            $stmt = $db->prepare("SELECT producto_id, cantidad FROM detalle_pedido WHERE pedido_id = ?");
+            $stmt->execute([$id]);
+            $detalles = $stmt->fetchAll();
+
+            // Si pasa de 'pendiente' a confirmado ('procesando' o 'completado'), descontamos stock
+            if ($estadoAnterior === 'pendiente' && in_array($nuevoEstado, ['procesando', 'completado'])) {
+                foreach ($detalles as $det) {
+                    $stmtUp = $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?");
+                    $stmtUp->execute([$det['cantidad'], $det['producto_id']]);
+
+                    $stmtMov = $db->prepare("INSERT INTO movimientos_inventario (producto_id, tipo_movimiento, cantidad, motivo, referencia) VALUES (?, 'salida', ?, 'Venta confirmada', ?)");
+                    $stmtMov->execute([$det['producto_id'], $det['cantidad'], $pedidoActual['codigo']]);
+                }
+            }
+            // Si ya estaba confirmado y ahora se 'cancela', devolvemos el stock
+            else if (in_array($estadoAnterior, ['procesando', 'completado']) && $nuevoEstado === 'cancelado') {
+                foreach ($detalles as $det) {
+                    $stmtUp = $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?");
+                    $stmtUp->execute([$det['cantidad'], $det['producto_id']]);
+
+                    $stmtMov = $db->prepare("INSERT INTO movimientos_inventario (producto_id, tipo_movimiento, cantidad, motivo, referencia) VALUES (?, 'entrada', ?, 'Cancelación de pedido', ?)");
+                    $stmtMov->execute([$det['producto_id'], $det['cantidad'], $pedidoActual['codigo']]);
+                }
+            }
+            // Si estaba 'cancelado' y se reactiva a 'procesando' o 'completado', volvemos a descontar
+            else if ($estadoAnterior === 'cancelado' && in_array($nuevoEstado, ['procesando', 'completado'])) {
+                foreach ($detalles as $det) {
+                    $stmtUp = $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?");
+                    $stmtUp->execute([$det['cantidad'], $det['producto_id']]);
+
+                    $stmtMov = $db->prepare("INSERT INTO movimientos_inventario (producto_id, tipo_movimiento, cantidad, motivo, referencia) VALUES (?, 'salida', ?, 'Reactivación de pedido', ?)");
+                    $stmtMov->execute([$det['producto_id'], $det['cantidad'], $pedidoActual['codigo']]);
+                }
+            }
+
+            // Actualizar estado del pedido
+            $stmt = $db->prepare("UPDATE pedidos SET estado = ? WHERE id = ?");
+            $stmt->execute([$nuevoEstado, $id]);
+
+            $db->commit();
+
+            echo json_encode(["status" => "success", "message" => "Estado de pedido actualizado a " . $nuevoEstado]);
+
+        } catch (Exception $e) {
+            $db->rollBack();
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Error al actualizar: " . $e->getMessage()]);
+        }
         break;
 
     case 'DELETE':
         $id = $_GET['id'] ?? null;
+        $usuario_id = $_GET['usuario_id'] ?? null;
+
         if (!$id) {
             http_response_code(400);
             echo json_encode(["status" => "error", "message" => "ID requerido"]);
             exit();
         }
 
-        // Restaurar stock antes de eliminar
-        $stmt = $db->prepare("SELECT producto_id, cantidad FROM detalle_pedido WHERE pedido_id = ?");
-        $stmt->execute([$id]);
-        $detalles = $stmt->fetchAll();
-
-        foreach ($detalles as $det) {
-            $stmt = $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?");
-            $stmt->execute([$det['cantidad'], $det['producto_id']]);
+        // Validar que el usuario sea superusuario
+        if (!empty($usuario_id)) {
+            $stmtUser = $db->prepare("SELECT rol FROM usuarios WHERE id = ? AND activo = 1");
+            $stmtUser->execute([$usuario_id]);
+            $u = $stmtUser->fetch();
+            if (!$u || !in_array($u['rol'], ['super_usuario', 'admin'])) {
+                http_response_code(403);
+                echo json_encode(["status" => "error", "message" => "Acceso restringido: solo el superusuario puede eliminar pedidos del historial"]);
+                exit();
+            }
         }
 
-        $stmt = $db->prepare("DELETE FROM pedidos WHERE id = ?");
-        $stmt->execute([$id]);
+        try {
+            $db->beginTransaction();
 
-        echo json_encode(["status" => "success", "message" => "Pedido eliminado"]);
+            // Eliminar los detalles asociados al pedido
+            $stmt = $db->prepare("DELETE FROM detalle_pedido WHERE pedido_id = ?");
+            $stmt->execute([$id]);
+
+            // Eliminar el pedido de la base de datos
+            $stmt = $db->prepare("DELETE FROM pedidos WHERE id = ?");
+            $stmt->execute([$id]);
+
+            $db->commit();
+            echo json_encode(["status" => "success", "message" => "Pedido eliminado del historial"]);
+
+        } catch (Exception $e) {
+            $db->rollBack();
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Error al eliminar: " . $e->getMessage()]);
+        }
         break;
 }
 ?>
