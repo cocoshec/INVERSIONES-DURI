@@ -84,6 +84,14 @@ img { max-width:100%; }
 .nav-toggle { display:none; background:none; border:none; font-size:1.25rem; color:var(--text-primary); cursor:pointer; padding:8px; border-radius:var(--radius-sm); touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .nav-toggle i { pointer-events:none; }
 
+/* User Admin Badge & Logout Button in Navbar */
+.user-nav-item { list-style:none; }
+.user-nav-container { display:inline-flex; align-items:center; gap:8px; margin-left:10px; padding:4px 8px 4px 12px; background:#190f2e; border-radius:50px; border:1px solid rgba(255,255,255,0.18); box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+.user-badge-mobile-info { display:inline-flex; align-items:center; gap:8px; color:#ffffff; font-size:0.85rem; }
+.user-badge-mobile-info .role-tag { font-size:0.7rem; padding:2px 8px; border-radius:100px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+.admin-logout-btn-mobile { display:inline-flex; align-items:center; gap:6px; background:#ef4444; color:#ffffff !important; border:none; border-radius:50px; padding:6px 14px; font-size:0.8rem; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(239,68,68,0.35); transition:all 0.2s ease; line-height:1; }
+.admin-logout-btn-mobile:hover { background:#dc2626; transform:translateY(-1px); box-shadow:0 4px 12px rgba(239,68,68,0.5); }
+
 /* ============================================
    HERO - Image background + gradient
    ============================================ */
@@ -722,6 +730,10 @@ img { max-width:100%; }
         font-weight:600;
         padding-left:18px;
     }
+    .user-nav-item { width:100% !important; margin-top:8px !important; }
+    .user-nav-container { width:100% !important; display:flex !important; flex-direction:column !important; gap:12px !important; margin:0 !important; padding:16px !important; background:#190f2e !important; border-radius:12px !important; border:1px solid rgba(255,255,255,0.15) !important; box-sizing:border-box !important; }
+    .user-badge-mobile-info { width:100% !important; display:flex !important; align-items:center !important; justify-content:space-between !important; font-size:0.92rem !important; }
+    .admin-logout-btn-mobile { width:100% !important; display:flex !important; align-items:center !important; justify-content:center !important; gap:8px !important; padding:12px 18px !important; background:#ef4444 !important; border-radius:10px !important; font-size:0.92rem !important; font-weight:700 !important; }
 
     .hero { min-height:auto; padding:60px 28px 80px; }
     .hero-bg { opacity:0.35; }
