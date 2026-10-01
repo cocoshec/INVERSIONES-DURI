@@ -189,10 +189,24 @@
             let allProducts = [];
 
             try {
-                const res = await fetch(API + '/productos.php');
-                const data = await res.json();
-                if (data.status === 'success') {
-                    allProducts = data.data.filter(p => p.stock_actual > 0);
+                const isGH = window.location.hostname.includes('github.io');
+                let res = null;
+                if (!isGH) {
+                    try { res = await fetch(API + '/productos.php'); } catch(e) {}
+                }
+                if (res && res.ok) {
+                    const data = await res.json();
+                    if (data && data.status === 'success' && Array.isArray(data.data)) {
+                        allProducts = data.data.filter(p => p.stock_actual > 0);
+                    }
+                }
+                // Si la API PHP no está disponible (ej: GitHub Pages), cargar de data/productos.json
+                if (!allProducts.length) {
+                    const resStatic = await fetch('../data/productos.json');
+                    if (resStatic.ok) {
+                        const staticData = await resStatic.json();
+                        allProducts = staticData.filter(p => p.stock_actual > 0);
+                    }
                 }
             } catch(err) { console.error('Error cargando productos:', err); }
 

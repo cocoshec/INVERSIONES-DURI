@@ -381,22 +381,55 @@ function initPage() {
 async function loadProductos(categoria = null) {
     const grid = document.getElementById('productsGrid');
     try {
-        let url = `${API_BASE}/productos.php`;
-        if (categoria && categoria !== 'all') url += `?categoria=${encodeURIComponent(categoria)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.status === 'success') {
-            if (!data.data || !data.data.length) {
-                if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;display:block"></i><p style="font-size:1.05rem">No hay productos en esta categoría.</p></div>';
-                return;
+        let productos = [];
+        const isGH = window.location.hostname.includes('github.io');
+
+        // Intentar primero API PHP si no estamos exclusivamente en GitHub Pages
+        if (!isGH) {
+            try {
+                let url = `${API_BASE}/productos.php`;
+                if (categoria && categoria !== 'all') url += `?categoria=${encodeURIComponent(categoria)}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.status === 'success' && Array.isArray(data.data)) {
+                        productos = data.data;
+                    }
+                }
+            } catch(e) {
+                console.warn('API PHP no disponible, cambiando a catálogo estático JSON...', e);
             }
-            renderProductos(data.data);
-        } else {
-            if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:#dc3545"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:10px;display:block"></i><p>Error: ' + (data.message || 'No se pudieron cargar los productos') + '</p></div>';
         }
+
+        // Si la API PHP no devolvió productos (ej: GitHub Pages o servidor estático)
+        if (!productos || !productos.length) {
+            const staticUrl = isInPages ? '../data/productos.json' : 'data/productos.json';
+            try {
+                const resStatic = await fetch(staticUrl);
+                if (resStatic.ok) {
+                    const staticList = await resStatic.json();
+                    productos = staticList;
+                    if (categoria && categoria !== 'all') {
+                        productos = productos.filter(p => 
+                            p.categoria_nombre === categoria || 
+                            String(p.categoria_id) === String(categoria)
+                        );
+                    }
+                }
+            } catch(eStatic) {
+                console.error('Error cargando JSON estático:', eStatic);
+            }
+        }
+
+        if (!productos || !productos.length) {
+            if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;display:block"></i><p style="font-size:1.05rem">No hay productos en esta categoría.</p></div>';
+            return;
+        }
+
+        renderProductos(productos);
     } catch (err) {
-        console.error('Error al cargar productos:', err);
-        if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:#dc3545"><i class="fas fa-wifi" style="font-size:2rem;margin-bottom:10px;display:block"></i><p>No se pudo conectar con el servidor.</p></div>';
+        console.error('Error general al cargar productos:', err);
+        if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:#dc3545"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:10px;display:block"></i><p>No se pudieron cargar los productos.</p></div>';
     }
 }
 
@@ -1132,8 +1165,14 @@ async function confirmAndSend() {
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; }
         }
     } catch (err) {
-        showToast('Error de conexión', 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; }
+        // En GitHub Pages o sin backend PHP, enviar directamente por WhatsApp
+        const waUrl = 'https://wa.me/584121234567?text=' + encodeURIComponent(data.msg);
+        window.open(waUrl, '_blank');
+        showToast('¡Abriendo WhatsApp para enviar tu pedido!');
+        cart = []; saveCart(); updateCart();
+        try { document.getElementById('orderForm').reset(); } catch(e){}
+        closeConfirmModal();
+        window._pendingOrder = null;
     }
 }
 
