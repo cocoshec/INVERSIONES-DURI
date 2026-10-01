@@ -282,19 +282,106 @@ function showUserBadge() {
         };
         nav.appendChild(badge);
 
-        // Banner solo 1 vez por sesión
+        // Notificación flotante elegante (responsive para móvil y PC)
         if (!sessionStorage.getItem('welcomeShown')) {
             sessionStorage.setItem('welcomeShown', '1');
             const welcome = document.createElement('div');
             welcome.id = 'welcomeBanner';
-            welcome.style.cssText = 'position:fixed;top:0;left:0;right:0;background:' + rolColors[user.rol] + ';color:white;padding:16px 20px;font-family:Rubik,sans-serif;font-size:1rem;font-weight:500;z-index:1500;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.2)';
-            welcome.innerHTML = '<span style="font-size:1.4rem">' + rolEmoji[user.rol] + '</span> ¡Bienvenido <strong>' + rolLabels[user.rol] + '</strong>! — ' + user.nombre + ' <span onclick="this.parentElement.remove()" style="margin-left:20px;cursor:pointer;opacity:0.7;font-size:1.2rem">&times;</span>';
+            
+            const userName = user.nombre ? user.nombre.split(' ')[0] : 'Administrador';
+            const userRole = rolLabels[user.rol] || 'Super Admin';
+            const roleColor = rolColors[user.rol] || '#EF7E26';
+
+            welcome.innerHTML = `
+                <div style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 8px 14px 8px 10px;
+                    background: #190f2e;
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 50px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+                    font-family: inherit;
+                    pointer-events: auto;
+                    max-width: 95vw;
+                ">
+                    <span style="
+                        width: 34px;
+                        height: 34px;
+                        background: ${roleColor};
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 1.15rem;
+                        flex-shrink: 0;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+                    ">${rolEmoji[user.rol] || '👑'}</span>
+                    <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.25; overflow: hidden;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+                            ¡Bienvenido, ${userName}!
+                        </span>
+                        <span style="font-size: 0.72rem; color: #ffa270; font-weight: 500; white-space: nowrap;">
+                            Sesión como ${userRole}
+                        </span>
+                    </div>
+                    <button type="button" onclick="closeWelcomeBanner()" style="
+                        background: rgba(255,255,255,0.12);
+                        border: none;
+                        color: #ddd;
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        margin-left: 2px;
+                        flex-shrink: 0;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">&times;</button>
+                </div>
+            `;
+            
+            welcome.style.cssText = `
+                position: fixed;
+                top: 14px;
+                left: 0;
+                right: 0;
+                z-index: 999999;
+                display: flex;
+                justify-content: center;
+                pointer-events: none;
+                transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+                transform: translateY(-50px);
+                opacity: 0;
+                padding: 0 12px;
+            `;
+
             document.body.appendChild(welcome);
-            document.body.style.paddingTop = '60px';
-            setTimeout(function() { 
-                var w = document.getElementById('welcomeBanner');
-                if (w) { w.style.opacity = '0'; w.style.transition = 'opacity 0.5s'; setTimeout(function(){ w.remove(); document.body.style.paddingTop = ''; }, 500); }
-            }, 5000);
+
+            // Animar entrada suave
+            requestAnimationFrame(() => {
+                welcome.style.transform = 'translateY(0)';
+                welcome.style.opacity = '1';
+            });
+
+            // Función para cerrar suavemente
+            window.closeWelcomeBanner = function() {
+                const el = document.getElementById('welcomeBanner');
+                if (!el) return;
+                el.style.transform = 'translateY(-50px)';
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 400);
+            };
+
+            // Auto ocultar después de 4.5 segundos
+            setTimeout(() => {
+                window.closeWelcomeBanner();
+            }, 4500);
         }
     }
     // NO agregar botón Admin al público - solo se accede desde footer
