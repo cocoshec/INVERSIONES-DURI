@@ -91,16 +91,21 @@ function logout() {
 
 // ============================================
 // NAVBAR
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {
-    try { initNav(); } catch(e) {}
-    try { initPage(); } catch(e) {}
+function bootApp() {
+    try { initNav(); } catch(e) { console.error('initNav error:', e); }
+    try { initPage(); } catch(e) { console.error('initPage error:', e); }
     try { showUserBadge(); } catch(e) {}
     try { showInventoryLink(); } catch(e) {}
     try { initCinematicEffects(); } catch(e) {}
     try { initFloatingCart(); } catch(e) {}
     try { initWhatsApp(); } catch(e) {}
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootApp);
+} else {
+    bootApp();
+}
 
 function initWhatsApp() {
     const div = document.createElement('div');
@@ -374,13 +379,25 @@ function initPage() {
 // PRODUCTOS
 // ============================================
 async function loadProductos(categoria = null) {
+    const grid = document.getElementById('productsGrid');
     try {
         let url = `${API_BASE}/productos.php`;
-        if (categoria && categoria !== 'all') url += `?categoria=${categoria}`;
+        if (categoria && categoria !== 'all') url += `?categoria=${encodeURIComponent(categoria)}`;
         const res = await fetch(url);
         const data = await res.json();
-        if (data.status === 'success') renderProductos(data.data);
-    } catch (err) { console.error('Error:', err); }
+        if (data.status === 'success') {
+            if (!data.data || !data.data.length) {
+                if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;display:block"></i><p style="font-size:1.05rem">No hay productos en esta categoría.</p></div>';
+                return;
+            }
+            renderProductos(data.data);
+        } else {
+            if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:#dc3545"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:10px;display:block"></i><p>Error: ' + (data.message || 'No se pudieron cargar los productos') + '</p></div>';
+        }
+    } catch (err) {
+        console.error('Error al cargar productos:', err);
+        if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:#dc3545"><i class="fas fa-wifi" style="font-size:2rem;margin-bottom:10px;display:block"></i><p>No se pudo conectar con el servidor.</p></div>';
+    }
 }
 
 function getUser() {

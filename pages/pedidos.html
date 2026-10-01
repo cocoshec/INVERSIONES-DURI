@@ -176,7 +176,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=4.0"></script>
+    <script src="../js/app.js?v=5.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -194,24 +194,26 @@
                 if (data.status === 'success') {
                     allProducts = data.data.filter(p => p.stock_actual > 0);
                 }
-            } catch(err) { console.error(err); }
+            } catch(err) { console.error('Error cargando productos:', err); }
 
             const searchInput = document.getElementById('productSearch');
             const resultsBox = document.getElementById('productResults');
 
-            searchInput.addEventListener('input', function() {
-                const q = this.value.toLowerCase().trim();
-                if (!q) { resultsBox.classList.remove('show'); resultsBox.innerHTML = ''; return; }
-                const matches = allProducts.filter(p =>
-                    p.nombre.toLowerCase().includes(q) ||
-                    (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
-                    (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(q))
-                );
+            function displayProductResults(query = '') {
+                const q = (query || '').toLowerCase().trim();
+                const matches = q
+                    ? allProducts.filter(p =>
+                        p.nombre.toLowerCase().includes(q) ||
+                        (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+                        (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(q))
+                    )
+                    : allProducts;
+
                 if (!matches.length) {
-                    resultsBox.innerHTML = '<div class="pr-empty">No se encontraron productos</div>';
+                    resultsBox.innerHTML = '<div class="pr-empty">No se encontraron productos disponibles</div>';
                 } else {
                     resultsBox.innerHTML = matches.map(p => `
-                        <div class="pr-item" onclick="quickAdd(${p.id},'${p.nombre.replace(/'/g,"\\'").replace(/"/g,"&quot;")}',${p.precio_venta},${p.stock_actual})">
+                        <div class="pr-item" onmousedown="quickAdd(${p.id},'${p.nombre.replace(/'/g,"\\'").replace(/"/g,"&quot;")}',${p.precio_venta},${p.stock_actual})">
                             <div class="pr-item-info">
                                 <strong>${p.nombre}</strong>
                                 <span>${p.categoria_nombre} · Stock: ${p.stock_actual}</span>
@@ -220,13 +222,22 @@
                         </div>`).join('');
                 }
                 resultsBox.classList.add('show');
+            }
+
+            searchInput.addEventListener('input', function() {
+                displayProductResults(this.value);
+            });
+
+            searchInput.addEventListener('focus', function() {
+                displayProductResults(this.value);
+            });
+
+            searchInput.addEventListener('click', function() {
+                displayProductResults(this.value);
             });
 
             searchInput.addEventListener('blur', function() {
-                setTimeout(() => resultsBox.classList.remove('show'), 200);
-            });
-            searchInput.addEventListener('focus', function() {
-                if (this.value.trim()) this.dispatchEvent(new Event('input'));
+                setTimeout(() => resultsBox.classList.remove('show'), 250);
             });
         });
 

@@ -24,10 +24,16 @@ switch ($method) {
                 http_response_code(404);
                 echo json_encode(["status" => "error", "message" => "Producto no encontrado"]);
             }
-        } elseif (isset($_GET['categoria'])) {
-            // Filtrar por categoría
-            $stmt = $db->prepare("SELECT p.*, c.nombre as categoria_nombre FROM productos p JOIN categorias c ON p.categoria_id = c.id WHERE p.categoria_id = ? AND p.activo = 1");
-            $stmt->execute([$_GET['categoria']]);
+        } elseif (isset($_GET['categoria']) && $_GET['categoria'] !== 'all') {
+            // Filtrar por ID o Nombre de categoría
+            $cat = trim($_GET['categoria']);
+            if (is_numeric($cat)) {
+                $stmt = $db->prepare("SELECT p.*, c.nombre as categoria_nombre FROM productos p JOIN categorias c ON p.categoria_id = c.id WHERE p.categoria_id = ? AND p.activo = 1 ORDER BY p.nombre");
+                $stmt->execute([$cat]);
+            } else {
+                $stmt = $db->prepare("SELECT p.*, c.nombre as categoria_nombre FROM productos p JOIN categorias c ON p.categoria_id = c.id WHERE c.nombre = ? AND p.activo = 1 ORDER BY p.nombre");
+                $stmt->execute([$cat]);
+            }
             $productos = $stmt->fetchAll();
             echo json_encode(["status" => "success", "data" => $productos]);
         } else {
