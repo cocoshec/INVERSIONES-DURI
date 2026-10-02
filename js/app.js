@@ -489,6 +489,40 @@ function initPage() {
 }
 
 // ============================================
+// CATÁLOGO DE RESPALDO (GitHub Pages / Offline)
+// ============================================
+const DEFAULT_PRODUCTS_FALLBACK = [
+  {"id":7,"codigo":"PRD-007","nombre":"Borradores Premium","descripcion":"Borrador blanco de alta calidad","categoria_id":1,"precio_compra":"0.00","precio_venta":"1.25","stock_actual":87,"stock_minimo":30,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
+  {"id":8,"codigo":"PRD-008","nombre":"Carpetas Archivador","descripcion":"Carpeta de cartón tamaño carta","categoria_id":2,"precio_compra":"0.00","precio_venta":"4.75","stock_actual":25,"stock_minimo":20,"unidad_medida":"unidad","categoria_nombre":"Papelería"},
+  {"id":4,"codigo":"PRD-004","nombre":"Cartuchos de Tinta","descripcion":"Cartuchos negra y color para impresoras","categoria_id":3,"precio_compra":"0.00","precio_venta":"24.99","stock_actual":22,"stock_minimo":10,"unidad_medida":"unidad","categoria_nombre":"Tecnología"},
+  {"id":1,"codigo":"PRD-001","nombre":"Cuaderno Espiral 100 Hojas","descripcion":"Cuaderno espiral cuadriculado","categoria_id":1,"precio_compra":"0.00","precio_venta":"3.50","stock_actual":150,"stock_minimo":20,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
+  {"id":6,"codigo":"PRD-006","nombre":"Grapadora de Oficina","descripcion":"Grapadora metálica capacidad 25 hojas","categoria_id":4,"precio_compra":"0.00","precio_venta":"7.90","stock_actual":0,"stock_minimo":5,"unidad_medida":"unidad","categoria_nombre":"Accesorios"},
+  {"id":2,"codigo":"PRD-002","nombre":"Lápices de Grafito 2B","descripcion":"Caja de 12 lápices de grafito","categoria_id":1,"precio_compra":"0.00","precio_venta":"2.80","stock_actual":78,"stock_minimo":15,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
+  {"id":9,"codigo":"PRD-009","nombre":"Marcadores Resaltadores","descripcion":"Set de 4 colores fluorescentes","categoria_id":1,"precio_compra":"0.00","precio_venta":"3.99","stock_actual":62,"stock_minimo":15,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
+  {"id":5,"codigo":"PRD-005","nombre":"Mouse Óptico USB","descripcion":"Mouse óptico ergonómico","categoria_id":3,"precio_compra":"0.00","precio_venta":"8.50","stock_actual":14,"stock_minimo":8,"unidad_medida":"unidad","categoria_nombre":"Tecnología"},
+  {"id":3,"codigo":"PRD-003","nombre":"Resma de Papel Carta","descripcion":"Resma de 500 hojas tamaño carta","categoria_id":2,"precio_compra":"0.00","precio_venta":"5.20","stock_actual":12,"stock_minimo":15,"unidad_medida":"unidad","categoria_nombre":"Papelería"},
+  {"id":10,"codigo":"PRD-010","nombre":"Tijeras Escolares","descripcion":"Tijeras con punta roma para niños","categoria_id":1,"precio_compra":"0.00","precio_venta":"1.95","stock_actual":43,"stock_minimo":10,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"}
+];
+
+async function getFallbackProducts() {
+    try {
+        const custom = JSON.parse(localStorage.getItem('duri_products_custom') || 'null');
+        if (Array.isArray(custom) && custom.length) return custom;
+    } catch(e) {}
+
+    try {
+        const staticUrl = isInPages ? '../data/productos.json' : 'data/productos.json';
+        const resStatic = await fetch(staticUrl);
+        if (resStatic.ok) {
+            const list = await resStatic.json();
+            if (Array.isArray(list) && list.length) return list;
+        }
+    } catch(e) {}
+
+    return JSON.parse(JSON.stringify(DEFAULT_PRODUCTS_FALLBACK));
+}
+
+// ============================================
 // PRODUCTOS
 // ============================================
 async function loadProductos(categoria = null) {
@@ -516,21 +550,13 @@ async function loadProductos(categoria = null) {
 
         // Si la API PHP no devolvió productos (ej: GitHub Pages o servidor estático)
         if (!productos || !productos.length) {
-            const staticUrl = isInPages ? '../data/productos.json' : 'data/productos.json';
-            try {
-                const resStatic = await fetch(staticUrl);
-                if (resStatic.ok) {
-                    const staticList = await resStatic.json();
-                    productos = staticList;
-                    if (categoria && categoria !== 'all') {
-                        productos = productos.filter(p => 
-                            p.categoria_nombre === categoria || 
-                            String(p.categoria_id) === String(categoria)
-                        );
-                    }
-                }
-            } catch(eStatic) {
-                console.error('Error cargando JSON estático:', eStatic);
+            let staticList = await getFallbackProducts();
+            productos = staticList;
+            if (categoria && categoria !== 'all') {
+                productos = productos.filter(p => 
+                    p.categoria_nombre === categoria || 
+                    String(p.categoria_id) === String(categoria)
+                );
             }
         }
 
@@ -626,17 +652,58 @@ function buyNow(id, name, price, stock) {
 // ============================================
 // INVENTARIO
 // ============================================
+let _cachedInventory = [];
+
 async function loadInventario() {
-    try {
-        const [invRes, statsRes] = await Promise.all([
-            fetch(`${API_BASE}/inventario.php`),
-            fetch(`${API_BASE}/inventario.php?estadisticas=true`)
-        ]);
-        const invData = await invRes.json();
-        const statsData = await statsRes.json();
-        if (invData.status === 'success') renderInventarioTable(invData.data);
-        if (statsData.status === 'success') renderInventarioStats(statsData.data);
-    } catch (err) { console.error('Error:', err); }
+    let productos = null;
+    let stats = null;
+    const isGH = window.location.hostname.includes('github.io');
+
+    if (!isGH) {
+        try {
+            const [invRes, statsRes] = await Promise.all([
+                fetch(`${API_BASE}/inventario.php`),
+                fetch(`${API_BASE}/inventario.php?estadisticas=true`)
+            ]);
+            if (invRes.ok && statsRes.ok) {
+                const invData = await invRes.json();
+                const statsData = await statsRes.json();
+                if (invData && invData.status === 'success' && Array.isArray(invData.data)) productos = invData.data;
+                if (statsData && statsData.status === 'success' && statsData.data) stats = statsData.data;
+            }
+        } catch (err) {
+            console.warn('API PHP de inventario no disponible, usando catálogo JSON estático...', err);
+        }
+    }
+
+    // Fallback estático para GitHub Pages o si la API PHP no responde
+    if (!productos || !productos.length) {
+        productos = await getFallbackProducts();
+        if (productos && productos.length) {
+            stats = {
+                total_productos: productos.length,
+                en_stock: productos.filter(p => Number(p.stock_actual) > Number(p.stock_minimo)).length,
+                stock_bajo: productos.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo) && Number(p.stock_actual) > 0).length,
+                agotados: productos.filter(p => Number(p.stock_actual) <= 0).length,
+                valor_inventario: productos.reduce((sum, p) => sum + (Number(p.stock_actual) * Number(p.precio_venta || 0)), 0)
+            };
+        }
+    }
+
+    if (productos && productos.length) {
+        _cachedInventory = productos;
+        renderInventarioTable(productos);
+        if (stats) renderInventarioStats(stats);
+    } else {
+        const tbody = document.getElementById('invBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#dc3545"><i class="fas fa-exclamation-triangle" style="font-size:1.8rem;margin-bottom:8px;display:block"></i>No se pudo cargar el inventario.</td></tr>';
+        }
+        const statsEl = document.getElementById('invStats');
+        if (statsEl) {
+            statsEl.innerHTML = '<div class="stat-card red"><div class="stat-card-icon red"><i class="fas fa-exclamation-triangle"></i></div><div><div class="stat-card-label">Error al cargar estadísticas</div></div></div>';
+        }
+    }
 }
 
 function renderInventarioStats(stats) {
@@ -697,17 +764,24 @@ let _editingProductId = null;
 
 async function editProduct(id) {
     try {
-        const res = await fetch(`${API_BASE}/productos.php?id=${id}`);
-        const data = await res.json();
-        if (data.status !== 'success') { showToast('Producto no encontrado', 'error'); return; }
-        const p = data.data;
+        let p = null;
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            try {
+                const res = await fetch(`${API_BASE}/productos.php?id=${id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') p = data.data;
+                }
+            } catch(e) {}
+        }
 
-        // Obtener categorías
-        let cats = [];
-        try {
-            const catRes = await fetch(`${API_BASE}/productos.php`);
-            // No hay API de categorías, usamos las fijas
-        } catch(e) {}
+        if (!p && Array.isArray(_cachedInventory)) {
+            p = _cachedInventory.find(item => String(item.id) === String(id));
+        }
+
+        if (!p) { showToast('Producto no encontrado', 'error'); return; }
+
         const catList = [
             {id:1, nombre:'Útiles Escolares'},
             {id:2, nombre:'Papelería'},
@@ -726,12 +800,12 @@ async function editProduct(id) {
             <div style="width:440px;max-width:95%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
                 <div style="background:linear-gradient(135deg,var(--dark),#2a1a4a);color:#fff;padding:20px 24px">
                     <h3 style="margin:0;font-size:1.1rem"><i class="fas fa-edit" style="color:var(--accent)"></i> Editar Producto</h3>
-                    <p style="margin:4px 0 0;font-size:0.82rem;opacity:0.6">${p.codigo}</p>
+                    <p style="margin:4px 0 0;font-size:0.82rem;opacity:0.6">${p.codigo || ''}</p>
                 </div>
                 <div style="padding:24px">
                     <div class="form-group">
                         <label>Nombre</label>
-                        <input type="text" id="editNombre" value="${p.nombre.replace(/"/g, '&quot;')}">
+                        <input type="text" id="editNombre" value="${(p.nombre || '').replace(/"/g, '&quot;')}">
                     </div>
                     <div class="form-group">
                         <label>Descripción</label>
@@ -746,15 +820,15 @@ async function editProduct(id) {
                     <div style="display:flex;gap:12px">
                         <div class="form-group" style="flex:1">
                             <label>Precio ($)</label>
-                            <input type="number" id="editPrecio" step="0.01" min="0" value="${p.precio_venta}">
+                            <input type="number" id="editPrecio" step="0.01" min="0" value="${p.precio_venta || 0}">
                         </div>
                         <div class="form-group" style="flex:1">
                             <label>Stock Actual</label>
-                            <input type="number" id="editStock" min="0" value="${p.stock_actual}">
+                            <input type="number" id="editStock" min="0" value="${p.stock_actual || 0}">
                         </div>
                         <div class="form-group" style="flex:1">
                             <label>Stock Mínimo</label>
-                            <input type="number" id="editStockMin" min="0" value="${p.stock_minimo}">
+                            <input type="number" id="editStockMin" min="0" value="${p.stock_minimo || 0}">
                         </div>
                     </div>
                 </div>
@@ -789,47 +863,90 @@ async function saveEditProduct() {
     if (!nombre) { showToast('El nombre es requerido', 'error'); return; }
     if (!precio || parseFloat(precio) <= 0) { showToast('Precio inválido', 'error'); return; }
 
-    try {
-        const res = await fetch(`${API_BASE}/productos.php?id=${_editingProductId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                nombre,
-                descripcion: desc,
-                categoria_id: parseInt(cat),
-                precio_venta: parseFloat(precio),
-                stock_actual: parseInt(stock),
-                stock_minimo: parseInt(stockMin)
-            })
-        });
-        const data = await res.json();
-        if (data.status === 'success') {
-            showToast('Producto actualizado correctamente');
-            closeEditModal();
-            loadInventario();
-        } else {
-            showToast('Error: ' + data.message, 'error');
+    const isGH = window.location.hostname.includes('github.io');
+    let saved = false;
+
+    if (!isGH) {
+        try {
+            const res = await fetch(`${API_BASE}/productos.php?id=${_editingProductId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre,
+                    descripcion: desc,
+                    categoria_id: parseInt(cat),
+                    precio_venta: parseFloat(precio),
+                    stock_actual: parseInt(stock),
+                    stock_minimo: parseInt(stockMin)
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'success') saved = true;
+            }
+        } catch (err) {}
+    }
+
+    // Persistencia local / GitHub Pages
+    if (!saved) {
+        if (Array.isArray(_cachedInventory)) {
+            const idx = _cachedInventory.findIndex(item => String(item.id) === String(_editingProductId));
+            const catNames = {1:'Útiles Escolares', 2:'Papelería', 3:'Tecnología', 4:'Accesorios'};
+            if (idx !== -1) {
+                _cachedInventory[idx] = {
+                    ..._cachedInventory[idx],
+                    nombre,
+                    descripcion: desc,
+                    categoria_id: parseInt(cat),
+                    categoria_nombre: catNames[cat] || _cachedInventory[idx].categoria_nombre || 'General',
+                    precio_venta: parseFloat(precio).toFixed(2),
+                    stock_actual: parseInt(stock),
+                    stock_minimo: parseInt(stockMin)
+                };
+                localStorage.setItem('duri_products_custom', JSON.stringify(_cachedInventory));
+                saved = true;
+            }
         }
-    } catch (err) {
-        showToast('Error de conexión', 'error');
+    }
+
+    if (saved) {
+        showToast('Producto actualizado correctamente');
+        closeEditModal();
+        loadInventario();
+    } else {
+        showToast('Error al guardar cambios', 'error');
     }
 }
 
 async function deleteProduct(id) {
     if (!confirm('¿Seguro que quieres eliminar este producto?')) return;
-    try {
-        const res = await fetch(`${API_BASE}/productos.php?id=${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.status === 'success') {
-            showToast('Producto eliminado');
-            loadInventario();
-            // También recargar productos si estamos en esa página
-            if (document.body.dataset.page === 'productos') loadProductos();
-        } else {
-            showToast('Error: ' + data.message, 'error');
+    const isGH = window.location.hostname.includes('github.io');
+    let deleted = false;
+
+    if (!isGH) {
+        try {
+            const res = await fetch(`${API_BASE}/productos.php?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'success') deleted = true;
+            }
+        } catch (err) {}
+    }
+
+    if (!deleted) {
+        if (Array.isArray(_cachedInventory)) {
+            _cachedInventory = _cachedInventory.filter(item => String(item.id) !== String(id));
+            localStorage.setItem('duri_products_custom', JSON.stringify(_cachedInventory));
+            deleted = true;
         }
-    } catch (err) {
-        showToast('Error de conexión', 'error');
+    }
+
+    if (deleted) {
+        showToast('Producto eliminado');
+        loadInventario();
+        if (document.body.dataset.page === 'productos') loadProductos();
+    } else {
+        showToast('Error al eliminar producto', 'error');
     }
 }
 
