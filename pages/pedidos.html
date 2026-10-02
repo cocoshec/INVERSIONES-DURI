@@ -99,7 +99,7 @@
                             
                             <!-- Botones adaptados para móvil -->
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="abrirModalMapa(true)" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
                                     <i class="fas fa-crosshairs"></i> Mi GPS Actual
                                 </button>
                                 <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
@@ -176,7 +176,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=6.1"></script>
+    <script src="../js/app.js?v=6.2"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -345,26 +345,144 @@
             });
 
             actualizarPuntoSeleccionado(coords[0], coords[1]);
-            setTimeout(() => gmap.invalidateSize(), 250);
+            setTimeout(() => { if (gmap) gmap.invalidateSize(); }, 250);
         }
 
-        function abrirModalMapa(usarGpsAutomatico = false) {
+        function aplicarUbicacionFijada(lat, lon, texto = '') {
+            const formatted = `${parseFloat(lat).toFixed(6)},${parseFloat(lon).toFixed(6)}`;
+            const geoInput = document.getElementById('geoCoords');
+            if (geoInput) geoInput.value = formatted;
+            selectedCoords = [parseFloat(lat), parseFloat(lon)];
+
+            const defaultText = texto || `Ubicación GPS (${parseFloat(lat).toFixed(5)}, ${parseFloat(lon).toFixed(5)})`;
+            selectedAddressText = defaultText;
+
+            const addrInput = document.getElementById('deliveryAddress');
+            if (addrInput && (!addrInput.value.trim() || addrInput.value.startsWith('Ubicación GPS') || addrInput.value.startsWith('Punto GPS') || addrInput.value.startsWith('Coordenadas'))) {
+                addrInput.value = defaultText;
+            }
+
+            const card = document.getElementById('ubicacionConfirmadaCard');
+            const coordsText = document.getElementById('ubicacionConfirmadaCoords');
+            const testLink = document.getElementById('ubicacionTestMapsLink');
+
+            if (card) card.style.display = 'flex';
+            if (coordsText) coordsText.textContent = `${defaultText} (${formatted})`;
+            if (testLink) testLink.href = `https://maps.google.com/?q=${formatted}`;
+        }
+
+        function obtenerGpsDirecto() {
+            const btnDirect = document.getElementById('btnGpsDirect');
+            if (btnDirect) {
+                btnDirect.disabled = true;
+                btnDirect.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localizando...';
+            }
+
+            const restaurarBtn = () => {
+                if (btnDirect) {
+                    btnDirect.disabled = false;
+                    btnDirect.innerHTML = '<i class="fas fa-crosshairs"></i> Mi GPS Actual';
+                }
+            };
+
+            let finalizado = false;
+
+            const onExito = (pos) => {
+                if (finalizado) return;
+                finalizado = true;
+                restaurarBtn();
+
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                aplicarUbicacionFijada(lat, lon);
+
+                // Reverse geocoding rápido no bloqueante
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2000);
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal })
+                        .then(r => r.json())
+                        .then(data => {
+                            clearTimeout(timeoutId);
+                            if (data && data.display_name) {
+                                const parts = data.display_name.split(',');
+                                const desc = parts.slice(0, 3).join(',').trim();
+                                if (desc) aplicarUbicacionFijada(lat, lon, desc);
+                            }
+                        })
+                        .catch(() => {});
+                } catch(e) {}
+
+                if (typeof showToast === 'function') {
+                    showToast('📍 ¡Ubicación GPS fijada con éxito!', 'success');
+                }
+            };
+
+            const onFallo = (msg) => {
+                if (finalizado) return;
+                finalizado = true;
+                restaurarBtn();
+                if (typeof showToast === 'function') {
+                    showToast(msg || 'Abre el mapa y toca tu casa para fijar la entrega 📍', 'info');
+                }
+                abrirModalMapa(false, true);
+            };
+
+            // Límite de tiempo estricto de 4 segundos para no congelar la pantalla
+            const safetyTimer = setTimeout(() => {
+                if (!finalizado) {
+                    onFallo('Tiempo de espera GPS agotado. Toca tu casa en el mapa 📍');
+                }
+            }, 4000);
+
+            if (!navigator.geolocation) {
+                clearTimeout(safetyTimer);
+                onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍');
+                return;
+            }
+
+            // Primer intento: rápido (red o wifi)
+            navigator.geolocation.getCurrentPosition(
+                (pos) => { clearTimeout(safetyTimer); onExito(pos); },
+                (err1) => {
+                    // Segundo intento: satélite alta precisión
+                    navigator.geolocation.getCurrentPosition(
+                        (pos2) => { clearTimeout(safetyTimer); onExito(pos2); },
+                        () => { clearTimeout(safetyTimer); onFallo('GPS desactivado o bloqueado. Marca tu casa en el mapa 📍'); },
+                        { enableHighAccuracy: true, timeout: 2500, maximumAge: 0 }
+                    );
+                },
+                { enableHighAccuracy: false, timeout: 2500, maximumAge: 300000 }
+            );
+        }
+
+        function abrirModalMapa(usarGpsAutomatico = false, mensajeAlerta = false) {
             const modal = document.getElementById('modalGoogleMaps');
             if (!modal) return;
             modal.style.display = 'flex';
 
-            // Si ya teníamos coordenadas previas guardadas, inicializar en ese punto
+            // Coordenadas a usar
             const currentCoordsVal = document.getElementById('geoCoords').value;
             let coordsToUse = DEFAULT_MARACAY;
             if (currentCoordsVal && currentCoordsVal.includes(',')) {
                 const parts = currentCoordsVal.split(',');
                 coordsToUse = [parseFloat(parts[0]), parseFloat(parts[1])];
+            } else if (selectedCoords && Array.isArray(selectedCoords)) {
+                coordsToUse = selectedCoords;
             }
 
             initGoogleMap(coordsToUse);
+            setTimeout(() => {
+                if (gmap) gmap.invalidateSize();
+            }, 200);
+
+            const alertBox = document.getElementById('gmapsPromptNotice');
+            if (alertBox) {
+                alertBox.style.display = mensajeAlerta ? 'flex' : 'none';
+            }
 
             if (usarGpsAutomatico) {
-                centrarGpsModal(true);
+                centrarGpsModal(false);
             }
         }
 
@@ -373,154 +491,95 @@
             if (modal) modal.style.display = 'none';
         }
 
-        function mostrarModalPedirPermisoGps() {
-            const modalPermiso = document.getElementById('modalPedirPermisoGps');
-            if (modalPermiso) modalPermiso.style.display = 'flex';
-        }
-
-        function cerrarModalPermisoGps() {
-            const modalPermiso = document.getElementById('modalPedirPermisoGps');
-            if (modalPermiso) modalPermiso.style.display = 'none';
-        }
-
-        function intentarGpsConPermiso() {
-            cerrarModalPermisoGps();
-            const modalMapa = document.getElementById('modalGoogleMaps');
-            if (modalMapa) modalMapa.style.display = 'flex';
-            initGoogleMap();
-            centrarGpsModal(false);
-        }
-
         function centrarGpsModal(mostrarAlertaSiFalla = true) {
             const btn = document.getElementById('btnGpsInsideModal');
-            const btnDirect = document.getElementById('btnGpsDirect');
-            const origHtml = btn ? btn.innerHTML : '';
             if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            if (btnDirect) btnDirect.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo GPS...';
 
-            const restaurarBotones = () => {
-                if (btn) btn.innerHTML = origHtml || '<i class="fas fa-crosshairs"></i>';
-                if (btnDirect) btnDirect.innerHTML = '<i class="fas fa-crosshairs"></i> Mi GPS Actual';
+            const restaurar = () => {
+                if (btn) btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
             };
 
-            const onExitoGps = (pos) => {
-                restaurarBotones();
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                if (gmap) {
-                    gmap.setView([lat, lon], 17);
-                    if (gmarker) gmarker.setLatLng([lat, lon]);
+            let hecho = false;
+            const timer = setTimeout(() => {
+                if (!hecho) {
+                    hecho = true;
+                    restaurar();
+                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
+                        showToast('Toca directamente tu ubicación en el mapa 📍', 'info');
+                    }
                 }
-                actualizarPuntoSeleccionado(lat, lon);
-                if (typeof showToast === 'function') showToast('📍 Ubicación GPS detectada con éxito');
-            };
-
-            const onFallaGps = (err) => {
-                console.warn('GPS primario no disponible:', err);
-                // Intento secundario: menor precisión (red celular o WiFi)
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        onExitoGps,
-                        (err2) => {
-                            console.warn('GPS secundario no disponible:', err2);
-                            // Intento terciario: Geocodificación IP o centro por defecto
-                            fetch('https://ipapi.co/json/')
-                                .then(r => r.json())
-                                .then(data => {
-                                    restaurarBotones();
-                                    if (data && data.latitude && data.longitude) {
-                                        if (gmap) {
-                                            gmap.setView([data.latitude, data.longitude], 15);
-                                            if (gmarker) gmarker.setLatLng([data.latitude, data.longitude]);
-                                        }
-                                        actualizarPuntoSeleccionado(data.latitude, data.longitude);
-                                        if (typeof showToast === 'function') showToast('📍 Ubicación aproximada detectada. Afina tu casa en el mapa.');
-                                    } else {
-                                        throw new Error('Sin coordenadas IP');
-                                    }
-                                })
-                                .catch(() => {
-                                    restaurarBotones();
-                                    if (mostrarAlertaSiFalla) {
-                                        mostrarModalPedirPermisoGps();
-                                    } else {
-                                        if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa 📍', 'info');
-                                    }
-                                });
-                        },
-                        { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
-                    );
-                } else {
-                    restaurarBotones();
-                    if (mostrarAlertaSiFalla) mostrarModalPedirPermisoGps();
-                }
-            };
+            }, 3500);
 
             if (!navigator.geolocation) {
-                onFallaGps({ message: 'Geolocation no soportado' });
+                clearTimeout(timer);
+                restaurar();
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
-                onExitoGps,
-                onFallaGps,
-                { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+                (pos) => {
+                    if (hecho) return;
+                    hecho = true;
+                    clearTimeout(timer);
+                    restaurar();
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    if (gmap) {
+                        gmap.setView([lat, lon], 17);
+                        if (gmarker) gmarker.setLatLng([lat, lon]);
+                    }
+                    actualizarPuntoSeleccionado(lat, lon);
+                    if (typeof showToast === 'function') showToast('📍 Ubicación GPS detectada');
+                },
+                () => {
+                    if (hecho) return;
+                    hecho = true;
+                    clearTimeout(timer);
+                    restaurar();
+                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
+                        showToast('Toca directamente tu ubicación en el mapa 📍', 'info');
+                    }
+                },
+                { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
             );
         }
 
         function actualizarPuntoSeleccionado(lat, lon) {
-            selectedCoords = [lat, lon];
-            const addressBox = document.getElementById('gmapsDetectedAddress');
-            if (addressBox) addressBox.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#007bff;"></i> Identificando calle y sector...';
+            selectedCoords = [parseFloat(lat), parseFloat(lon)];
+            const formatted = `${selectedCoords[0].toFixed(5)}, ${selectedCoords[1].toFixed(5)}`;
+            selectedAddressText = `Ubicación GPS (${formatted})`;
 
-            // Geocodificación inversa para obtener el nombre de la calle/barrio
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.display_name) {
-                        // Limpiar dirección corta
-                        const parts = data.display_name.split(',');
-                        selectedAddressText = parts.slice(0, 3).join(',').trim();
-                        if (addressBox) addressBox.textContent = selectedAddressText;
-                    } else {
-                        selectedAddressText = `Coordenadas: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-                        if (addressBox) addressBox.textContent = selectedAddressText;
-                    }
-                })
-                .catch(() => {
-                    selectedAddressText = `Punto GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-                    if (addressBox) addressBox.textContent = selectedAddressText;
-                });
+            const addressBox = document.getElementById('gmapsDetectedAddress');
+            if (addressBox) addressBox.textContent = `Punto fijado: ${formatted}`;
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal })
+                    .then(res => res.json())
+                    .then(data => {
+                        clearTimeout(timeoutId);
+                        if (data && data.display_name) {
+                            const parts = data.display_name.split(',');
+                            selectedAddressText = parts.slice(0, 3).join(',').trim();
+                            if (addressBox) addressBox.textContent = selectedAddressText;
+                        }
+                    })
+                    .catch(() => {});
+            } catch(e) {}
         }
 
         function confirmarUbicacionDesdeModal() {
-            if (!selectedCoords) {
-                alert('Por favor selecciona un punto en el mapa primero.');
+            if (!selectedCoords || !selectedCoords.length) {
+                alert('Por favor toca un punto en el mapa para marcar tu dirección.');
                 return;
             }
 
-            const formatted = `${parseFloat(selectedCoords[0]).toFixed(6)},${parseFloat(selectedCoords[1]).toFixed(6)}`;
-            document.getElementById('geoCoords').value = formatted;
-
-            // Rellenar o sugerir dirección en el campo de texto si está vacío
-            const addrInput = document.getElementById('deliveryAddress');
-            if (addrInput && (!addrInput.value.trim() || addrInput.value.startsWith('Punto GPS') || addrInput.value.startsWith('Coordenadas'))) {
-                addrInput.value = selectedAddressText;
-            }
-
-            // Mostrar tarjeta de confirmación en el formulario principal
-            const card = document.getElementById('ubicacionConfirmadaCard');
-            const coordsText = document.getElementById('ubicacionConfirmadaCoords');
-            const testLink = document.getElementById('ubicacionTestMapsLink');
-
-            if (card) card.style.display = 'flex';
-            if (coordsText) coordsText.textContent = `${selectedAddressText} (${formatted})`;
-            if (testLink) testLink.href = `https://maps.google.com/?q=${formatted}`;
-
+            aplicarUbicacionFijada(selectedCoords[0], selectedCoords[1], selectedAddressText);
             cerrarModalMapa();
 
             if (typeof showToast === 'function') {
-                showToast('📍 Dirección y GPS fijados con éxito');
+                showToast('📍 Dirección y GPS fijados con éxito', 'success');
             }
         }
     </script>
@@ -535,6 +594,11 @@
                     <strong style="font-size:1.05rem; color:#202124;">Ubicar Dirección en Google Maps</strong>
                 </div>
                 <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:34px; height:34px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;">&times;</button>
+            </div>
+
+            <div id="gmapsPromptNotice" style="display:none; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:8px 16px; font-size:0.82rem; color:#035388; align-items:center; gap:8px;">
+                <i class="fas fa-hand-pointer" style="color:#007bff; font-size:0.95rem;"></i>
+                <span><b>Toca en el mapa donde está tu casa</b> o arrastra el marcador rojo para fijar tu entrega.</span>
             </div>
 
             <!-- Mapa con Cartografía de Google Maps -->
