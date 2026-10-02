@@ -176,7 +176,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=6.3"></script>
+    <script src="../js/app.js?v=6.4"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -423,72 +423,36 @@
                 finalizado = true;
                 restaurarBtn();
                 if (typeof showToast === 'function') {
-                    showToast(msg || 'Abre el mapa y toca tu casa para fijar la entrega 📍', 'info');
+                    showToast(msg || 'No se pudo obtener señal GPS. Abre el mapa para marcar tu casa 📍', 'info');
                 }
                 abrirModalMapa(false, true);
             };
 
-            // 1. Fallback rápido por IP si el GPS de hardware tarda más de 1.8 segundos
-            const ipTimer = setTimeout(async () => {
-                if (finalizado) return;
-                try {
-                    const r = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) });
-                    const d = await r.json();
-                    if (d && d.latitude && d.longitude) {
-                        onExito({ coords: { latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude) } });
-                    }
-                } catch(e) {}
-            }, 1800);
-
-            // Límite de tiempo de seguridad de 4.5 segundos
+            // Límite de tiempo de seguridad de 6.5 segundos para hardware real
             const safetyTimer = setTimeout(() => {
                 if (!finalizado) {
-                    onFallo('Tiempo de espera GPS agotado. Toca tu casa en el mapa 📍');
+                    onFallo('Tiempo agotado buscando GPS. Toca tu casa en el mapa o busca tu sector 📍');
                 }
-            }, 4500);
+            }, 6500);
 
             if (!navigator.geolocation) {
-                clearTimeout(ipTimer);
                 clearTimeout(safetyTimer);
-                // Si no hay API geolocation, probar IP directamente
-                fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d && d.latitude && d.longitude) {
-                            onExito({ coords: { latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude) } });
-                        } else {
-                            onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍');
-                        }
-                    })
-                    .catch(() => onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍'));
+                onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍');
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    clearTimeout(ipTimer);
                     clearTimeout(safetyTimer);
                     onExito(pos);
                 },
-                (err1) => {
-                    console.warn('GPS nativo no disponible o denegado:', err1.message);
-                    fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) })
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d && d.latitude && d.longitude) {
-                                clearTimeout(safetyTimer);
-                                onExito({ coords: { latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude) } });
-                            } else {
-                                clearTimeout(safetyTimer);
-                                onFallo('GPS desactivado o bloqueado. Marca tu casa en el mapa 📍');
-                            }
-                        })
-                        .catch(() => {
-                            clearTimeout(safetyTimer);
-                            onFallo('GPS desactivado o bloqueado. Marca tu casa en el mapa 📍');
-                        });
+                (err) => {
+                    clearTimeout(safetyTimer);
+                    let errText = 'Señal GPS no disponible. Marca tu casa en el mapa 📍';
+                    if (err.code === 1) errText = 'Permiso de ubicación bloqueado. Permítelo en tu navegador o marca el mapa.';
+                    onFallo(errText);
                 },
-                { enableHighAccuracy: true, timeout: 4500, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
             );
         }
 
@@ -497,7 +461,7 @@
             if (!modal) return;
             modal.style.display = 'flex';
 
-            // Coordenadas a usar
+            // Coordenadas a usar (por defecto centro de Maracay)
             const currentCoordsVal = document.getElementById('geoCoords').value;
             let coordsToUse = DEFAULT_MARACAY;
             if (currentCoordsVal && currentCoordsVal.includes(',')) {
@@ -535,71 +499,107 @@
                 if (btn) btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
             };
 
-            let ubicado = false;
-
-            const aplicarPunto = (lat, lon, fuente = '') => {
-                if (ubicado) return;
-                ubicado = true;
+            if (!navigator.geolocation) {
                 restaurar();
-
-                const nLat = parseFloat(lat);
-                const nLon = parseFloat(lon);
-
-                if (gmap) {
-                    gmap.setView([nLat, nLon], 17);
-                    if (gmarker) gmarker.setLatLng([nLat, nLon]);
+                if (mostrarAlertaSiFalla && typeof showToast === 'function') {
+                    showToast('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍', 'info');
                 }
-                actualizarPuntoSeleccionado(nLat, nLon);
-                if (typeof showToast === 'function') {
-                    showToast('📍 Ubicación detectada en el mapa', 'success');
-                }
-            };
+                return;
+            }
 
-            // 1. Fallback rápido por IP si el GPS de hardware tarda más de 1.8 segundos
-            const ipTimer = setTimeout(async () => {
-                if (ubicado) return;
-                try {
-                    const r = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) });
-                    const d = await r.json();
-                    if (d && d.latitude && d.longitude) {
-                        aplicarPunto(d.latitude, d.longitude, 'IP');
-                    }
-                } catch(e) {}
-            }, 1800);
+            let finalizado = false;
 
-            // Timer de seguridad máximo (4.5s)
-            const maxTimer = setTimeout(() => {
-                if (!ubicado) {
+            const timer = setTimeout(() => {
+                if (!finalizado) {
+                    finalizado = true;
                     restaurar();
                     if (mostrarAlertaSiFalla && typeof showToast === 'function') {
-                        showToast('Toca directamente tu ubicación en el mapa 📍', 'info');
+                        showToast('Sin señal GPS en este momento. Toca tu casa directamente en el mapa 📍', 'info');
                     }
                 }
-            }, 4500);
+            }, 6500);
 
-            // 2. Detección nativa del navegador / teléfono
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        clearTimeout(ipTimer);
-                        clearTimeout(maxTimer);
-                        aplicarPunto(pos.coords.latitude, pos.coords.longitude, 'GPS');
-                    },
-                    (err) => {
-                        console.warn('GPS con demora o error:', err.message);
-                        fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) })
-                            .then(r => r.json())
-                            .then(d => {
-                                if (d && d.latitude && d.longitude) {
-                                    clearTimeout(maxTimer);
-                                    aplicarPunto(d.latitude, d.longitude, 'IP');
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    if (finalizado) return;
+                    finalizado = true;
+                    clearTimeout(timer);
+                    restaurar();
+
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+
+                    if (gmap) {
+                        gmap.setView([lat, lon], 17);
+                        if (gmarker) gmarker.setLatLng([lat, lon]);
+                    }
+                    actualizarPuntoSeleccionado(lat, lon);
+                    if (typeof showToast === 'function') {
+                        showToast('📍 ¡Ubicación GPS real detectada!', 'success');
+                    }
+                },
+                (err) => {
+                    if (finalizado) return;
+                    finalizado = true;
+                    clearTimeout(timer);
+                    restaurar();
+
+                    let errText = 'Sin señal GPS en este dispositivo. Toca tu casa en el mapa 📍';
+                    if (err.code === 1) {
+                        errText = 'Permiso de ubicación denegado en el navegador. Toca tu casa en el mapa 📍';
+                    }
+                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
+                        showToast(errText, 'info');
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+            );
+        }
+
+        function buscarSectorEnMapa() {
+            const input = document.getElementById('mapSearchInput');
+            if (!input || !input.value.trim()) return;
+            const q = input.value.trim();
+
+            if (typeof showToast === 'function') showToast('Buscando "' + q + '"...', 'info');
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Aragua, Venezuela')}&limit=1`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        if (gmap) {
+                            gmap.setView([lat, lon], 17);
+                            if (gmarker) gmarker.setLatLng([lat, lon]);
+                        }
+                        actualizarPuntoSeleccionado(lat, lon);
+                        if (typeof showToast === 'function') showToast('📍 Encontrado: ' + (data[0].display_name.split(',')[0]), 'success');
+                    } else {
+                        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Venezuela')}&limit=1`)
+                            .then(r2 => r2.json())
+                            .then(d2 => {
+                                if (d2 && d2.length > 0) {
+                                    const lat2 = parseFloat(d2[0].lat);
+                                    const lon2 = parseFloat(d2[0].lon);
+                                    if (gmap) {
+                                        gmap.setView([lat2, lon2], 16);
+                                        if (gmarker) gmarker.setLatLng([lat2, lon2]);
+                                    }
+                                    actualizarPuntoSeleccionado(lat2, lon2);
+                                    if (typeof showToast === 'function') showToast('📍 Encontrado: ' + (d2[0].display_name.split(',')[0]), 'success');
+                                } else {
+                                    if (typeof showToast === 'function') showToast('No se encontró el sector. Toca directamente tu casa en el mapa 📍', 'error');
                                 }
                             })
-                            .catch(() => {});
-                    },
-                    { enableHighAccuracy: true, timeout: 4500, maximumAge: 0 }
-                );
-            }
+                            .catch(() => {
+                                if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa 📍', 'info');
+                            });
+                    }
+                })
+                .catch(() => {
+                    if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa 📍', 'info');
+                });
         }
 
         function actualizarPuntoSeleccionado(lat, lon) {
@@ -657,6 +657,15 @@
             <div id="gmapsPromptNotice" style="display:none; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:8px 16px; font-size:0.82rem; color:#035388; align-items:center; gap:8px;">
                 <i class="fas fa-hand-pointer" style="color:#007bff; font-size:0.95rem;"></i>
                 <span><b>Toca en el mapa donde está tu casa</b> o arrastra el marcador rojo para fijar tu entrega.</span>
+            </div>
+
+            <!-- Buscador rápido de sector / avenida para Maracay y alrededores -->
+            <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:8px 14px;">
+                <div style="display:flex; gap:6px; background:#fff; border:1.5px solid #d0d7de; border-radius:8px; padding:3px 6px; align-items:center;">
+                    <i class="fas fa-search" style="color:#5f6368; padding-left:6px; font-size:0.85rem;"></i>
+                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector o calle (ej: Calicanto, Las Delicias, La Coromoto)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
+                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">Buscar</button>
+                </div>
             </div>
 
             <!-- Mapa con Cartografía de Google Maps -->
