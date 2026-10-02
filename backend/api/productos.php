@@ -4,7 +4,13 @@
 // Inversiones Duri C.A
 // ============================================
 
-require_once '../config/database.php';
+if (!class_exists('Database')) {
+    $dbPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\database.php';
+    if (!@file_exists($dbPath)) {
+        $dbPath = __DIR__ . '/../config/database.php';
+    }
+    include $dbPath;
+}
 
 $database = new Database();
 $db = $database->getConnection();

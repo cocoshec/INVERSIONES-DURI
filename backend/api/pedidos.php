@@ -4,7 +4,13 @@
 // Inversiones Duri C.A
 // ============================================
 
-require_once '../config/database.php';
+if (!class_exists('Database')) {
+    $dbPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\database.php';
+    if (!@file_exists($dbPath)) {
+        $dbPath = __DIR__ . '/../config/database.php';
+    }
+    include $dbPath;
+}
 
 $database = new Database();
 $db = $database->getConnection();
@@ -15,7 +21,7 @@ switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
             // Obtener un pedido con sus detalles
-            $stmt = $db->prepare("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
+            $stmt = $db->prepare("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
             $stmt->execute([$_GET['id']]);
             $pedido = $stmt->fetch();
 
@@ -31,7 +37,7 @@ switch ($method) {
             }
         } else {
             // Obtener todos los pedidos
-            $stmt = $db->query("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p JOIN clientes c ON p.cliente_id = c.id ORDER BY p.created_at DESC");
+            $stmt = $db->query("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id ORDER BY p.created_at DESC");
             $pedidos = $stmt->fetchAll();
             echo json_encode(["status" => "success", "data" => $pedidos]);
         }

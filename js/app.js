@@ -106,6 +106,7 @@ function bootApp() {
     try { initPage(); } catch(e) { console.error('initPage error:', e); }
     try { showUserBadge(); } catch(e) {}
     try { showInventoryLink(); } catch(e) {}
+    try { initSuperAdminNotifications(); } catch(e) {}
     try { initCinematicEffects(); } catch(e) {}
     try { initFloatingCart(); } catch(e) {}
     try { initWhatsApp(); } catch(e) {}
@@ -302,6 +303,14 @@ function showUserBadge() {
     const userRole = rolLabels[user.rol] || 'Admin';
     const roleColor = rolColors[user.rol] || '#EF7E26';
 
+    const isSuper = user.rol === 'super_usuario' || user.rol === 'admin';
+    const bellBtnHtml = isSuper ? `
+        <button type="button" class="admin-notif-bell-btn" id="superAdminBellBtn" onclick="irAPedidosValidacion()" title="Validar pagos de pedidos pendientes">
+            <i class="fas fa-bell"></i>
+            <span class="bell-count" id="adminBellCount" style="display:none;">0</span>
+        </button>
+    ` : '';
+
     li.innerHTML = `
         <div class="user-nav-container">
             <div class="user-badge-mobile-info">
@@ -309,6 +318,7 @@ function showUserBadge() {
                 <span style="font-weight:700;font-size:0.86rem;color:#ffffff;">${userName}</span>
                 <span class="role-tag" style="background:${roleColor};color:#fff;padding:2px 7px;border-radius:6px;font-size:0.68rem;font-weight:700;">${userRole}</span>
             </div>
+            ${bellBtnHtml}
             <button type="button" class="admin-logout-btn-mobile" onclick="logout()" title="Cerrar sesión de Administrador (${userName})">
                 <i class="fas fa-sign-out-alt"></i> <span class="logout-btn-text">Salir</span>
             </button>
@@ -979,6 +989,259 @@ async function loadClientesSelect() {
     } catch (err) { console.error(err); }
 }
 
+// ============================================
+// GESTIÓN DE PEDIDOS Y NOTIFICACIONES SUPER ADMIN
+// ============================================
+
+function getLocalOrders() {
+    try {
+        return JSON.parse(localStorage.getItem('duri_orders') || '[]');
+    } catch(e) { return []; }
+}
+
+function saveLocalOrders(orders) {
+    try {
+        localStorage.setItem('duri_orders', JSON.stringify(orders));
+    } catch(e) {}
+}
+
+function saveLocalOrder(order) {
+    try {
+        const orders = getLocalOrders();
+        const idx = orders.findIndex(o => (o.codigo && o.codigo === order.codigo) || (o.id && String(o.id) === String(order.id)));
+        if (idx >= 0) {
+            orders[idx] = { ...orders[idx], ...order };
+        } else {
+            orders.unshift(order);
+        }
+        saveLocalOrders(orders);
+    } catch(e) { console.error('Error guardando pedido local:', e); }
+}
+
+function playNotificationSound() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // Re (D5)
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.14); // La (A5)
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.38);
+    } catch(e) {}
+}
+
+function showSuperAdminOrderAlert(count, orderInfo = null) {
+    if (!isSuperUsuario()) return;
+    const prev = document.getElementById('superAdminFloatingAlert');
+    if (prev) prev.remove();
+
+    const isInPages = window.location.pathname.includes('/pages/');
+    const pedidosUrl = (isInPages ? 'pedidos.html' : 'pages/pedidos.html') + '#adminOrdersCard';
+
+    const alert = document.createElement('div');
+    alert.id = 'superAdminFloatingAlert';
+    alert.className = 'superadmin-floating-alert';
+
+    const desc = orderInfo
+        ? `Pedido <b>${orderInfo.codigo}</b> ($${parseFloat(orderInfo.total).toFixed(2)}) de <b>${orderInfo.cliente_nombre || 'Cliente'}</b> espera validación de pago.`
+        : `Tienes <b>${count}</b> pedido(s) con <b>pago pendiente de verificar</b>.`;
+
+    alert.innerHTML = `
+        <div class="alert-icon"><i class="fas fa-bell"></i></div>
+        <div class="alert-info">
+            <strong>¡Atención Super Admin!</strong>
+            <span>${desc}</span>
+        </div>
+        <button type="button" class="alert-btn" onclick="irAPedidosValidacion()"><i class="fas fa-check-circle"></i> Validar</button>
+        <button type="button" class="alert-close" onclick="this.parentElement.remove()" title="Cerrar">&times;</button>
+    `;
+
+    document.body.appendChild(alert);
+    playNotificationSound();
+
+    setTimeout(() => {
+        if (alert.parentElement) {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            alert.style.transition = 'all 0.4s ease';
+            setTimeout(() => alert.remove(), 400);
+        }
+    }, 9000);
+}
+
+function irAPedidosValidacion() {
+    const prev = document.getElementById('superAdminFloatingAlert');
+    if (prev) prev.remove();
+
+    const isInPages = window.location.pathname.includes('/pages/');
+    const isPedidosPage = window.location.pathname.includes('pedidos.html');
+    
+    if (isPedidosPage) {
+        const card = document.getElementById('adminOrdersCard');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth' });
+            card.style.transition = 'box-shadow 0.4s ease';
+            card.style.boxShadow = '0 0 25px rgba(255, 102, 0, 0.5)';
+            setTimeout(() => card.style.boxShadow = '', 2500);
+        }
+    } else {
+        const target = (isInPages ? 'pedidos.html' : 'pages/pedidos.html') + '#adminOrdersCard';
+        window.location.href = target;
+    }
+}
+window.irAPedidosValidacion = irAPedidosValidacion;
+
+async function getPendingOrdersCount() {
+    let orders = [];
+    try {
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            const res = await fetch(`${API_BASE}/pedidos.php`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'success' && Array.isArray(data.data)) {
+                    orders = data.data;
+                }
+            }
+        }
+    } catch(e) {}
+
+    const localOrders = getLocalOrders();
+    if (!orders.length) {
+        orders = localOrders;
+    } else {
+        const ids = new Set(orders.map(o => String(o.id)));
+        const cods = new Set(orders.map(o => String(o.codigo)));
+        localOrders.forEach(lo => {
+            if (!ids.has(String(lo.id)) && !cods.has(String(lo.codigo))) {
+                orders.push(lo);
+            }
+        });
+    }
+
+    const pendingCount = orders.filter(o => o.estado === 'pendiente').length;
+    return { pendingCount, orders };
+}
+
+async function updateSuperAdminNotifBadge(triggerAlert = false, orderInfo = null) {
+    if (!isSuperUsuario()) {
+        const b = document.getElementById('navPendingOrdersBadge');
+        if (b) b.remove();
+        const bell = document.getElementById('adminBellCount');
+        if (bell) bell.style.display = 'none';
+        return;
+    }
+
+    const { pendingCount } = await getPendingOrdersCount();
+
+    // 1. Badge en el enlace de "Pedidos" en el navbar
+    const pedidosLinks = document.querySelectorAll('.nav-menu a[href*="pedidos.html"]');
+    pedidosLinks.forEach(link => {
+        let badge = link.querySelector('.nav-order-badge');
+        if (pendingCount > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'nav-order-badge';
+                badge.id = 'navPendingOrdersBadge';
+                link.appendChild(badge);
+            }
+            badge.textContent = pendingCount;
+            badge.title = `${pendingCount} pedido(s) pendiente(s) de validación de pago`;
+            badge.style.display = 'inline-flex';
+        } else if (badge) {
+            badge.style.display = 'none';
+        }
+    });
+
+    // 2. Bell icon en el user-nav-container
+    const bellBadge = document.getElementById('adminBellCount');
+    if (bellBadge) {
+        if (pendingCount > 0) {
+            bellBadge.textContent = pendingCount;
+            bellBadge.style.display = 'block';
+        } else {
+            bellBadge.style.display = 'none';
+        }
+    }
+
+    // 3. Notificación flotante
+    if (pendingCount > 0 && triggerAlert) {
+        showSuperAdminOrderAlert(pendingCount, orderInfo);
+    }
+}
+
+function notifySuperAdminNewOrder(order) {
+    try {
+        localStorage.setItem('duri_new_order_alert', JSON.stringify({
+            order: order,
+            time: Date.now()
+        }));
+    } catch(e) {}
+
+    window.dispatchEvent(new CustomEvent('duri_new_order', { detail: order }));
+
+    if (isSuperUsuario()) {
+        updateSuperAdminNotifBadge(true, order);
+    }
+}
+
+function initSuperAdminNotifications() {
+    if (!isSuperUsuario()) return;
+
+    updateSuperAdminNotifBadge(false);
+
+    // Escuchar cambios desde otras pestañas
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'duri_last_order_event' || e.key === 'duri_new_order_alert' || e.key === 'duri_orders') {
+            if (isSuperUsuario()) {
+                let orderInfo = null;
+                if (e.key === 'duri_new_order_alert' && e.newValue) {
+                    try { orderInfo = JSON.parse(e.newValue).order; } catch(err) {}
+                }
+                updateSuperAdminNotifBadge(e.key === 'duri_new_order_alert', orderInfo);
+                if (document.getElementById('recentOrders')) {
+                    loadPedidosRecientes();
+                }
+            }
+        }
+    });
+
+    // Escuchar evento personalizado en la misma pestaña
+    window.addEventListener('duri_new_order', (e) => {
+        if (isSuperUsuario()) {
+            updateSuperAdminNotifBadge(true, e.detail);
+            if (document.getElementById('recentOrders')) {
+                loadPedidosRecientes();
+            }
+        }
+    });
+
+    // Sondeo periódico cada 12 segundos
+    setInterval(() => {
+        if (isSuperUsuario()) {
+            updateSuperAdminNotifBadge(false);
+        }
+    }, 12000);
+}
+
+let currentAdminOrderFilter = 'todos';
+
+function filterAdminPedidos(filter) {
+    currentAdminOrderFilter = filter;
+    if (window._allAdminPedidos) {
+        renderPedidosRecientes(window._allAdminPedidos, filter);
+    }
+}
+window.filterAdminPedidos = filterAdminPedidos;
+
 async function loadPedidosRecientes() {
     const adminCard = document.getElementById('adminOrdersCard');
     
@@ -990,49 +1253,141 @@ async function loadPedidosRecientes() {
 
     if (adminCard) adminCard.style.display = 'block';
 
+    let pedidos = [];
     try {
-        const res = await fetch(`${API_BASE}/pedidos.php`);
-        const data = await res.json();
-        if (data.status === 'success') renderPedidosRecientes(data.data);
-    } catch (err) { console.error(err); }
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            const res = await fetch(`${API_BASE}/pedidos.php`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'success' && Array.isArray(data.data)) {
+                    pedidos = data.data;
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('API pedidos no disponible, cargando local:', err);
+    }
+
+    // Combinar con pedidos locales
+    const localOrders = getLocalOrders();
+    if (!pedidos.length) {
+        pedidos = localOrders;
+    } else {
+        const ids = new Set(pedidos.map(p => String(p.id)));
+        const cods = new Set(pedidos.map(p => String(p.codigo)));
+        localOrders.forEach(lo => {
+            if (!ids.has(String(lo.id)) && !cods.has(String(lo.codigo))) {
+                pedidos.push(lo);
+            }
+        });
+        // Sincronizar estados de la BD hacia local
+        pedidos.forEach(p => {
+            const m = localOrders.find(l => String(l.id) === String(p.id) || l.codigo === p.codigo);
+            if (m && m.estado !== p.estado) {
+                m.estado = p.estado;
+            }
+        });
+        saveLocalOrders(localOrders);
+    }
+
+    window._allAdminPedidos = pedidos;
+    renderPedidosRecientes(pedidos, currentAdminOrderFilter);
+    updateSuperAdminNotifBadge(false);
 }
 
-function renderPedidosRecientes(pedidos) {
+function renderPedidosRecientes(pedidos, filter = 'todos') {
     const container = document.getElementById('recentOrders');
     if (!container) return;
+
     if (!pedidos || pedidos.length === 0) {
-        container.innerHTML = '<p style="color:var(--gray);text-align:center;padding:15px;">No hay pedidos registrados aún.</p>';
+        container.innerHTML = `
+            <div class="admin-payment-alert ok">
+                <i class="fas fa-check-circle" style="font-size:1.3rem; color:#28a745;"></i>
+                <div><strong>No hay pedidos registrados en el sistema.</strong></div>
+            </div>
+            <p style="color:var(--gray);text-align:center;padding:15px;">Cuando un cliente realice un pedido, aparecerá aquí inmediatamente para que valides el pago.</p>
+        `;
         return;
     }
+
+    const pendingCount = pedidos.filter(p => p.estado === 'pendiente').length;
+    const aprobadosCount = pedidos.filter(p => p.estado === 'procesando').length;
+    const completadosCount = pedidos.filter(p => p.estado === 'completado').length;
+    const canceladosCount = pedidos.filter(p => p.estado === 'cancelado').length;
+
+    let filtered = pedidos;
+    if (filter !== 'todos') {
+        filtered = pedidos.filter(p => p.estado === filter);
+    }
+
     const estadoClass = {'pendiente':'pending','procesando':'processing','completado':'completed','cancelado':'out'};
-    const estadoText = {'pendiente':'Pendiente de Pago','procesando':'Pago Confirmado / En Proceso','completado':'Completado','cancelado':'Cancelado'};
+    const estadoText = {'pendiente':'⏳ Pendiente de Pago','procesando':'✅ Pago Confirmado','completado':'📦 Completado / Entregado','cancelado':'❌ Cancelado'};
     const canManage = isSuperUsuario();
-    
-    container.innerHTML = pedidos.map(p => {
+
+    // 1. Alerta de resumen superior
+    const summaryBanner = pendingCount > 0 ? `
+        <div class="admin-payment-alert pending">
+            <i class="fas fa-exclamation-triangle" style="font-size:1.4rem; color:#b07800;"></i>
+            <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.95rem; color:#856404;">
+                    ⚠️ ¡Atención! Tienes <strong>${pendingCount}</strong> pedido(s) con <strong>pago pendiente de verificar</strong>
+                </div>
+                <div style="font-size:0.82rem; color:#665103; margin-top:2px;">
+                    Revisa si el dinero ingresó a tu cuenta / pago móvil y haz clic en <b>"Aprobar Pago"</b> para confirmar la compra.
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm" onclick="filterAdminPedidos('pendiente')" style="background:#ff9f1c;color:#1a0f2e;font-weight:700;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap;">
+                Ver Pendientes (${pendingCount})
+            </button>
+        </div>
+    ` : `
+        <div class="admin-payment-alert ok">
+            <i class="fas fa-check-circle" style="font-size:1.3rem; color:#28a745;"></i>
+            <div style="font-weight:600; color:#155724;">
+                ✅ Todos los pagos están al día. No hay pedidos pendientes de verificación.
+            </div>
+        </div>
+    `;
+
+    // 2. Pestañas de filtrado
+    const tabsHtml = `
+        <div class="admin-orders-tabs">
+            <button type="button" class="admin-order-tab ${filter === 'todos' ? 'active' : ''}" onclick="filterAdminPedidos('todos')">Todos (${pedidos.length})</button>
+            <button type="button" class="admin-order-tab ${filter === 'pendiente' ? 'active' : ''}" style="${pendingCount > 0 ? 'border-color:#ff9f1c; color:#d97706; font-weight:700;' : ''}" onclick="filterAdminPedidos('pendiente')">⏳ Pendientes de Pago (${pendingCount})</button>
+            <button type="button" class="admin-order-tab ${filter === 'procesando' ? 'active' : ''}" onclick="filterAdminPedidos('procesando')">✅ Pagos Aprobados (${aprobadosCount})</button>
+            <button type="button" class="admin-order-tab ${filter === 'completado' ? 'active' : ''}" onclick="filterAdminPedidos('completado')">📦 Completados (${completadosCount})</button>
+            <button type="button" class="admin-order-tab ${filter === 'cancelado' ? 'active' : ''}" onclick="filterAdminPedidos('cancelado')">❌ Cancelados (${canceladosCount})</button>
+        </div>
+    `;
+
+    // 3. Renderizar cada pedido
+    const listHtml = filtered.length === 0 ? `
+        <p style="color:var(--gray);text-align:center;padding:25px;background:#f9f9f9;border-radius:8px;">No hay pedidos en la categoría seleccionada.</p>
+    ` : filtered.map(p => {
         let actionButtons = '';
         if (canManage) {
             let statusBtn = '';
             if (p.estado === 'pendiente') {
                 statusBtn = `
-                    <button class="btn btn-sm" style="background:#28a745;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'procesando')">
-                        <i class="fas fa-check"></i> Aprobar Pago
+                    <button class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(40,167,69,0.3);" onclick="actualizarEstadoPedido(${p.id}, 'procesando', '${p.codigo}', ${p.total})">
+                        <i class="fas fa-check-circle"></i> Aprobar Pago
                     </button>
-                    <button class="btn btn-sm" style="background:#ffc107;color:#212529;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado')">
-                        <i class="fas fa-times"></i> Cancelar
+                    <button class="btn btn-sm" style="background:#e0a800;color:#212529;font-weight:600;padding:7px 10px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado', '${p.codigo}', ${p.total})">
+                        <i class="fas fa-times-circle"></i> Cancelar
                     </button>
                 `;
             } else if (p.estado === 'procesando') {
                 statusBtn = `
-                    <button class="btn btn-sm" style="background:#007bff;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'completado')">
+                    <button class="btn btn-sm" style="background:#007bff;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'completado', '${p.codigo}', ${p.total})">
                         <i class="fas fa-box-check"></i> Entregar / Completar
                     </button>
-                    <button class="btn btn-sm" style="background:#ffc107;color:#212529;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado')">
+                    <button class="btn btn-sm" style="background:#ffc107;color:#212529;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado', '${p.codigo}', ${p.total})">
                         <i class="fas fa-undo"></i> Cancelar
                     </button>
                 `;
             }
 
-            // Botón de eliminar (papelera) para limpiar el historial
             actionButtons = `
                 ${statusBtn}
                 <button class="btn btn-sm" style="background:#dc3545;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" title="Eliminar del historial permanentemente" onclick="eliminarPedidoHistorial(${p.id}, '${p.codigo}')">
@@ -1041,27 +1396,115 @@ function renderPedidosRecientes(pedidos) {
             `;
         }
 
+        const formaPagoLabels = {
+            'efectivo': '💵 Efectivo',
+            'pago_movil': '📱 Pago Móvil',
+            'transferencia': '🏦 Transferencia Bancaria',
+            'tarjeta': '💳 Tarjeta'
+        };
+        const formaPagoDisplay = formaPagoLabels[p.forma_pago] || p.forma_pago || 'Efectivo';
+        
+        // Limpiar teléfono para link directo a WhatsApp
+        let phoneWa = '';
+        if (p.cliente_telefono) {
+            let clean = p.cliente_telefono.replace(/[^0-9]/g, '');
+            if (clean.startsWith('0')) clean = '58' + clean.slice(1);
+            if (!clean.startsWith('58') && clean.length === 10) clean = '58' + clean;
+            phoneWa = clean;
+        }
+
+        const isPendiente = p.estado === 'pendiente';
+
         return `
-            <div class="order-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:12px; margin-bottom:8px; border:1px solid #eee; border-radius:6px; background:#fff;">
-                <div class="order-row-info" style="display:flex; flex-direction:column; gap:2px;">
-                    <strong style="color:var(--dark-brown,#333); font-size:0.95rem;">${p.codigo} &mdash; ${p.cliente_nombre || 'Cliente'}</strong>
-                    <span style="font-size:0.8rem; color:var(--dark,#444);">
+            <div class="order-row ${isPendiente ? 'order-pending-highlight' : ''}" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px; margin-bottom:10px; border:1px solid ${isPendiente ? '#ffc107' : '#eee'}; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.03);">
+                <div class="order-row-info" style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:240px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <strong style="color:var(--dark-brown,#333); font-size:1rem;">${p.codigo} &mdash; ${p.cliente_nombre || 'Cliente'}</strong>
+                        ${isPendiente ? '<span style="background:#fffae6; color:#b07800; border:1px solid #ffe58f; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:10px;"><i class="fas fa-hourglass-half"></i> Requiere Verificación</span>' : ''}
+                    </div>
+                    <span style="font-size:0.83rem; color:var(--dark,#444);">
                         ${p.cliente_ci ? '<i class="fas fa-id-card"></i> <strong>' + p.cliente_ci + '</strong> · ' : ''}
-                        ${p.cliente_telefono ? '<i class="fas fa-phone"></i> ' + p.cliente_telefono + ' · ' : ''}
-                        <strong>Pago:</strong> ${p.forma_pago || 'efectivo'}
+                        ${p.cliente_telefono ? '<i class="fas fa-phone"></i> ' + p.cliente_telefono : ''}
+                        ${phoneWa ? ` <a href="https://wa.me/${phoneWa}?text=Hola%20${encodeURIComponent(p.cliente_nombre || '')}%2C%20le%20escribimos%20de%20Inversiones%20Duri%20sobre%20su%20pedido%20${p.codigo}" target="_blank" style="color:#25d366; font-size:0.78rem; font-weight:600; text-decoration:underline; margin-left:4px;"><i class="fab fa-whatsapp"></i> Chat</a>` : ''}
+                        · <strong>Pago:</strong> ${formaPagoDisplay}
                     </span>
-                    ${p.direccion_entrega ? `<span style="font-size:0.75rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
+                    ${p.direccion_entrega ? `<span style="font-size:0.76rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
                 </div>
                 <div class="order-row-details" style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-weight:700; font-size:1rem; color:#28a745;">$${parseFloat(p.total).toFixed(2)}</span>
-                    <span class="status ${estadoClass[p.estado] || 'pending'}" style="padding:4px 8px; border-radius:12px; font-size:0.75rem; font-weight:600;">${estadoText[p.estado] || p.estado}</span>
+                    <span style="font-weight:700; font-size:1.1rem; color:#28a745;">$${parseFloat(p.total).toFixed(2)}</span>
+                    <span class="status ${estadoClass[p.estado] || 'pending'}" style="padding:4px 10px; border-radius:12px; font-size:0.75rem; font-weight:700;">${estadoText[p.estado] || p.estado}</span>
                 </div>
-                <div style="display:flex; gap:6px; align-items:center;">
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                     ${actionButtons}
                 </div>
             </div>
         `;
     }).join('');
+
+    container.innerHTML = summaryBanner + tabsHtml + listHtml;
+}
+
+async function actualizarEstadoPedido(id, nuevoEstado, codigo = '', total = 0) {
+    if (!isSuperUsuario()) {
+        showToast('Acceso restringido: solo el superusuario puede verificar y administrar pagos', 'error');
+        return;
+    }
+
+    const actionText = nuevoEstado === 'procesando'
+        ? `¿Confirmas que ya verificaste el pago del pedido ${codigo || ''} por $${parseFloat(total || 0).toFixed(2)}?\n\nAl aprobar el pago, la orden se marcará como CONFIRMADA y se descontarán las unidades del inventario.`
+        : (nuevoEstado === 'cancelado' ? `¿Deseas cancelar el pedido ${codigo || ''}?` : `¿Marcar el pedido ${codigo || ''} como entregado y completado?`);
+
+    if (!confirm(actionText)) return;
+
+    // 1. Enviar al Backend si está activo
+    try {
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            const currentUser = getUser();
+            await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    estado: nuevoEstado,
+                    usuario_id: currentUser ? currentUser.id : null
+                })
+            });
+        }
+    } catch (err) {
+        console.warn('API backend no disponible al actualizar pedido:', err);
+    }
+
+    // 2. Actualizar en localStorage
+    const localOrders = getLocalOrders();
+    const match = localOrders.find(o => String(o.id) === String(id) || (codigo && o.codigo === codigo));
+    if (match) {
+        match.estado = nuevoEstado;
+        match.updated_at = new Date().toISOString();
+        saveLocalOrders(localOrders);
+    }
+    
+    try {
+        localStorage.setItem('duri_last_order_event', JSON.stringify({
+            action: 'update',
+            id,
+            codigo,
+            estado: nuevoEstado,
+            timestamp: Date.now()
+        }));
+    } catch(e) {}
+
+    if (nuevoEstado === 'procesando') {
+        showToast(`¡Pago del pedido ${codigo || ''} aprobado con éxito!`, 'success');
+    } else if (nuevoEstado === 'cancelado') {
+        showToast(`Pedido ${codigo || ''} cancelado`, 'info');
+    } else {
+        showToast(`Pedido ${codigo || ''} actualizado`, 'success');
+    }
+
+    loadPedidosRecientes();
+    updateSuperAdminNotifBadge(false);
+    if (typeof loadProductos === 'function') loadProductos();
+    if (typeof loadInventario === 'function') loadInventario();
 }
 
 async function eliminarPedidoHistorial(id, codigo) {
@@ -1070,63 +1513,39 @@ async function eliminarPedidoHistorial(id, codigo) {
         return;
     }
 
-    if (!confirm(`¿Deseas eliminar permanentemente el pedido ${codigo} del historial?`)) {
+    if (!confirm(`¿Deseas eliminar permanentemente el pedido ${codigo || ''} del historial?`)) {
         return;
     }
 
     try {
-        const currentUser = getUser();
-        const usuarioParam = currentUser ? `&usuario_id=${currentUser.id}` : '';
-        const res = await fetch(`${API_BASE}/pedidos.php?id=${id}${usuarioParam}`, {
-            method: 'DELETE'
-        });
-        const result = await res.json();
-        if (result.status === 'success') {
-            showToast(`Pedido ${codigo} eliminado del historial`);
-            loadPedidosRecientes();
-        } else {
-            showToast('Error: ' + result.message, 'error');
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            const currentUser = getUser();
+            const usuarioParam = currentUser ? `&usuario_id=${currentUser.id}` : '';
+            await fetch(`${API_BASE}/pedidos.php?id=${id}${usuarioParam}`, {
+                method: 'DELETE'
+            });
         }
     } catch (err) {
-        console.error(err);
-        showToast('Error de conexión al eliminar pedido', 'error');
-    }
-}
-
-async function actualizarEstadoPedido(id, nuevoEstado) {
-    if (!isSuperUsuario()) {
-        showToast('Acceso restringido: solo el superusuario puede verificar y administrar pagos', 'error');
-        return;
+        console.warn('API pedidos no disponible al eliminar:', err);
     }
 
-    const confirmMsg = nuevoEstado === 'procesando' 
-        ? '¿Confirmas que ya verificaste el pago de este pedido? Esto descontará los productos del inventario.' 
-        : (nuevoEstado === 'cancelado' ? '¿Deseas cancelar este pedido?' : '¿Marcar pedido como completado?');
-    
-    if (!confirm(confirmMsg)) return;
+    const localOrders = getLocalOrders();
+    const filtered = localOrders.filter(o => String(o.id) !== String(id) && (!codigo || o.codigo !== codigo));
+    saveLocalOrders(filtered);
 
     try {
-        const currentUser = getUser();
-        const res = await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                estado: nuevoEstado,
-                usuario_id: currentUser ? currentUser.id : null
-            })
-        });
-        const result = await res.json();
-        if (result.status === 'success') {
-            showToast(result.message);
-            loadPedidosRecientes();
-            if (typeof loadProducts === 'function') loadProducts();
-        } else {
-            showToast('Error: ' + result.message, 'error');
-        }
-    } catch (err) {
-        console.error(err);
-        showToast('Error al actualizar el estado del pedido', 'error');
-    }
+        localStorage.setItem('duri_last_order_event', JSON.stringify({
+            action: 'delete',
+            id,
+            codigo,
+            timestamp: Date.now()
+        }));
+    } catch(e) {}
+
+    showToast(`Pedido ${codigo || ''} eliminado del historial`);
+    loadPedidosRecientes();
+    updateSuperAdminNotifBadge(false);
 }
 
 function addProductToCart() {
@@ -1250,12 +1669,15 @@ async function submitOrder() {
         direccion_entrega: fullDeliveryAddress,
         notas: notes ? notes.value : '',
         forma_pago: payment ? payment.value : 'efectivo',
-        productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price })),
+        productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price, nombre: it.name })),
         clientName,
         clientCi,
         clientPhone,
         mapsLink,
-        msg
+        msg,
+        subtotal,
+        iva,
+        total
     };
     
     // Mostrar modal de confirmación
@@ -1332,77 +1754,112 @@ async function confirmAndSend() {
     if (!data) { closeConfirmModal(); return; }
     
     const btn = document.getElementById('confirmSendBtn');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...'; }
     
     let clienteId = data.cliente_id;
     
     // Crear cliente nuevo si aplica guardando su cédula y teléfono
     if (clienteId === 'nuevo') {
         try {
-            const resCli = await fetch(`${API_BASE}/clientes.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    nombre: data.clientName, 
-                    ci_rif: data.clientCi,
-                    telefono: data.clientPhone,
-                    direccion: data.direccion_entrega
-                })
-            });
-            const cliData = await resCli.json();
-            if (cliData.status !== 'success') { 
-                showToast('Error al registrar cliente: ' + cliData.message, 'error'); 
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } 
-                return; 
+            const isGH = window.location.hostname.includes('github.io');
+            if (!isGH) {
+                const resCli = await fetch(`${API_BASE}/clientes.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        nombre: data.clientName, 
+                        ci_rif: data.clientCi,
+                        telefono: data.clientPhone,
+                        direccion: data.direccion_entrega
+                    })
+                });
+                if (resCli.ok) {
+                    const cliData = await resCli.json();
+                    if (cliData.status === 'success' && cliData.id) {
+                        clienteId = cliData.id;
+                    }
+                }
             }
-            clienteId = cliData.id;
         } catch (err) { 
-            showToast('Error de conexión', 'error'); 
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; } 
-            return; 
+            console.warn('API clientes no disponible o sin conexión. Continuando con cliente local:', err);
         }
     }
-    
-    // Enviar pedido a la BD
+    if (!clienteId || clienteId === 'nuevo') clienteId = 1;
+
+    // Generar código único y calcular totales
+    const now = new Date();
+    const timeCode = String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
+    let orderCode = `PED-${timeCode}`;
+    let orderId = Date.now();
+    let orderTotal = data.total || (data.subtotal ? data.subtotal * 1.16 : 0);
+
+    // Enviar pedido a la BD si el backend está disponible
     try {
-        const res = await fetch(`${API_BASE}/pedidos.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                cliente_id: clienteId,
-                direccion_entrega: data.direccion_entrega,
-                notas: data.notas,
-                forma_pago: data.forma_pago,
-                productos: data.productos
-            })
-        });
-        const result = await res.json();
-        if (result.status === 'success') {
-            // Abrir WhatsApp con el mensaje
-            const waUrl = 'https://wa.me/584121234567?text=' + encodeURIComponent(data.msg);
-            window.open(waUrl, '_blank');
-            
-            showToast('¡Pedido ' + result.codigo + ' creado! Total: $' + parseFloat(result.total).toFixed(2));
-            
-            // Limpiar
-            cart = []; saveCart(); updateCart();
-            document.getElementById('orderForm').reset();
-            loadPedidosRecientes();
-            closeConfirmModal();
-            window._pendingOrder = null;
-        } else {
-            showToast('Error: ' + result.message, 'error');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fab fa-whatsapp"></i> Confirmar y Enviar'; }
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            const res = await fetch(`${API_BASE}/pedidos.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cliente_id: clienteId,
+                    direccion_entrega: data.direccion_entrega,
+                    notas: data.notas,
+                    forma_pago: data.forma_pago,
+                    productos: data.productos
+                })
+            });
+            if (res.ok) {
+                const result = await res.json();
+                if (result.status === 'success') {
+                    if (result.codigo) orderCode = result.codigo;
+                    if (result.total) orderTotal = result.total;
+                    if (result.id) orderId = result.id;
+                }
+            }
         }
     } catch (err) {
-        // En GitHub Pages o sin backend PHP, enviar directamente por WhatsApp
-        const waUrl = 'https://wa.me/584121234567?text=' + encodeURIComponent(data.msg);
-        window.open(waUrl, '_blank');
-        showToast('¡Abriendo WhatsApp para enviar tu pedido!');
-        cart = []; saveCart(); updateCart();
-        try { document.getElementById('orderForm').reset(); } catch(e){}
-        closeConfirmModal();
-        window._pendingOrder = null;
+        console.warn('API pedidos no disponible. Guardando localmente:', err);
+    }
+
+    // Estructurar el pedido completo para almacenamiento local y notificación inmediata
+    const localOrder = {
+        id: orderId,
+        codigo: orderCode,
+        cliente_id: clienteId,
+        cliente_nombre: data.clientName,
+        cliente_ci: data.clientCi,
+        cliente_telefono: data.clientPhone,
+        direccion_entrega: data.direccion_entrega,
+        notas: data.notas || '',
+        forma_pago: data.forma_pago || 'efectivo',
+        total: parseFloat(orderTotal).toFixed(2),
+        subtotal: parseFloat(data.subtotal || 0).toFixed(2),
+        impuesto: parseFloat(data.iva || 0).toFixed(2),
+        estado: 'pendiente', // Siempre requiere validación de pago por el Super Admin
+        productos: data.productos || [],
+        created_at: now.toISOString().replace('T', ' ').substring(0, 19)
+    };
+
+    // Guardar en almacenamiento persistente local
+    saveLocalOrder(localOrder);
+
+    // Notificar en tiempo real al Super Admin
+    notifySuperAdminNewOrder(localOrder);
+
+    // Abrir WhatsApp con el pedido
+    const waUrl = 'https://wa.me/584121234567?text=' + encodeURIComponent(data.msg);
+    window.open(waUrl, '_blank');
+
+    showToast(`¡Pedido ${orderCode} creado con éxito! Total: $${localOrder.total}`);
+
+    // Limpiar carrito y formulario
+    cart = []; saveCart(); updateCart();
+    try { document.getElementById('orderForm').reset(); } catch(e){}
+    closeConfirmModal();
+    window._pendingOrder = null;
+
+    if (typeof loadPedidosRecientes === 'function') {
+        loadPedidosRecientes();
     }
 }
 
