@@ -176,7 +176,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=6.2"></script>
+    <script src="../js/app.js?v=6.3"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -428,31 +428,67 @@
                 abrirModalMapa(false, true);
             };
 
-            // Límite de tiempo estricto de 4 segundos para no congelar la pantalla
+            // 1. Fallback rápido por IP si el GPS de hardware tarda más de 1.8 segundos
+            const ipTimer = setTimeout(async () => {
+                if (finalizado) return;
+                try {
+                    const r = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) });
+                    const d = await r.json();
+                    if (d && d.latitude && d.longitude) {
+                        onExito({ coords: { latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude) } });
+                    }
+                } catch(e) {}
+            }, 1800);
+
+            // Límite de tiempo de seguridad de 4.5 segundos
             const safetyTimer = setTimeout(() => {
                 if (!finalizado) {
                     onFallo('Tiempo de espera GPS agotado. Toca tu casa en el mapa 📍');
                 }
-            }, 4000);
+            }, 4500);
 
             if (!navigator.geolocation) {
+                clearTimeout(ipTimer);
                 clearTimeout(safetyTimer);
-                onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍');
+                // Si no hay API geolocation, probar IP directamente
+                fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d && d.latitude && d.longitude) {
+                            onExito({ coords: { latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude) } });
+                        } else {
+                            onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍');
+                        }
+                    })
+                    .catch(() => onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍'));
                 return;
             }
 
-            // Primer intento: rápido (red o wifi)
             navigator.geolocation.getCurrentPosition(
-                (pos) => { clearTimeout(safetyTimer); onExito(pos); },
-                (err1) => {
-                    // Segundo intento: satélite alta precisión
-                    navigator.geolocation.getCurrentPosition(
-                        (pos2) => { clearTimeout(safetyTimer); onExito(pos2); },
-                        () => { clearTimeout(safetyTimer); onFallo('GPS desactivado o bloqueado. Marca tu casa en el mapa 📍'); },
-                        { enableHighAccuracy: true, timeout: 2500, maximumAge: 0 }
-                    );
+                (pos) => {
+                    clearTimeout(ipTimer);
+                    clearTimeout(safetyTimer);
+                    onExito(pos);
                 },
-                { enableHighAccuracy: false, timeout: 2500, maximumAge: 300000 }
+                (err1) => {
+                    console.warn('GPS nativo no disponible o denegado:', err1.message);
+                    fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d && d.latitude && d.longitude) {
+                                clearTimeout(safetyTimer);
+                                onExito({ coords: { latitude: parseFloat(d.latitude), longitude: parseFloat(d.longitude) } });
+                            } else {
+                                clearTimeout(safetyTimer);
+                                onFallo('GPS desactivado o bloqueado. Marca tu casa en el mapa 📍');
+                            }
+                        })
+                        .catch(() => {
+                            clearTimeout(safetyTimer);
+                            onFallo('GPS desactivado o bloqueado. Marca tu casa en el mapa 📍');
+                        });
+                },
+                { enableHighAccuracy: true, timeout: 4500, maximumAge: 0 }
             );
         }
 
@@ -499,49 +535,71 @@
                 if (btn) btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
             };
 
-            let hecho = false;
-            const timer = setTimeout(() => {
-                if (!hecho) {
-                    hecho = true;
+            let ubicado = false;
+
+            const aplicarPunto = (lat, lon, fuente = '') => {
+                if (ubicado) return;
+                ubicado = true;
+                restaurar();
+
+                const nLat = parseFloat(lat);
+                const nLon = parseFloat(lon);
+
+                if (gmap) {
+                    gmap.setView([nLat, nLon], 17);
+                    if (gmarker) gmarker.setLatLng([nLat, nLon]);
+                }
+                actualizarPuntoSeleccionado(nLat, nLon);
+                if (typeof showToast === 'function') {
+                    showToast('📍 Ubicación detectada en el mapa', 'success');
+                }
+            };
+
+            // 1. Fallback rápido por IP si el GPS de hardware tarda más de 1.8 segundos
+            const ipTimer = setTimeout(async () => {
+                if (ubicado) return;
+                try {
+                    const r = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) });
+                    const d = await r.json();
+                    if (d && d.latitude && d.longitude) {
+                        aplicarPunto(d.latitude, d.longitude, 'IP');
+                    }
+                } catch(e) {}
+            }, 1800);
+
+            // Timer de seguridad máximo (4.5s)
+            const maxTimer = setTimeout(() => {
+                if (!ubicado) {
                     restaurar();
                     if (mostrarAlertaSiFalla && typeof showToast === 'function') {
                         showToast('Toca directamente tu ubicación en el mapa 📍', 'info');
                     }
                 }
-            }, 3500);
+            }, 4500);
 
-            if (!navigator.geolocation) {
-                clearTimeout(timer);
-                restaurar();
-                return;
+            // 2. Detección nativa del navegador / teléfono
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        clearTimeout(ipTimer);
+                        clearTimeout(maxTimer);
+                        aplicarPunto(pos.coords.latitude, pos.coords.longitude, 'GPS');
+                    },
+                    (err) => {
+                        console.warn('GPS con demora o error:', err.message);
+                        fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(2000) })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d && d.latitude && d.longitude) {
+                                    clearTimeout(maxTimer);
+                                    aplicarPunto(d.latitude, d.longitude, 'IP');
+                                }
+                            })
+                            .catch(() => {});
+                    },
+                    { enableHighAccuracy: true, timeout: 4500, maximumAge: 0 }
+                );
             }
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    if (hecho) return;
-                    hecho = true;
-                    clearTimeout(timer);
-                    restaurar();
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    if (gmap) {
-                        gmap.setView([lat, lon], 17);
-                        if (gmarker) gmarker.setLatLng([lat, lon]);
-                    }
-                    actualizarPuntoSeleccionado(lat, lon);
-                    if (typeof showToast === 'function') showToast('📍 Ubicación GPS detectada');
-                },
-                () => {
-                    if (hecho) return;
-                    hecho = true;
-                    clearTimeout(timer);
-                    restaurar();
-                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
-                        showToast('Toca directamente tu ubicación en el mapa 📍', 'info');
-                    }
-                },
-                { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
-            );
         }
 
         function actualizarPuntoSeleccionado(lat, lon) {
