@@ -305,12 +305,12 @@ function showUserBadge() {
     li.innerHTML = `
         <div class="user-nav-container">
             <div class="user-badge-mobile-info">
-                <span style="font-size:1.15rem;">${rolEmoji[user.rol] || '👑'}</span>
-                <span style="font-weight:700;font-size:0.9rem;color:#ffffff;">${userName}</span>
-                <span class="role-tag" style="background:${roleColor};color:#fff;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:600;">${userRole}</span>
+                <span style="font-size:1.05rem;">${rolEmoji[user.rol] || '👑'}</span>
+                <span style="font-weight:700;font-size:0.86rem;color:#ffffff;">${userName}</span>
+                <span class="role-tag" style="background:${roleColor};color:#fff;padding:2px 7px;border-radius:6px;font-size:0.68rem;font-weight:700;">${userRole}</span>
             </div>
-            <button type="button" class="admin-logout-btn-mobile" onclick="logout()" title="Cerrar sesión">
-                <i class="fas fa-sign-out-alt"></i> Salir del Administrador
+            <button type="button" class="admin-logout-btn-mobile" onclick="logout()" title="Cerrar sesión de Administrador (${userName})">
+                <i class="fas fa-sign-out-alt"></i> <span class="logout-btn-text">Salir</span>
             </button>
         </div>
     `;
