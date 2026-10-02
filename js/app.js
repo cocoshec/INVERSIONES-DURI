@@ -67,8 +67,20 @@ const Validator = {
 // USUARIO / SESIÓN
 // ============================================
 function getUser() {
-    const data = localStorage.getItem('userDuri');
-    return data ? JSON.parse(data) : null;
+    try {
+        const data = localStorage.getItem('userDuri');
+        if (!data) return null;
+        const user = JSON.parse(data);
+        if (!user || !user.rol) return null;
+        // Expirar sesión automáticamente tras 8 horas de inactividad por seguridad
+        if (user.timestamp && (Date.now() - user.timestamp > 8 * 60 * 60 * 1000)) {
+            localStorage.removeItem('userDuri');
+            return null;
+        }
+        return user;
+    } catch(e) {
+        return null;
+    }
 }
 
 function isLoggedIn() {
@@ -77,7 +89,7 @@ function isLoggedIn() {
 
 function isSuperUsuario() {
     const user = getUser();
-    return user && (user.rol === 'super_usuario' || user.rol === 'admin');
+    return !!(user && (user.rol === 'super_usuario' || user.rol === 'admin'));
 }
 
 
@@ -1336,7 +1348,14 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     const canManage = isSuperUsuario();
 
     // 1. Alerta de resumen superior
-    const summaryBanner = pendingCount > 0 ? `
+    const adminNotice = `
+        <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; margin-bottom:12px; font-size:0.78rem; color:#475569; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Este módulo de verificación de pagos solo es visible para tu cuenta. Los clientes que compran en la tienda no tienen acceso a él.</span>
+            <button type="button" onclick="logout()" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:4px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" title="Cerrar sesión de administrador para probar la tienda como cliente normal"><i class="fas fa-sign-out-alt"></i> Salir de Admin</button>
+        </div>
+    `;
+
+    const summaryBanner = adminNotice + (pendingCount > 0 ? `
         <div class="admin-payment-alert pending">
             <i class="fas fa-exclamation-triangle" style="font-size:1.4rem; color:#b07800;"></i>
             <div style="flex:1;">
@@ -2035,7 +2054,7 @@ async function confirmAndSend() {
     closeConfirmModal();
     window._pendingOrder = null;
 
-    if (typeof loadPedidosRecientes === 'function') {
+    if (typeof loadPedidosRecientes === 'function' && isSuperUsuario()) {
         loadPedidosRecientes();
     }
 }
