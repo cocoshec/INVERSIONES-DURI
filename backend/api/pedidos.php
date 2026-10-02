@@ -51,6 +51,34 @@ switch ($method) {
                                 LEFT JOIN clientes c ON p.cliente_id = c.id 
                                 ORDER BY p.created_at DESC");
             $pedidos = $stmt->fetchAll();
+
+            if (!empty($pedidos)) {
+                $ids = array_column($pedidos, 'id');
+                $inQuery = implode(',', array_fill(0, count($ids), '?'));
+                $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre 
+                                         FROM detalle_pedido dp 
+                                         LEFT JOIN productos pr ON dp.producto_id = pr.id 
+                                         WHERE dp.pedido_id IN ($inQuery)");
+                $stmtDet->execute($ids);
+                $detalles = $stmtDet->fetchAll();
+
+                $detallesPorPedido = [];
+                foreach ($detalles as $det) {
+                    $detallesPorPedido[$det['pedido_id']][] = [
+                        'producto_id' => $det['producto_id'],
+                        'nombre' => $det['producto_nombre'] ?? ('Producto #' . $det['producto_id']),
+                        'cantidad' => (int)$det['cantidad'],
+                        'precio_unitario' => (float)$det['precio_unitario'],
+                        'subtotal' => (float)$det['subtotal']
+                    ];
+                }
+
+                foreach ($pedidos as &$p) {
+                    $p['productos'] = $detallesPorPedido[$p['id']] ?? [];
+                }
+                unset($p);
+            }
+
             echo json_encode(["status" => "success", "data" => $pedidos]);
         }
         break;

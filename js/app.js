@@ -1308,6 +1308,9 @@ async function loadPedidosRecientes() {
                 if (m.cliente_ci && !p.cliente_ci) {
                     p.cliente_ci = m.cliente_ci;
                 }
+                if ((!p.productos || !p.productos.length) && m.productos && m.productos.length) {
+                    p.productos = m.productos;
+                }
             }
         });
         saveLocalOrders(localOrders);
@@ -1454,6 +1457,24 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 
         const isPendiente = p.estado === 'pendiente';
 
+        const prods = (p.productos && p.productos.length) ? p.productos : (p.detalles || []);
+        let productsSnippet = '';
+        if (prods && prods.length) {
+            const itemsList = prods.map(it => {
+                const name = (it.nombre || it.producto_nombre || 'Producto').replace(/'/g, "\\'");
+                const qty = it.cantidad || 1;
+                const price = parseFloat(it.precio_unitario || 0).toFixed(2);
+                return `<span style="display:inline-flex; align-items:center; gap:4px; background:#f8fafc; color:#1e293b; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:600; border:1px solid #e2e8f0;"><i class="fas fa-box" style="color:var(--accent,#FF6600); font-size:0.7rem;"></i> ${name} <strong style="color:#0f172a;">&times;${qty}</strong> <span style="color:#64748b; font-size:0.7rem;">($${price})</span></span>`;
+            }).join(' ');
+
+            productsSnippet = `
+                <div style="margin-top:6px; padding:6px 10px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+                    <span style="font-size:0.76rem; font-weight:700; color:#475569; display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-boxes" style="color:var(--accent,#FF6600);"></i> Pide (${prods.length}):</span>
+                    ${itemsList}
+                </div>
+            `;
+        }
+
         return `
             <div class="order-row ${isPendiente ? 'order-pending-highlight' : ''}" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px; margin-bottom:10px; border:1px solid ${isPendiente ? '#ffc107' : '#eee'}; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.03);">
                 <div class="order-row-info" style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:240px;">
@@ -1468,6 +1489,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                         · <strong>Pago:</strong> ${formaPagoDisplay}
                     </span>
                     ${p.direccion_entrega ? `<span style="font-size:0.76rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
+                    ${productsSnippet}
                 </div>
                 <div class="order-row-details" style="display:flex; align-items:center; gap:12px;">
                     <span style="font-weight:700; font-size:1.1rem; color:#28a745;">$${parseFloat(p.total).toFixed(2)}</span>
@@ -1517,6 +1539,40 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
         }
     }
 
+    const orderObj = (window._allAdminPedidos || []).find(p => String(p.id) === String(id) || p.codigo === codigo) || {};
+    const orderProds = (orderObj.productos && orderObj.productos.length) ? orderObj.productos : (orderObj.detalles || []);
+    let prodsModalHtml = '';
+    if (orderProds.length > 0) {
+        const rows = orderProds.map(it => {
+            const name = (it.nombre || it.producto_nombre || 'Producto').replace(/</g, '&lt;');
+            const qty = it.cantidad || 1;
+            const price = parseFloat(it.precio_unitario || 0).toFixed(2);
+            const sub = ((it.precio_unitario || 0) * qty).toFixed(2);
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px dashed #e2e8f0; font-size:0.83rem;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <i class="fas fa-box" style="color:var(--accent,#FF6600); font-size:0.75rem;"></i>
+                        <span style="color:#1e293b; font-weight:600;">${name}</span>
+                        <span style="background:#e2e8f0; color:#475569; padding:1px 6px; border-radius:4px; font-size:0.72rem; font-weight:700;">x${qty}</span>
+                    </div>
+                    <span style="font-weight:700; color:#0f172a;">$${sub}</span>
+                </div>
+            `;
+        }).join('');
+
+        prodsModalHtml = `
+            <div style="padding:10px 0; border-bottom:1px solid #f0f0f0;">
+                <div style="color:#475569; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas fa-shopping-basket" style="color:var(--accent,#FF6600);"></i> Productos que solicita:</span>
+                    <span style="background:#eff6ff; color:#2563eb; padding:2px 8px; border-radius:10px; font-size:0.72rem;">${orderProds.length} artículo(s)</span>
+                </div>
+                <div style="background:#f8fafc; border-radius:8px; padding:6px 12px; max-height:140px; overflow-y:auto; border:1px solid #e2e8f0;">
+                    ${rows}
+                </div>
+            </div>
+        `;
+    }
+
     const modal = document.createElement('div');
     modal.id = 'modalValidarPagoAdmin';
     modal.className = 'modal show';
@@ -1560,6 +1616,7 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
                         <span style="color:#666;font-size:0.85rem;"><i class="fas fa-credit-card"></i> Método de Pago:</span>
                         <strong style="color:#333;font-size:0.88rem;">${paymentDisplay}</strong>
                     </div>
+                    ${prodsModalHtml}
                     <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;">
                         <span style="color:#333;font-weight:700;font-size:0.95rem;">Monto a Confirmar:</span>
                         <span style="color:#28a745;font-weight:800;font-size:1.35rem;">$${totalDisplay}</span>
