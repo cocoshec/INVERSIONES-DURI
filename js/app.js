@@ -1377,7 +1377,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                 ✅ Todos los pagos están al día. No hay pedidos pendientes de verificación.
             </div>
         </div>
-    `;
+    `);
 
     // 2. Pestañas de filtrado
     const tabsHtml = `
