@@ -1369,20 +1369,25 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         if (canManage) {
             let statusBtn = '';
             if (p.estado === 'pendiente') {
+                const safeName = (p.cliente_nombre || 'Cliente').replace(/'/g, "\\'");
+                const safeCode = (p.codigo || '').replace(/'/g, "\\'");
+                const safePay = (p.forma_pago || 'efectivo').replace(/'/g, "\\'");
+                const safeTotal = parseFloat(p.total || 0).toFixed(2);
                 statusBtn = `
-                    <button class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(40,167,69,0.3);" onclick="actualizarEstadoPedido(${p.id}, 'procesando', '${p.codigo}', ${p.total})">
+                    <button type="button" class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(40,167,69,0.35);" onclick="abrirModalValidarPago(${p.id}, '${safeCode}', ${safeTotal}, '${safeName}', '${safePay}')">
                         <i class="fas fa-check-circle"></i> Aprobar Pago
                     </button>
-                    <button class="btn btn-sm" style="background:#e0a800;color:#212529;font-weight:600;padding:7px 10px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado', '${p.codigo}', ${p.total})">
+                    <button type="button" class="btn btn-sm" style="background:#e0a800;color:#212529;font-weight:600;padding:8px 12px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="confirmarCancelarPedido(${p.id}, '${safeCode}')">
                         <i class="fas fa-times-circle"></i> Cancelar
                     </button>
                 `;
             } else if (p.estado === 'procesando') {
+                const safeCode = (p.codigo || '').replace(/'/g, "\\'");
                 statusBtn = `
-                    <button class="btn btn-sm" style="background:#007bff;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'completado', '${p.codigo}', ${p.total})">
+                    <button type="button" class="btn btn-sm" style="background:#007bff;color:#fff;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="actualizarEstadoPedidoDirecto(${p.id}, 'completado', '${safeCode}')">
                         <i class="fas fa-box-check"></i> Entregar / Completar
                     </button>
-                    <button class="btn btn-sm" style="background:#ffc107;color:#212529;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" onclick="actualizarEstadoPedido(${p.id}, 'cancelado', '${p.codigo}', ${p.total})">
+                    <button type="button" class="btn btn-sm" style="background:#ffc107;color:#212529;padding:7px 10px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;" onclick="confirmarCancelarPedido(${p.id}, '${safeCode}')">
                         <i class="fas fa-undo"></i> Cancelar
                     </button>
                 `;
@@ -1444,17 +1449,142 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     container.innerHTML = summaryBanner + tabsHtml + listHtml;
 }
 
-async function actualizarEstadoPedido(id, nuevoEstado, codigo = '', total = 0) {
+// ============================================
+// MODAL DE VALIDACIÓN Y CONFIRMACIÓN DE PAGO
+// ============================================
+
+function cerrarModalValidacionPago() {
+    const modal = document.getElementById('modalValidarPagoAdmin');
+    if (modal) modal.remove();
+}
+window.cerrarModalValidacionPago = cerrarModalValidacionPago;
+
+function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'efectivo') {
+    cerrarModalValidacionPago();
+
+    const formaPagoLabels = {
+        'efectivo': '💵 Efectivo',
+        'pago_movil': '📱 Pago Móvil',
+        'transferencia': '🏦 Transferencia Bancaria',
+        'tarjeta': '💳 Tarjeta'
+    };
+    const paymentDisplay = formaPagoLabels[formaPago] || formaPago || 'Efectivo';
+    const totalDisplay = parseFloat(total || 0).toFixed(2);
+
+    const modal = document.createElement('div');
+    modal.id = 'modalValidarPagoAdmin';
+    modal.className = 'modal show';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+    modal.innerHTML = `
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);">
+            <div style="background:linear-gradient(135deg,#190c2e 0%,#2e1554 100%);color:#fff;padding:22px 24px;text-align:center;position:relative;">
+                <div style="width:58px;height:58px;border-radius:50%;background:rgba(40,167,69,0.18);border:2px solid #28a745;color:#28a745;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 10px;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3 style="margin:0;font-size:1.25rem;color:#ffffff;font-weight:700;">Validación de Pago</h3>
+                <p style="margin:4px 0 0;font-size:0.84rem;color:#d8d2e6;">Panel de Superusuario</p>
+                <button type="button" onclick="cerrarModalValidacionPago()" style="position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,0.7);font-size:1.4rem;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            
+            <div style="padding:20px 24px;background:#fcfcfc;">
+                <div style="background:#ffffff;border:1.5px solid #edf0f2;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.02);margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">
+                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-hashtag"></i> Pedido:</span>
+                        <strong style="color:#251442;font-size:1rem;font-weight:700;">${codigo}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-user"></i> Cliente:</span>
+                        <strong style="color:#333;font-size:0.88rem;">${clienteNombre || 'Cliente'}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-credit-card"></i> Método de Pago:</span>
+                        <strong style="color:#333;font-size:0.88rem;">${paymentDisplay}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;">
+                        <span style="color:#333;font-weight:700;font-size:0.95rem;">Monto a Confirmar:</span>
+                        <span style="color:#28a745;font-weight:800;font-size:1.35rem;">$${totalDisplay}</span>
+                    </div>
+                </div>
+
+                <div style="background:#e8f4fd;border:1px solid #cbe5fb;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#035388;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-info-circle" style="font-size:1.1rem;color:#007bff;flex-shrink:0;"></i>
+                    <span>Al presionar <b>"Aceptar y Validar"</b>, la orden quedará como <b>Pago Confirmado</b> y se descontará del inventario.</span>
+                </div>
+            </div>
+
+            <div style="padding:16px 24px 20px;display:flex;gap:10px;background:#ffffff;border-top:1px solid #eee;">
+                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;padding:12px 14px;background:#f8f9fa;border:1.5px solid #dee2e6;border-radius:8px;font-size:0.9rem;font-weight:600;color:#555;cursor:pointer;">
+                    Cancelar
+                </button>
+                <button type="button" id="btnAceptarYValidar" onclick="ejecutarAprobacionPago(${id}, '${codigo}')" style="flex:2;padding:12px 16px;background:linear-gradient(135deg,#28a745 0%,#1e7e34 100%);border:none;border-radius:8px;font-size:0.95rem;font-weight:700;color:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(40,167,69,0.35);">
+                    <i class="fas fa-check-circle"></i> Aceptar y Validar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModalValidacionPago();
+    });
+}
+window.abrirModalValidarPago = abrirModalValidarPago;
+
+async function ejecutarAprobacionPago(id, codigo) {
+    const btn = document.getElementById('btnAceptarYValidar');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando...';
+    }
+
+    try {
+        await actualizarEstadoPedidoDirecto(id, 'procesando', codigo);
+        cerrarModalValidacionPago();
+        showToast(`¡Pago del pedido ${codigo || ''} aprobado y validado con éxito!`, 'success');
+    } catch(err) {
+        console.error('Error al aprobar pago:', err);
+        cerrarModalValidacionPago();
+        showToast('Error al validar el pago', 'error');
+    }
+}
+window.ejecutarAprobacionPago = ejecutarAprobacionPago;
+
+function confirmarCancelarPedido(id, codigo) {
+    cerrarModalValidacionPago();
+    const modal = document.createElement('div');
+    modal.id = 'modalValidarPagoAdmin';
+    modal.className = 'modal show';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+    modal.innerHTML = `
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);text-align:center;">
+            <div style="padding:26px 24px 16px;">
+                <div style="width:54px;height:54px;border-radius:50%;background:rgba(220,53,69,0.15);border:2px solid #dc3545;color:#dc3545;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 12px;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 style="margin:0 0 6px;font-size:1.2rem;color:#111;">¿Cancelar Pedido ${codigo}?</h3>
+                <p style="margin:0;font-size:0.85rem;color:#666;">El estado del pedido pasará a Cancelado.</p>
+            </div>
+            <div style="padding:16px 24px 22px;display:flex;gap:10px;">
+                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;padding:11px;background:#fff;border:1.5px solid #ccc;border-radius:8px;font-size:0.88rem;font-weight:600;color:#555;cursor:pointer;">
+                    Volver
+                </button>
+                <button type="button" onclick="actualizarEstadoPedidoDirecto(${id}, 'cancelado', '${codigo}'); cerrarModalValidacionPago(); showToast('Pedido ${codigo} cancelado', 'info');" style="flex:1;padding:11px;background:#dc3545;border:none;border-radius:8px;font-size:0.88rem;font-weight:700;color:#fff;cursor:pointer;">
+                    Sí, Cancelar
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+window.confirmarCancelarPedido = confirmarCancelarPedido;
+
+async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     if (!isSuperUsuario()) {
         showToast('Acceso restringido: solo el superusuario puede verificar y administrar pagos', 'error');
         return;
     }
-
-    const actionText = nuevoEstado === 'procesando'
-        ? `¿Confirmas que ya verificaste el pago del pedido ${codigo || ''} por $${parseFloat(total || 0).toFixed(2)}?\n\nAl aprobar el pago, la orden se marcará como CONFIRMADA y se descontarán las unidades del inventario.`
-        : (nuevoEstado === 'cancelado' ? `¿Deseas cancelar el pedido ${codigo || ''}?` : `¿Marcar el pedido ${codigo || ''} como entregado y completado?`);
-
-    if (!confirm(actionText)) return;
 
     // 1. Enviar al Backend si está activo
     try {
@@ -1493,19 +1623,23 @@ async function actualizarEstadoPedido(id, nuevoEstado, codigo = '', total = 0) {
         }));
     } catch(e) {}
 
-    if (nuevoEstado === 'procesando') {
-        showToast(`¡Pago del pedido ${codigo || ''} aprobado con éxito!`, 'success');
-    } else if (nuevoEstado === 'cancelado') {
-        showToast(`Pedido ${codigo || ''} cancelado`, 'info');
-    } else {
-        showToast(`Pedido ${codigo || ''} actualizado`, 'success');
-    }
-
     loadPedidosRecientes();
     updateSuperAdminNotifBadge(false);
     if (typeof loadProductos === 'function') loadProductos();
     if (typeof loadInventario === 'function') loadInventario();
 }
+window.actualizarEstadoPedidoDirecto = actualizarEstadoPedidoDirecto;
+
+function actualizarEstadoPedido(id, nuevoEstado, codigo = '', total = 0) {
+    if (nuevoEstado === 'procesando') {
+        abrirModalValidarPago(id, codigo, total);
+    } else if (nuevoEstado === 'cancelado') {
+        confirmarCancelarPedido(id, codigo);
+    } else {
+        actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo);
+    }
+}
+window.actualizarEstadoPedido = actualizarEstadoPedido;
 
 async function eliminarPedidoHistorial(id, codigo) {
     if (!isSuperUsuario()) {
