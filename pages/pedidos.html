@@ -292,7 +292,15 @@
         let gmarker = null;
         let selectedCoords = null;
         let selectedAddressText = '';
-        const DEFAULT_MARACAY = [10.2469, -67.5958]; // Maracay centro
+        const DEFAULT_COORD = [10.1700, -68.0004]; // Valencia por defecto / ajustable
+        const CIUDADES_VE = {
+            valencia: { nombre: 'Valencia, Carabobo', coords: [10.170026, -68.000398], zoom: 15 },
+            naguanagua: { nombre: 'Naguanagua, Carabobo', coords: [10.258136, -68.012099], zoom: 15 },
+            sandiego: { nombre: 'San Diego, Carabobo', coords: [10.229989, -67.961796], zoom: 15 },
+            maracay: { nombre: 'Maracay, Aragua', coords: [10.2469, -67.5958], zoom: 15 },
+            caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 14 },
+            barquisimeto: { nombre: 'Barquisimeto, Lara', coords: [10.0678, -69.3474], zoom: 14 }
+        };
 
         const googlePinIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -303,7 +311,38 @@
             shadowSize: [41, 41]
         });
 
-        function initGoogleMap(coords = DEFAULT_MARACAY, zoom = 15) {
+        function centrarEnCiudad(clave) {
+            const info = CIUDADES_VE[clave];
+            if (!info) return;
+            if (gmap) {
+                gmap.flyTo(info.coords, info.zoom, { animate: true, duration: 1.2 });
+                if (gmarker) gmarker.setLatLng(info.coords);
+            }
+            actualizarPuntoSeleccionado(info.coords[0], info.coords[1]);
+            if (typeof showToast === 'function') {
+                showToast('📍 Mapa centrado en ' + info.nombre, 'info');
+            }
+        }
+
+        function reverseGeocodeReal(lat, lon, callback) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3500);
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal })
+                    .then(res => res.json())
+                    .then(data => {
+                        clearTimeout(timeoutId);
+                        if (data && data.display_name) {
+                            const parts = data.display_name.split(',');
+                            const desc = parts.slice(0, 3).join(',').trim();
+                            if (callback) callback(desc);
+                        }
+                    })
+                    .catch(() => {});
+            } catch(e) {}
+        }
+
+        function initGoogleMap(coords = DEFAULT_COORD, zoom = 15) {
             if (gmap) {
                 gmap.setView(coords, zoom);
                 if (gmarker) gmarker.setLatLng(coords);
@@ -371,11 +410,90 @@
             if (testLink) testLink.href = `https://maps.google.com/?q=${formatted}`;
         }
 
+        /**
+         * Motor unificado y robusto para detectar ubicación en tiempo real tanto en PC como en móviles
+         */
+        function capturarGpsTiempoReal(onSuccess, onError, onProgress) {
+            if (!navigator.geolocation) {
+                if (onError) onError('Tu navegador o dispositivo no tiene soporte de GPS. Toca el mapa para marcar tu casa 📍');
+                return;
+            }
+
+            if (onProgress) onProgress('Buscando señal en tiempo real...');
+
+            let resuelto = false;
+            let watchId = null;
+
+            const limpiar = () => {
+                if (watchId !== null) {
+                    try { navigator.geolocation.clearWatch(watchId); } catch(e) {}
+                    watchId = null;
+                }
+            };
+
+            const notificarExito = (pos) => {
+                if (resuelto) return;
+                resuelto = true;
+                limpiar();
+                onSuccess(pos);
+            };
+
+            const notificarFallo = (msg) => {
+                if (resuelto) return;
+                resuelto = true;
+                limpiar();
+                onError(msg);
+            };
+
+            // 1. Observador en tiempo real (vital para teléfonos: reacciona en cuanto el chip o red móvil despierta)
+            try {
+                watchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        if (pos && pos.coords && pos.coords.latitude) {
+                            notificarExito(pos);
+                        }
+                    },
+                    (err) => {
+                        if (err.code === 1) { // PERMISSION_DENIED
+                            notificarFallo('Permiso de ubicación denegado en tu navegador. Actívalo en el candado 🔒 superior o usa los botones de ciudad.');
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+                );
+            } catch(e) {}
+
+            // 2. Consulta de alta precisión estándar
+            navigator.geolocation.getCurrentPosition(
+                (pos) => notificarExito(pos),
+                (err) => {
+                    if (err.code === 1) {
+                        notificarFallo('Permiso de ubicación denegado. Permite el acceso a tu ubicación en el navegador.');
+                        return;
+                    }
+                    // Si falló alta precisión por falta de satélites en interiores, usar triangulación de red celular / WiFi
+                    navigator.geolocation.getCurrentPosition(
+                        (pos2) => notificarExito(pos2),
+                        () => {},
+                        { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+                    );
+                },
+                { enableHighAccuracy: true, timeout: 7000, maximumAge: 15000 }
+            );
+
+            // 3. Temporizador de seguridad
+            setTimeout(() => {
+                if (!resuelto) {
+                    limpiar();
+                    notificarFallo('No se pudo fijar GPS en tiempo real. Usa los botones rápidos (Valencia, Maracay) o escribe tu sector en el buscador.');
+                }
+            }, 10000);
+        }
+
         function obtenerGpsDirecto() {
             const btnDirect = document.getElementById('btnGpsDirect');
             if (btnDirect) {
                 btnDirect.disabled = true;
-                btnDirect.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localizando...';
+                btnDirect.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localizando en tiempo real...';
             }
 
             const restaurarBtn = () => {
@@ -385,74 +503,32 @@
                 }
             };
 
-            let finalizado = false;
-
-            const onExito = (pos) => {
-                if (finalizado) return;
-                finalizado = true;
-                restaurarBtn();
-
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                aplicarUbicacionFijada(lat, lon);
-
-                // Reverse geocoding rápido no bloqueante
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 2000);
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal })
-                        .then(r => r.json())
-                        .then(data => {
-                            clearTimeout(timeoutId);
-                            if (data && data.display_name) {
-                                const parts = data.display_name.split(',');
-                                const desc = parts.slice(0, 3).join(',').trim();
-                                if (desc) aplicarUbicacionFijada(lat, lon, desc);
-                            }
-                        })
-                        .catch(() => {});
-                } catch(e) {}
-
-                if (typeof showToast === 'function') {
-                    showToast('📍 ¡Ubicación GPS fijada con éxito!', 'success');
-                }
-            };
-
-            const onFallo = (msg) => {
-                if (finalizado) return;
-                finalizado = true;
-                restaurarBtn();
-                if (typeof showToast === 'function') {
-                    showToast(msg || 'No se pudo obtener señal GPS. Abre el mapa para marcar tu casa 📍', 'info');
-                }
-                abrirModalMapa(false, true);
-            };
-
-            // Límite de tiempo de seguridad de 6.5 segundos para hardware real
-            const safetyTimer = setTimeout(() => {
-                if (!finalizado) {
-                    onFallo('Tiempo agotado buscando GPS. Toca tu casa en el mapa o busca tu sector 📍');
-                }
-            }, 6500);
-
-            if (!navigator.geolocation) {
-                clearTimeout(safetyTimer);
-                onFallo('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍');
-                return;
+            if (typeof showToast === 'function') {
+                showToast('📡 Buscando tu ubicación exacta en tiempo real...', 'info');
             }
 
-            navigator.geolocation.getCurrentPosition(
+            capturarGpsTiempoReal(
                 (pos) => {
-                    clearTimeout(safetyTimer);
-                    onExito(pos);
+                    restaurarBtn();
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    aplicarUbicacionFijada(lat, lon);
+
+                    reverseGeocodeReal(lat, lon, (desc) => {
+                        aplicarUbicacionFijada(lat, lon, desc);
+                    });
+
+                    if (typeof showToast === 'function') {
+                        showToast('📍 ¡Ubicación en tiempo real fijada con éxito!', 'success');
+                    }
                 },
-                (err) => {
-                    clearTimeout(safetyTimer);
-                    let errText = 'Señal GPS no disponible. Marca tu casa en el mapa 📍';
-                    if (err.code === 1) errText = 'Permiso de ubicación bloqueado. Permítelo en tu navegador o marca el mapa.';
-                    onFallo(errText);
-                },
-                { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+                (msgError) => {
+                    restaurarBtn();
+                    if (typeof showToast === 'function') {
+                        showToast(msgError, 'warning');
+                    }
+                    abrirModalMapa(false, true);
+                }
             );
         }
 
@@ -461,9 +537,9 @@
             if (!modal) return;
             modal.style.display = 'flex';
 
-            // Coordenadas a usar (por defecto centro de Maracay)
+            // Coordenadas a usar
             const currentCoordsVal = document.getElementById('geoCoords').value;
-            let coordsToUse = DEFAULT_MARACAY;
+            let coordsToUse = DEFAULT_COORD;
             if (currentCoordsVal && currentCoordsVal.includes(',')) {
                 const parts = currentCoordsVal.split(',');
                 coordsToUse = [parseFloat(parts[0]), parseFloat(parts[1])];
@@ -499,60 +575,32 @@
                 if (btn) btn.innerHTML = '<i class="fas fa-crosshairs"></i>';
             };
 
-            if (!navigator.geolocation) {
-                restaurar();
-                if (mostrarAlertaSiFalla && typeof showToast === 'function') {
-                    showToast('Navegador sin soporte de GPS. Toca tu casa en el mapa 📍', 'info');
-                }
-                return;
+            if (typeof showToast === 'function') {
+                showToast('📡 Conectando con satélites GPS en tiempo real...', 'info');
             }
 
-            let finalizado = false;
-
-            const timer = setTimeout(() => {
-                if (!finalizado) {
-                    finalizado = true;
-                    restaurar();
-                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
-                        showToast('Sin señal GPS en este momento. Toca tu casa directamente en el mapa 📍', 'info');
-                    }
-                }
-            }, 6500);
-
-            navigator.geolocation.getCurrentPosition(
+            capturarGpsTiempoReal(
                 (pos) => {
-                    if (finalizado) return;
-                    finalizado = true;
-                    clearTimeout(timer);
                     restaurar();
-
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
 
                     if (gmap) {
-                        gmap.setView([lat, lon], 17);
+                        gmap.flyTo([lat, lon], 17, { animate: true, duration: 1.2 });
                         if (gmarker) gmarker.setLatLng([lat, lon]);
                     }
                     actualizarPuntoSeleccionado(lat, lon);
-                    if (typeof showToast === 'function') {
-                        showToast('📍 ¡Ubicación GPS real detectada!', 'success');
-                    }
-                },
-                (err) => {
-                    if (finalizado) return;
-                    finalizado = true;
-                    clearTimeout(timer);
-                    restaurar();
 
-                    let errText = 'Sin señal GPS en este dispositivo. Toca tu casa en el mapa 📍';
-                    if (err.code === 1) {
-                        errText = 'Permiso de ubicación denegado en el navegador. Toca tu casa en el mapa 📍';
-                    }
-                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
-                        showToast(errText, 'info');
+                    if (typeof showToast === 'function') {
+                        showToast('📍 ¡Ubicación en tiempo real detectada!', 'success');
                     }
                 },
-                { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+                (msgError) => {
+                    restaurar();
+                    if (mostrarAlertaSiFalla && typeof showToast === 'function') {
+                        showToast(msgError, 'warning');
+                    }
+                }
             );
         }
 
@@ -561,21 +609,25 @@
             if (!input || !input.value.trim()) return;
             const q = input.value.trim();
 
-            if (typeof showToast === 'function') showToast('Buscando "' + q + '"...', 'info');
+            if (typeof showToast === 'function') showToast('🔍 Buscando "' + q + '" en toda Venezuela...', 'info');
 
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Aragua, Venezuela')}&limit=1`)
+            // Buscar en todo el territorio nacional de Venezuela (sin restringir a ningún estado)
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ve&q=${encodeURIComponent(q)}&limit=1`)
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.length > 0) {
                         const lat = parseFloat(data[0].lat);
                         const lon = parseFloat(data[0].lon);
                         if (gmap) {
-                            gmap.setView([lat, lon], 17);
+                            gmap.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
                             if (gmarker) gmarker.setLatLng([lat, lon]);
                         }
                         actualizarPuntoSeleccionado(lat, lon);
-                        if (typeof showToast === 'function') showToast('📍 Encontrado: ' + (data[0].display_name.split(',')[0]), 'success');
+                        const partes = data[0].display_name.split(',');
+                        const nombreCorto = partes.slice(0, 2).join(',');
+                        if (typeof showToast === 'function') showToast('📍 Encontrado: ' + nombreCorto, 'success');
                     } else {
+                        // Fallback con ", Venezuela"
                         fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Venezuela')}&limit=1`)
                             .then(r2 => r2.json())
                             .then(d2 => {
@@ -583,13 +635,15 @@
                                     const lat2 = parseFloat(d2[0].lat);
                                     const lon2 = parseFloat(d2[0].lon);
                                     if (gmap) {
-                                        gmap.setView([lat2, lon2], 16);
+                                        gmap.flyTo([lat2, lon2], 16, { animate: true, duration: 1.2 });
                                         if (gmarker) gmarker.setLatLng([lat2, lon2]);
                                     }
                                     actualizarPuntoSeleccionado(lat2, lon2);
-                                    if (typeof showToast === 'function') showToast('📍 Encontrado: ' + (d2[0].display_name.split(',')[0]), 'success');
+                                    const partes2 = d2[0].display_name.split(',');
+                                    const nombreCorto2 = partes2.slice(0, 2).join(',');
+                                    if (typeof showToast === 'function') showToast('📍 Encontrado: ' + nombreCorto2, 'success');
                                 } else {
-                                    if (typeof showToast === 'function') showToast('No se encontró el sector. Toca directamente tu casa en el mapa 📍', 'error');
+                                    if (typeof showToast === 'function') showToast('No se encontró "' + q + '". Toca los botones de Valencia/Maracay o toca tu casa en el mapa 📍', 'warning');
                                 }
                             })
                             .catch(() => {
@@ -610,21 +664,10 @@
             const addressBox = document.getElementById('gmapsDetectedAddress');
             if (addressBox) addressBox.textContent = `Punto fijado: ${formatted}`;
 
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, { signal: controller.signal })
-                    .then(res => res.json())
-                    .then(data => {
-                        clearTimeout(timeoutId);
-                        if (data && data.display_name) {
-                            const parts = data.display_name.split(',');
-                            selectedAddressText = parts.slice(0, 3).join(',').trim();
-                            if (addressBox) addressBox.textContent = selectedAddressText;
-                        }
-                    })
-                    .catch(() => {});
-            } catch(e) {}
+            reverseGeocodeReal(lat, lon, (desc) => {
+                selectedAddressText = desc;
+                if (addressBox) addressBox.textContent = desc;
+            });
         }
 
         function confirmarUbicacionDesdeModal() {
@@ -659,12 +702,31 @@
                 <span><b>Toca en el mapa donde está tu casa</b> o arrastra el marcador rojo para fijar tu entrega.</span>
             </div>
 
-            <!-- Buscador rápido de sector / avenida para Maracay y alrededores -->
-            <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:8px 14px;">
+            <!-- Buscador rápido de sector / ciudad / avenida en toda Venezuela -->
+            <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:10px 14px; display:flex; flex-direction:column; gap:8px;">
                 <div style="display:flex; gap:6px; background:#fff; border:1.5px solid #d0d7de; border-radius:8px; padding:3px 6px; align-items:center;">
                     <i class="fas fa-search" style="color:#5f6368; padding-left:6px; font-size:0.85rem;"></i>
-                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector o calle (ej: Calicanto, Las Delicias, La Coromoto)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
-                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">Buscar</button>
+                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu ciudad, sector o calle (ej: Valencia, El Trigal, Naguanagua, Maracay, Las Delicias)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
+                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">Buscar</button>
+                </div>
+                <!-- Botones rápidos de ciudades principales -->
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <span style="font-size:0.75rem; color:#5f6368; font-weight:600;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Ir a:</span>
+                    <button type="button" onclick="centrarEnCiudad('valencia')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Valencia
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('naguanagua')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 Naguanagua
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('sandiego')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 San Diego
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#fce8e6; color:#c5221f; border:1px solid #fad2cf; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Maracay
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('caracas')" style="background:#f1f3f4; color:#3c4043; border:1px solid #dadce0; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 Caracas
+                    </button>
                 </div>
             </div>
 
