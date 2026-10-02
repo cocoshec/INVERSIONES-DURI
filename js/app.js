@@ -1277,15 +1277,25 @@ async function loadPedidosRecientes() {
         const ids = new Set(pedidos.map(p => String(p.id)));
         const cods = new Set(pedidos.map(p => String(p.codigo)));
         localOrders.forEach(lo => {
+            // Reemplazar número de demostración de la empresa si quedó guardado en pedidos locales
+            if (lo.cliente_telefono === '+58 412-1234567' || lo.cliente_telefono === '584121234567') {
+                lo.cliente_telefono = '0414-5559876';
+            }
             if (!ids.has(String(lo.id)) && !cods.has(String(lo.codigo))) {
                 pedidos.push(lo);
             }
         });
-        // Sincronizar estados de la BD hacia local
+        // Sincronizar estados de la BD hacia local y preservar datos específicos del cliente
         pedidos.forEach(p => {
             const m = localOrders.find(l => String(l.id) === String(p.id) || l.codigo === p.codigo);
-            if (m && m.estado !== p.estado) {
-                m.estado = p.estado;
+            if (m) {
+                if (m.estado !== p.estado) m.estado = p.estado;
+                if (m.cliente_telefono && (!p.cliente_telefono || p.cliente_telefono.includes('412-1234567'))) {
+                    p.cliente_telefono = m.cliente_telefono;
+                }
+                if (m.cliente_ci && !p.cliente_ci) {
+                    p.cliente_ci = m.cliente_ci;
+                }
             }
         });
         saveLocalOrders(localOrders);
@@ -1365,16 +1375,19 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     const listHtml = filtered.length === 0 ? `
         <p style="color:var(--gray);text-align:center;padding:25px;background:#f9f9f9;border-radius:8px;">No hay pedidos en la categoría seleccionada.</p>
     ` : filtered.map(p => {
+        const safeName = (p.cliente_nombre || 'Cliente').replace(/'/g, "\\'");
+        const safeCode = (p.codigo || '').replace(/'/g, "\\'");
+        const safePay = (p.forma_pago || 'efectivo').replace(/'/g, "\\'");
+        const safeTotal = parseFloat(p.total || 0).toFixed(2);
+        const safePhone = (p.cliente_telefono || '').replace(/'/g, "\\'");
+        const safeCi = (p.cliente_ci || '').replace(/'/g, "\\'");
+
         let actionButtons = '';
         if (canManage) {
             let statusBtn = '';
             if (p.estado === 'pendiente') {
-                const safeName = (p.cliente_nombre || 'Cliente').replace(/'/g, "\\'");
-                const safeCode = (p.codigo || '').replace(/'/g, "\\'");
-                const safePay = (p.forma_pago || 'efectivo').replace(/'/g, "\\'");
-                const safeTotal = parseFloat(p.total || 0).toFixed(2);
                 statusBtn = `
-                    <button type="button" class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(40,167,69,0.35);" onclick="abrirModalValidarPago(${p.id}, '${safeCode}', ${safeTotal}, '${safeName}', '${safePay}')">
+                    <button type="button" class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(40,167,69,0.35);" onclick="abrirModalValidarPago(${p.id}, '${safeCode}', ${safeTotal}, '${safeName}', '${safePay}', '${safePhone}', '${safeCi}')">
                         <i class="fas fa-check-circle"></i> Aprobar Pago
                     </button>
                     <button type="button" class="btn btn-sm" style="background:#e0a800;color:#212529;font-weight:600;padding:8px 12px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="confirmarCancelarPedido(${p.id}, '${safeCode}')">
@@ -1382,7 +1395,6 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                     </button>
                 `;
             } else if (p.estado === 'procesando') {
-                const safeCode = (p.codigo || '').replace(/'/g, "\\'");
                 statusBtn = `
                     <button type="button" class="btn btn-sm" style="background:#007bff;color:#fff;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="actualizarEstadoPedidoDirecto(${p.id}, 'completado', '${safeCode}')">
                         <i class="fas fa-box-check"></i> Entregar / Completar
@@ -1409,13 +1421,16 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         };
         const formaPagoDisplay = formaPagoLabels[p.forma_pago] || p.forma_pago || 'Efectivo';
         
-        // Limpiar teléfono para link directo a WhatsApp
-        let phoneWa = '';
+        // Formatear WhatsApp al NÚMERO DEL CLIENTE (no de la empresa)
+        let phoneWaUrl = '';
         if (p.cliente_telefono) {
             let clean = p.cliente_telefono.replace(/[^0-9]/g, '');
             if (clean.startsWith('0')) clean = '58' + clean.slice(1);
             if (!clean.startsWith('58') && clean.length === 10) clean = '58' + clean;
-            phoneWa = clean;
+            if (clean.length >= 10) {
+                const waText = encodeURIComponent(`Hola ${p.cliente_nombre || 'estimado cliente'}, le escribimos de Inversiones Duri sobre su pedido ${p.codigo}.`);
+                phoneWaUrl = `https://wa.me/${clean}?text=${waText}`;
+            }
         }
 
         const isPendiente = p.estado === 'pendiente';
@@ -1428,9 +1443,9 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                         ${isPendiente ? '<span style="background:#fffae6; color:#b07800; border:1px solid #ffe58f; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:10px;"><i class="fas fa-hourglass-half"></i> Requiere Verificación</span>' : ''}
                     </div>
                     <span style="font-size:0.83rem; color:var(--dark,#444);">
-                        ${p.cliente_ci ? '<i class="fas fa-id-card"></i> <strong>' + p.cliente_ci + '</strong> · ' : ''}
-                        ${p.cliente_telefono ? '<i class="fas fa-phone"></i> ' + p.cliente_telefono : ''}
-                        ${phoneWa ? ` <a href="https://wa.me/${phoneWa}?text=Hola%20${encodeURIComponent(p.cliente_nombre || '')}%2C%20le%20escribimos%20de%20Inversiones%20Duri%20sobre%20su%20pedido%20${p.codigo}" target="_blank" style="color:#25d366; font-size:0.78rem; font-weight:600; text-decoration:underline; margin-left:4px;"><i class="fab fa-whatsapp"></i> Chat</a>` : ''}
+                        ${p.cliente_ci ? '<i class="fas fa-id-card" style="color:var(--accent,#FF6600);"></i> <strong>' + p.cliente_ci + '</strong> · ' : ''}
+                        ${p.cliente_telefono ? '<i class="fas fa-phone" style="color:#666;"></i> <strong>' + p.cliente_telefono + '</strong>' : ''}
+                        ${phoneWaUrl ? ` <a href="${phoneWaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:4px; background:#e8f7ee; color:#128c7e; border:1px solid #c3e6cb; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; text-decoration:none; margin-left:4px;" title="Chatear con el cliente (${p.cliente_telefono})"><i class="fab fa-whatsapp" style="color:#25d366; font-size:0.85rem;"></i> Chat</a>` : ''}
                         · <strong>Pago:</strong> ${formaPagoDisplay}
                     </span>
                     ${p.direccion_entrega ? `<span style="font-size:0.76rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
@@ -1459,7 +1474,7 @@ function cerrarModalValidacionPago() {
 }
 window.cerrarModalValidacionPago = cerrarModalValidacionPago;
 
-function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'efectivo') {
+function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'efectivo', clienteTelefono = '', clienteCi = '') {
     cerrarModalValidacionPago();
 
     const formaPagoLabels = {
@@ -1471,13 +1486,25 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
     const paymentDisplay = formaPagoLabels[formaPago] || formaPago || 'Efectivo';
     const totalDisplay = parseFloat(total || 0).toFixed(2);
 
+    // Link de WhatsApp directo al cliente para consultar el comprobante
+    let clientWaLink = '';
+    if (clienteTelefono) {
+        let clean = clienteTelefono.replace(/[^0-9]/g, '');
+        if (clean.startsWith('0')) clean = '58' + clean.slice(1);
+        if (!clean.startsWith('58') && clean.length === 10) clean = '58' + clean;
+        if (clean.length >= 10) {
+            const waMsg = encodeURIComponent(`Hola ${clienteNombre || 'estimado cliente'}, le contactamos de Inversiones Duri para verificar el comprobante de su pedido ${codigo}.`);
+            clientWaLink = `https://wa.me/${clean}?text=${waMsg}`;
+        }
+    }
+
     const modal = document.createElement('div');
     modal.id = 'modalValidarPagoAdmin';
     modal.className = 'modal show';
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px;';
 
     modal.innerHTML = `
-        <div style="background:#fff;border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);">
+        <div style="background:#fff;border-radius:16px;width:100%;max-width:470px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);">
             <div style="background:linear-gradient(135deg,#190c2e 0%,#2e1554 100%);color:#fff;padding:22px 24px;text-align:center;position:relative;">
                 <div style="width:58px;height:58px;border-radius:50%;background:rgba(40,167,69,0.18);border:2px solid #28a745;color:#28a745;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 10px;">
                     <i class="fas fa-check-circle"></i>
@@ -1495,8 +1522,21 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
                         <span style="color:#666;font-size:0.85rem;"><i class="fas fa-user"></i> Cliente:</span>
-                        <strong style="color:#333;font-size:0.88rem;">${clienteNombre || 'Cliente'}</strong>
+                        <strong style="color:#333;font-size:0.88rem;">${clienteNombre || 'Cliente'}${clienteCi ? ` (${clienteCi})` : ''}</strong>
                     </div>
+                    ${clienteTelefono ? `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-phone"></i> Teléfono del Cliente:</span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <strong style="color:#333;font-size:0.88rem;">${clienteTelefono}</strong>
+                            ${clientWaLink ? `
+                                <a href="${clientWaLink}" target="_blank" rel="noopener noreferrer" style="background:#25d366;color:#fff;padding:3px 9px;border-radius:12px;font-size:0.75rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Pedir captura de pago al cliente por WhatsApp">
+                                    <i class="fab fa-whatsapp"></i> Chat Cliente
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
                         <span style="color:#666;font-size:0.85rem;"><i class="fas fa-credit-card"></i> Método de Pago:</span>
                         <strong style="color:#333;font-size:0.88rem;">${paymentDisplay}</strong>
@@ -1936,6 +1976,9 @@ async function confirmAndSend() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     cliente_id: clienteId,
+                    cliente_nombre: data.clientName,
+                    cliente_telefono: data.clientPhone,
+                    cliente_ci: data.clientCi,
                     direccion_entrega: data.direccion_entrega,
                     notas: data.notas,
                     forma_pago: data.forma_pago,

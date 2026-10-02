@@ -20,8 +20,14 @@ $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
-            // Obtener un pedido con sus detalles
-            $stmt = $db->prepare("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
+            // Obtener un pedido con sus detalles (priorizando datos directos del pedido sobre el cliente de respaldo)
+            $stmt = $db->prepare("SELECT p.*, 
+                                         COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, 
+                                         COALESCE(NULLIF(p.cliente_telefono, ''), c.telefono) as cliente_telefono, 
+                                         COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci 
+                                  FROM pedidos p 
+                                  LEFT JOIN clientes c ON p.cliente_id = c.id 
+                                  WHERE p.id = ?");
             $stmt->execute([$_GET['id']]);
             $pedido = $stmt->fetch();
 
@@ -36,8 +42,14 @@ switch ($method) {
                 echo json_encode(["status" => "error", "message" => "Pedido no encontrado"]);
             }
         } else {
-            // Obtener todos los pedidos
-            $stmt = $db->query("SELECT p.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, c.ci_rif as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id ORDER BY p.created_at DESC");
+            // Obtener todos los pedidos con datos directos del cliente que realizó la compra
+            $stmt = $db->query("SELECT p.*, 
+                                       COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, 
+                                       COALESCE(NULLIF(p.cliente_telefono, ''), c.telefono) as cliente_telefono, 
+                                       COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci 
+                                FROM pedidos p 
+                                LEFT JOIN clientes c ON p.cliente_id = c.id 
+                                ORDER BY p.created_at DESC");
             $pedidos = $stmt->fetchAll();
             echo json_encode(["status" => "success", "data" => $pedidos]);
         }
@@ -68,15 +80,22 @@ switch ($method) {
             $row = $stmt->fetch();
             $codigo = 'PED-' . str_pad(($row['max_id'] ?? 0) + 1, 3, '0', STR_PAD_LEFT);
 
-            // Insertar pedido
+            // Insertar pedido con los datos exactos que el cliente escribió en el formulario
             $formaPago = $data['forma_pago'] ?? 'efectivo';
             $formasValidas = ['efectivo', 'transferencia', 'pago_movil', 'tarjeta'];
             if (!in_array($formaPago, $formasValidas)) $formaPago = 'efectivo';
 
-            $stmt = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, subtotal, impuesto, total, estado, forma_pago, direccion_entrega, notas) VALUES (?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)");
+            $clienteNombre = $data['cliente_nombre'] ?? '';
+            $clienteTelefono = $data['cliente_telefono'] ?? '';
+            $clienteCi = $data['cliente_ci'] ?? '';
+
+            $stmt = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, cliente_nombre, cliente_telefono, cliente_ci, subtotal, impuesto, total, estado, forma_pago, direccion_entrega, notas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)");
             $stmt->execute([
                 $codigo,
                 $data['cliente_id'],
+                $clienteNombre,
+                $clienteTelefono,
+                $clienteCi,
                 $subtotal,
                 $impuesto,
                 $total,
