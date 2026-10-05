@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=11.0">
+    <link rel="stylesheet" href="../css/styles.css?v=12.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -186,7 +186,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=11.0"></script>
+    <script src="../js/app.js?v=12.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -553,38 +553,69 @@
         function capturarGpsTiempoReal(onSuccess, onError) {
             detenerRastreoGps();
 
+            // 1. Verificar contexto seguro (HTTPS)
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                if (onError) onError('El navegador exige HTTPS para activar el GPS. Abre el enlace seguro de GitHub Pages.');
+                return;
+            }
+
             if (!navigator.geolocation) {
-                if (onError) onError('Tu navegador no soporta GPS. Toca directamente tu casa en el mapa 📍');
+                if (onError) onError('Tu navegador o dispositivo no soporta geolocalización GPS. Toca directamente tu casa en el mapa 📍');
                 return;
             }
 
             let resuelto = false;
 
-            // Timer de seguridad: si el satélite tarda más de 5.5s, no dejar al usuario esperando indefinidamente
+            // Timer de seguridad máximo (12 segundos)
             const safetyTimer = setTimeout(() => {
                 if (!resuelto) {
-                    console.warn('GPS safety timeout: probando por antenas/red...');
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            if (!resuelto && pos && pos.coords && pos.coords.latitude) {
-                                resuelto = true;
-                                detenerRastreoGps();
-                                onSuccess(pos, 'red');
-                            }
-                        },
-                        (err) => {
+                    resuelto = true;
+                    detenerRastreoGps();
+                    if (onError) onError('El GPS tardó en responder. Asegúrate de tener la ubicación encendida en tu celular o toca tu casa en el mapa 📍');
+                }
+            }, 12000);
+
+            // Intentar primero con watchPosition: en móviles es el más rápido y confiable
+            try {
+                gpsWatchTrackerId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        if (pos && pos.coords && pos.coords.latitude) {
                             if (!resuelto) {
                                 resuelto = true;
-                                detenerRastreoGps();
-                                if (onError) onError('No se pudo fijar GPS. Toca directamente tu casa en el mapa 📍');
+                                clearTimeout(safetyTimer);
+                                onSuccess(pos, 'satelite');
                             }
-                        },
-                        { enableHighAccuracy: false, timeout: 3500, maximumAge: 300000 }
-                    );
-                }
-            }, 5500);
+                            const acc = pos.coords.accuracy || 15;
+                            if (acc < 25) {
+                                setTimeout(detenerRastreoGps, 3000);
+                            }
+                        }
+                    },
+                    (err) => {
+                        console.warn('Geolocation watch error:', err);
+                        if (err.code === 1) { // PERMISSION_DENIED
+                            resuelto = true;
+                            clearTimeout(safetyTimer);
+                            detenerRastreoGps();
+                            mostrarInstruccionesPermisoGps();
+                            if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 en la barra superior para permitirlo.');
+                            return;
+                        }
+                        if (err.code === 2) { // POSITION_UNAVAILABLE
+                            resuelto = true;
+                            clearTimeout(safetyTimer);
+                            detenerRastreoGps();
+                            if (onError) onError('Ubicación apagada en el celular. Enciende el botón "Ubicación / GPS" en los ajustes de tu teléfono.');
+                            return;
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
+            } catch(e) {
+                console.error(e);
+            }
 
-            // Intento 1: Alta precisión con caché reciente (hasta 2 minutos para respuesta instantánea desde Google Play / iOS)
+            // Fallback con getCurrentPosition por si watchPosition no arranca
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     if (!resuelto && pos && pos.coords && pos.coords.latitude) {
@@ -594,65 +625,26 @@
                     }
                 },
                 (err) => {
-                    console.warn('Geolocation direct error:', err);
-                    if (err.code === 1) { // Permiso denegado por el usuario
-                        clearTimeout(safetyTimer);
+                    if (err && err.code === 1 && !resuelto) {
                         resuelto = true;
+                        clearTimeout(safetyTimer);
                         detenerRastreoGps();
                         mostrarInstruccionesPermisoGps();
-                        if (onError) onError('Permiso de GPS bloqueado. Enciéndelo en los ajustes del navegador.');
-                        return;
-                    }
-                    // Si falló por timeout o señal baja (ej: bajo techo), probar por antenas/red inmediatamente
-                    if (!resuelto) {
-                        navigator.geolocation.getCurrentPosition(
-                            (pos2) => {
-                                if (!resuelto && pos2 && pos2.coords && pos2.coords.latitude) {
-                                    resuelto = true;
-                                    clearTimeout(safetyTimer);
-                                    onSuccess(pos2, 'red');
-                                }
-                            },
-                            (err2) => {
-                                if (!resuelto) {
-                                    resuelto = true;
-                                    clearTimeout(safetyTimer);
-                                    detenerRastreoGps();
-                                    if (onError) onError('No se detectó GPS. Toca en el mapa donde está tu casa 📍');
-                                }
-                            },
-                            { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
-                        );
+                        if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 para permitirlo.');
                     }
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 120000 }
+                { enableHighAccuracy: false, timeout: 8000, maximumAge: 180000 }
             );
-
-            // WatchPosition en segundo plano sólo para afinar si el usuario camina
-            try {
-                gpsWatchTrackerId = navigator.geolocation.watchPosition(
-                    (pos) => {
-                        if (pos && pos.coords && pos.coords.latitude) {
-                            if (!resuelto) {
-                                resuelto = true;
-                                clearTimeout(safetyTimer);
-                            }
-                            onSuccess(pos, 'satelite');
-                            const acc = pos.coords.accuracy || 15;
-                            if (acc < 25) {
-                                setTimeout(detenerRastreoGps, 4000);
-                            }
-                        }
-                    },
-                    () => {},
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
-                );
-            } catch(e) {}
         }
 
         function obtenerGpsDirecto() {
-            // Abrir directamente el mapa para que el usuario VEA en tiempo real cómo se rastrea y fija su ubicación
+            const btn = document.getElementById('btnGpsDirect');
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abriendo GPS...';
             abrirModalMapa(true, false);
+            setTimeout(() => {
+                if (btn) btn.innerHTML = originalHtml;
+            }, 800);
         }
 
         function abrirModalMapa(usarGpsAutomatico = false, mensajeAlerta = false) {
@@ -743,7 +735,7 @@
                     restaurar();
                     if (alertBox) {
                         alertBox.style.display = 'flex';
-                        alertBox.innerHTML = '<i class="fas fa-hand-pointer" style="color:#f59e0b; font-size:1.1rem;"></i> <span>No pudimos conectar con el GPS. <b>Toca en el mapa donde está tu casa</b> para fijarla.</span>';
+                        alertBox.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ea4335; font-size:1.1rem;"></i> <span>' + (msgError || 'No pudimos conectar con el GPS.') + ' <b>Toca en el mapa donde está tu casa</b> para marcar la entrega.</span>';
                     }
                     if (mostrarAlertaSiFalla && typeof showToast === 'function') {
                         showToast(msgError || 'Toca tu casa en el mapa 📍', 'warning');
