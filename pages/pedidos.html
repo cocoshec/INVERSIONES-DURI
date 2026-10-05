@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=10.0">
+    <link rel="stylesheet" href="../css/styles.css?v=11.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -102,7 +102,7 @@
                                 <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
                                     <i class="fas fa-crosshairs"></i> Mi GPS Actual
                                 </button>
-                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(true)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
                                     <i class="fas fa-map-marked-alt"></i> Abrir en Maps
                                 </button>
                             </div>
@@ -186,7 +186,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=10.0"></script>
+    <script src="../js/app.js?v=11.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -548,73 +548,106 @@
         }
 
         /**
-         * Rastreo Satelital Real sin intermediarios IP erróneos
+         * Rastreo Satelital y Fused Location Real sin bloqueos infinitos
          */
-        function capturarGpsTiempoReal(onSuccess, onError, onProgress) {
+        function capturarGpsTiempoReal(onSuccess, onError) {
             detenerRastreoGps();
 
-            if (onProgress) onProgress('Buscando satélites GPS en tu teléfono...');
-
             if (!navigator.geolocation) {
-                if (onError) onError('Tu navegador no soporta GPS. Usa el mapa para tocar tu casa 📍');
+                if (onError) onError('Tu navegador no soporta GPS. Toca directamente tu casa en el mapa 📍');
                 return;
             }
 
             let resuelto = false;
 
-            // 1. Consulta directa con alta precisión satelital
+            // Timer de seguridad: si el satélite tarda más de 5.5s, no dejar al usuario esperando indefinidamente
+            const safetyTimer = setTimeout(() => {
+                if (!resuelto) {
+                    console.warn('GPS safety timeout: probando por antenas/red...');
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            if (!resuelto && pos && pos.coords && pos.coords.latitude) {
+                                resuelto = true;
+                                detenerRastreoGps();
+                                onSuccess(pos, 'red');
+                            }
+                        },
+                        (err) => {
+                            if (!resuelto) {
+                                resuelto = true;
+                                detenerRastreoGps();
+                                if (onError) onError('No se pudo fijar GPS. Toca directamente tu casa en el mapa 📍');
+                            }
+                        },
+                        { enableHighAccuracy: false, timeout: 3500, maximumAge: 300000 }
+                    );
+                }
+            }, 5500);
+
+            // Intento 1: Alta precisión con caché reciente (hasta 2 minutos para respuesta instantánea desde Google Play / iOS)
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    if (pos && pos.coords && pos.coords.latitude) {
+                    if (!resuelto && pos && pos.coords && pos.coords.latitude) {
                         resuelto = true;
+                        clearTimeout(safetyTimer);
                         onSuccess(pos, 'satelite');
                     }
                 },
                 (err) => {
                     console.warn('Geolocation direct error:', err);
-                    if (err.code === 1) { // Permiso denegado en Safari/Chrome
+                    if (err.code === 1) { // Permiso denegado por el usuario
+                        clearTimeout(safetyTimer);
+                        resuelto = true;
+                        detenerRastreoGps();
                         mostrarInstruccionesPermisoGps();
-                        if (onError) onError('Permiso de GPS bloqueado. Actívalo en tu navegador para rastrear tu casa.');
-                    } else {
-                        // Si tarda en conectar con satélites, intentar un escaneo de antenas
+                        if (onError) onError('Permiso de GPS bloqueado. Enciéndelo en los ajustes del navegador.');
+                        return;
+                    }
+                    // Si falló por timeout o señal baja (ej: bajo techo), probar por antenas/red inmediatamente
+                    if (!resuelto) {
                         navigator.geolocation.getCurrentPosition(
                             (pos2) => {
-                                if (pos2 && pos2.coords) {
+                                if (!resuelto && pos2 && pos2.coords && pos2.coords.latitude) {
                                     resuelto = true;
+                                    clearTimeout(safetyTimer);
                                     onSuccess(pos2, 'red');
                                 }
                             },
                             (err2) => {
-                                if (!resuelto && onError) {
-                                    onError('Buscando satélite... También puedes tocar directamente tu casa en el mapa 📍');
+                                if (!resuelto) {
+                                    resuelto = true;
+                                    clearTimeout(safetyTimer);
+                                    detenerRastreoGps();
+                                    if (onError) onError('No se detectó GPS. Toca en el mapa donde está tu casa 📍');
                                 }
                             },
-                            { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+                            { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
                         );
                     }
                 },
-                { enableHighAccuracy: true, timeout: 14000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 120000 }
             );
 
-            // 2. Rastreo activo continuo en segundo plano para afinar metros
+            // WatchPosition en segundo plano sólo para afinar si el usuario camina
             try {
                 gpsWatchTrackerId = navigator.geolocation.watchPosition(
                     (pos) => {
                         if (pos && pos.coords && pos.coords.latitude) {
-                            resuelto = true;
+                            if (!resuelto) {
+                                resuelto = true;
+                                clearTimeout(safetyTimer);
+                            }
                             onSuccess(pos, 'satelite');
                             const acc = pos.coords.accuracy || 15;
                             if (acc < 25) {
-                                setTimeout(detenerRastreoGps, 5000);
+                                setTimeout(detenerRastreoGps, 4000);
                             }
                         }
                     },
                     () => {},
-                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
                 );
             } catch(e) {}
-
-            setTimeout(detenerRastreoGps, 25000);
         }
 
         function obtenerGpsDirecto() {
@@ -648,7 +681,7 @@
             }
 
             if (usarGpsAutomatico) {
-                centrarGpsModal(false);
+                centrarGpsModal(true);
             }
         }
 
@@ -669,11 +702,11 @@
             const alertBox = document.getElementById('gmapsPromptNotice');
             if (alertBox) {
                 alertBox.style.display = 'flex';
-                alertBox.innerHTML = '<i class="fas fa-satellite-dish fa-spin" style="color:#007bff; font-size:1.05rem;"></i> <span><b>Rastreando tu ubicación en tiempo real...</b> Conectando con satélites GPS.</span>';
+                alertBox.innerHTML = '<i class="fas fa-satellite-dish fa-spin" style="color:#007bff; font-size:1.05rem;"></i> <span><b>Localizando tu posición en tiempo real...</b> Por favor espera un momento.</span>';
             }
 
             if (typeof showToast === 'function') {
-                showToast('📡 Rastreando tu ubicación GPS en tiempo real...', 'info');
+                showToast('📡 Localizando tu ubicación GPS...', 'info');
             }
 
             capturarGpsTiempoReal(
@@ -682,11 +715,10 @@
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
                     const acc = pos.coords.accuracy || 20;
-                    const esAprox = (pos.fuente === 'ip');
 
-                    const zoomNivel = esAprox ? 14 : (acc < 30 ? 18 : 16);
+                    const zoomNivel = (acc < 30 ? 18 : 16);
                     if (gmap) {
-                        gmap.flyTo([lat, lon], zoomNivel, { animate: true, duration: 1.2 });
+                        gmap.flyTo([lat, lon], zoomNivel, { animate: true, duration: 1.0 });
                         if (gmarker) gmarker.setLatLng([lat, lon]);
                     }
                     dibujarCirculoPrecision(lat, lon, acc);
@@ -699,27 +731,22 @@
                     });
 
                     if (alertBox) {
-                        if (esAprox) {
-                            alertBox.style.display = 'flex';
-                            alertBox.innerHTML = `<i class="fas fa-map-marker-alt" style="color:#f59e0b; font-size:1.1rem;"></i> <span>Ubicación aproximada detectada (<b>${pos.ciudad || 'tu ciudad'}</b>). <b>Toca en el mapa donde está tu casa</b> para afinar la entrega.</span>`;
-                        } else {
-                            alertBox.style.display = 'flex';
-                            alertBox.innerHTML = '<i class="fas fa-check-circle" style="color:#28a745; font-size:1.1rem;"></i> <span><b>¡Ubicación exacta encontrada!</b> Si deseas afinar tu puerta, arrastra el marcador rojo.</span>';
-                        }
+                        alertBox.style.display = 'flex';
+                        alertBox.innerHTML = '<i class="fas fa-check-circle" style="color:#28a745; font-size:1.1rem;"></i> <span><b>¡Ubicación encontrada!</b> Si deseas afinar tu puerta, arrastra el marcador rojo.</span>';
                     }
 
                     if (typeof showToast === 'function') {
-                        if (esAprox) {
-                            showToast(`📍 Ubicación detectada (${pos.ciudad || 'Venezuela'}). Toca tu casa en el mapa`, 'info');
-                        } else {
-                            showToast('📍 ¡Ubicación exacta en tiempo real fijada con éxito!', 'success');
-                        }
+                        showToast('📍 ¡Ubicación exacta fijada con éxito!', 'success');
                     }
                 },
                 (msgError) => {
                     restaurar();
+                    if (alertBox) {
+                        alertBox.style.display = 'flex';
+                        alertBox.innerHTML = '<i class="fas fa-hand-pointer" style="color:#f59e0b; font-size:1.1rem;"></i> <span>No pudimos conectar con el GPS. <b>Toca en el mapa donde está tu casa</b> para fijarla.</span>';
+                    }
                     if (mostrarAlertaSiFalla && typeof showToast === 'function') {
-                        showToast(msgError, 'warning');
+                        showToast(msgError || 'Toca tu casa en el mapa 📍', 'warning');
                     }
                 }
             );
