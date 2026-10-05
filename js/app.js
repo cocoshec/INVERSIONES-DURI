@@ -514,16 +514,18 @@ function initPage() {
 // CATÁLOGO DE RESPALDO (GitHub Pages / Offline)
 // ============================================
 const DEFAULT_PRODUCTS_FALLBACK = [
-  {"id":7,"codigo":"PRD-007","nombre":"Borradores Premium","descripcion":"Borrador blanco de alta calidad","categoria_id":1,"precio_compra":"0.00","precio_venta":"1.25","stock_actual":87,"stock_minimo":30,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
-  {"id":8,"codigo":"PRD-008","nombre":"Carpetas Archivador","descripcion":"Carpeta de cartón tamaño carta","categoria_id":2,"precio_compra":"0.00","precio_venta":"4.75","stock_actual":25,"stock_minimo":20,"unidad_medida":"unidad","categoria_nombre":"Papelería"},
-  {"id":4,"codigo":"PRD-004","nombre":"Cartuchos de Tinta","descripcion":"Cartuchos negra y color para impresoras","categoria_id":3,"precio_compra":"0.00","precio_venta":"24.99","stock_actual":22,"stock_minimo":10,"unidad_medida":"unidad","categoria_nombre":"Tecnología"},
-  {"id":1,"codigo":"PRD-001","nombre":"Cuaderno Espiral 100 Hojas","descripcion":"Cuaderno espiral cuadriculado","categoria_id":1,"precio_compra":"0.00","precio_venta":"3.50","stock_actual":150,"stock_minimo":20,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
-  {"id":6,"codigo":"PRD-006","nombre":"Grapadora de Oficina","descripcion":"Grapadora metálica capacidad 25 hojas","categoria_id":4,"precio_compra":"0.00","precio_venta":"7.90","stock_actual":0,"stock_minimo":5,"unidad_medida":"unidad","categoria_nombre":"Accesorios"},
-  {"id":2,"codigo":"PRD-002","nombre":"Lápices de Grafito 2B","descripcion":"Caja de 12 lápices de grafito","categoria_id":1,"precio_compra":"0.00","precio_venta":"2.80","stock_actual":78,"stock_minimo":15,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
-  {"id":9,"codigo":"PRD-009","nombre":"Marcadores Resaltadores","descripcion":"Set de 4 colores fluorescentes","categoria_id":1,"precio_compra":"0.00","precio_venta":"3.99","stock_actual":62,"stock_minimo":15,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"},
-  {"id":5,"codigo":"PRD-005","nombre":"Mouse Óptico USB","descripcion":"Mouse óptico ergonómico","categoria_id":3,"precio_compra":"0.00","precio_venta":"8.50","stock_actual":14,"stock_minimo":8,"unidad_medida":"unidad","categoria_nombre":"Tecnología"},
-  {"id":3,"codigo":"PRD-003","nombre":"Resma de Papel Carta","descripcion":"Resma de 500 hojas tamaño carta","categoria_id":2,"precio_compra":"0.00","precio_venta":"5.20","stock_actual":12,"stock_minimo":15,"unidad_medida":"unidad","categoria_nombre":"Papelería"},
-  {"id":10,"codigo":"PRD-010","nombre":"Tijeras Escolares","descripcion":"Tijeras con punta roma para niños","categoria_id":1,"precio_compra":"0.00","precio_venta":"1.95","stock_actual":43,"stock_minimo":10,"unidad_medida":"unidad","categoria_nombre":"Útiles Escolares"}
+  {"id":1,"codigo":"PRD-001","nombre":"Lápices de Color (12-pack)","descripcion":"Set de 12 lápices de colores vibrantes y punta resistente","categoria_id":1,"precio_compra":"0.00","precio_venta":"12.50","stock_actual":44,"stock_minimo":20,"unidad_medida":"unidad","imagen":"img/productos/lapices-color.jpg","categoria_nombre":"Útiles Escolares"},
+  {"id":2,"codigo":"PRD-002","nombre":"Marcadores Permanentes","descripcion":"Pack de 8 marcadores permanentes de colores intensos","categoria_id":1,"precio_compra":"0.00","precio_venta":"8.75","stock_actual":8,"stock_minimo":15,"unidad_medida":"unidad","imagen":"img/productos/marcadores-permanentes.jpg","categoria_nombre":"Útiles Escolares"},
+  {"id":3,"codigo":"PRD-003","nombre":"Cuadernos Universitarios","descripcion":"Cuaderno espiral de 100 hojas rayadas de alta blancura","categoria_id":2,"precio_compra":"0.00","precio_venta":"3.25","stock_actual":120,"stock_minimo":25,"unidad_medida":"unidad","imagen":"img/productos/cuadernos-universitarios.jpg","categoria_nombre":"Papelería"},
+  {"id":4,"codigo":"PRD-004","nombre":"Cartuchos de Tinta","descripcion":"Cartuchos negro y tricolor para impresoras de alto rendimiento","categoria_id":3,"precio_compra":"0.00","precio_venta":"24.99","stock_actual":22,"stock_minimo":10,"unidad_medida":"unidad","imagen":"img/productos/cartuchos-tinta.jpg","categoria_nombre":"Tecnología"},
+  {"id":5,"codigo":"PRD-005","nombre":"Tijeras de Oficina","descripcion":"Tijeras ergonómicas de acero inoxidable para corte preciso","categoria_id":2,"precio_compra":"0.00","precio_venta":"5.50","stock_actual":28,"stock_minimo":15,"unidad_medida":"unidad","imagen":"img/productos/tijeras-oficina.jpg","categoria_nombre":"Papelería"},
+  {"id":6,"codigo":"PRD-006","nombre":"Clips Metálicos (100u)","descripcion":"Caja con 100 clips metálicos resistentes y anticorrosivos","categoria_id":4,"precio_compra":"0.00","precio_venta":"2.00","stock_actual":0,"stock_minimo":50,"unidad_medida":"unidad","imagen":"img/productos/clips-metalicos.jpg","categoria_nombre":"Accesorios"},
+  {"id":7,"codigo":"PRD-007","nombre":"Borradores Premium","descripcion":"Pack de borradores blancos de vinilo de máxima calidad","categoria_id":1,"precio_compra":"0.00","precio_venta":"1.25","stock_actual":87,"stock_minimo":30,"unidad_medida":"unidad","imagen":"img/productos/borradores-premium.jpg","categoria_nombre":"Útiles Escolares"},
+  {"id":8,"codigo":"PRD-008","nombre":"Carpetas Archivador","descripcion":"Carpeta archivador de palanca tamaño carta para oficina","categoria_id":2,"precio_compra":"0.00","precio_venta":"4.75","stock_actual":25,"stock_minimo":20,"unidad_medida":"unidad","imagen":"img/productos/carpetas-archivador.jpg","categoria_nombre":"Papelería"},
+  {"id":9,"codigo":"PRD-009","nombre":"Resaltadores Fluorescentes","descripcion":"Set de 5 resaltadores neón colores pastel y fluorescentes","categoria_id":2,"precio_compra":"0.00","precio_venta":"7.50","stock_actual":38,"stock_minimo":15,"unidad_medida":"unidad","imagen":"img/productos/resaltadores-fluorescentes.jpg","categoria_nombre":"Papelería"},
+  {"id":10,"codigo":"PRD-010","nombre":"Organizador de Escritorio","descripcion":"Organizador de escritorio metálico multifunción con compartimentos","categoria_id":4,"precio_compra":"0.00","precio_venta":"15.99","stock_actual":12,"stock_minimo":15,"unidad_medida":"unidad","imagen":"img/productos/organizador-escritorio.jpg","categoria_nombre":"Accesorios"},
+  {"id":11,"codigo":"PRD-011","nombre":"Mouse Óptico USB","descripcion":"Mouse óptico ergonómico USB para computadoras y laptops","categoria_id":3,"precio_compra":"0.00","precio_venta":"8.50","stock_actual":18,"stock_minimo":8,"unidad_medida":"unidad","imagen":"img/productos/mouse-optico.jpg","categoria_nombre":"Tecnología"},
+  {"id":12,"codigo":"PRD-012","nombre":"Resma de Papel Carta","descripcion":"Resma de 500 hojas tamaño carta de alta blancura y gramaje","categoria_id":2,"precio_compra":"0.00","precio_venta":"5.20","stock_actual":45,"stock_minimo":15,"unidad_medida":"unidad","imagen":"img/productos/resma-papel.jpg","categoria_nombre":"Papelería"}
 ];
 
 async function getFallbackProducts() {
@@ -626,10 +628,22 @@ function renderProductos(productos) {
                 : '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="buyNow(\'' + p.id + '\',\'' + p.nombre.replace(/'/g, "\\'") + '\',' + p.precio_venta + ',' + p.stock_actual + ')"><i class="fas fa-cart-plus"></i> Pedir</button>';
         }
         
+        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+        let imageHtml = '';
+        if (p.imagen) {
+            const imgSrc = p.imagen.startsWith('http') ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '');
+            imageHtml = `
+            <div class="product-image">
+                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="this.parentElement.className='product-image ${colores[i % colores.length]}'; this.parentElement.innerHTML='<i class=\\\'fas ${icons[p.categoria_nombre] || 'fa-box'}\\\'></i>';">
+            </div>`;
+        } else {
+            imageHtml = `<div class="product-image ${colores[i % colores.length]}"><i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>`;
+        }
+        
         return `
         <div class="product-card" data-category="${p.categoria_nombre}">
             ${badge}
-            <div class="product-image ${colores[i % colores.length]}"><i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>
+            ${imageHtml}
             <div class="product-content">
                 <span class="product-category">${p.categoria_nombre}</span>
                 <h3>${p.nombre}</h3>

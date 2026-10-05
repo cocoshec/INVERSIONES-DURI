@@ -212,7 +212,9 @@ img { max-width:100%; }
 .product-badge.popular { background:var(--green-light); color:var(--green); border:1px solid rgba(34,197,94,0.15); }
 .product-badge.low { background:var(--yellow-light); color:var(--yellow); border:1px solid rgba(234,179,8,0.15); }
 .product-badge.out { background:var(--red-light); color:var(--red); border:1px solid rgba(239,68,68,0.15); }
-.product-image { height:180px; display:flex; align-items:center; justify-content:center; font-size:3rem; overflow:hidden; }
+.product-image { height:200px; display:flex; align-items:center; justify-content:center; font-size:3rem; overflow:hidden; position:relative; background:#f8f9fa; }
+.product-image img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+.product-card:hover .product-image img { transform:scale(1.08); }
 .gradient-orange { background:linear-gradient(135deg, #FEF0E7, #FDDCC7); color:var(--accent); }
 .gradient-yellow { background:linear-gradient(135deg, #FEF9E7, #FEF3C7); color:#B8860B; }
 .gradient-brown { background:linear-gradient(135deg, #F5F5F5, #E8E8E8); color:var(--text-secondary); }
