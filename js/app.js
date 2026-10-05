@@ -189,6 +189,16 @@ function toggleCartPanel() {
 // ============================================
 // CHATBOT INTELIGENTE: DURIBOT
 // ============================================
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function initDuriChatbot() {
     if (document.getElementById('duribotWidget')) return;
 
@@ -344,7 +354,7 @@ async function handleDuriSubmit(e) {
     setTimeout(async () => {
         hideDuriTyping();
         await processDuriQuery(text);
-    }, 600);
+    }, 500);
 }
 
 window.sendDuriQuickReply = function(text) {
@@ -353,26 +363,69 @@ window.sendDuriQuickReply = function(text) {
     handleDuriSubmit(null);
 };
 
-window.addDuriBotProductToCart = function(id, name, price) {
-    if (typeof addToCartById === 'function') {
-        addToCartById(id, name, parseFloat(price), 1);
-    } else {
-        const existing = cart.find(it => String(it.id) === String(id));
-        if (existing) {
-            existing.qty += 1;
-        } else {
-            cart.push({ id, name, price: parseFloat(price), qty: 1 });
-        }
-        try { saveCart(); } catch(e) {}
-        try { updateFloatingCart(); } catch(e) {}
-        showToast(`¡${name} agregado al pedido!`);
-    }
+window.addDuriBotProductToCart = async function(id) {
+    let allProducts = [];
+    try {
+        allProducts = await getFallbackProducts();
+    } catch(e) {}
+    const p = (allProducts || []).find(it => String(it.id) === String(id));
+    const name = p ? p.nombre : 'Producto';
+    const price = p ? parseFloat(p.precio_venta || 0) : 0;
 
-    appendDuriMessage(`✅ ¡Listo! Agregué <strong>${escapeHtml(name)}</strong> a tu pedido. Puedes seguir navegando o pulsar <strong>Ver Pedido</strong> en el carrito para confirmar.`, 'bot');
+    const existing = cart.find(it => String(it.id) === String(id));
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        cart.push({ id: Number(id), name, price, qty: 1 });
+    }
+    try { saveCart(); } catch(e) {}
+    try { updateFloatingCart(); } catch(e) {}
+    showToast(`¡${name} agregado al pedido!`);
+
+    const pedidosUrl = (window.location.pathname.includes('/pages/') ? 'pedidos.html' : 'pages/pedidos.html');
+    appendDuriMessage('', 'bot', `
+        ✅ ¡Listo! Agregué <strong>${escapeHtml(name)}</strong> ($${price.toFixed(2)}) a tu carrito de compras.<br><br>
+        <a href="${pedidosUrl}" class="btn btn-sm btn-primary" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:8px; text-decoration:none; font-weight:700;">
+            <i class="fas fa-shopping-cart"></i> Ver Carrito y Procesar Pedido
+        </a>
+        <span class="duribot-time">${getFormattedTime()}</span>
+    `);
 };
 
 async function processDuriQuery(rawQuery) {
-    const q = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const q = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+    // 0. Saludos y bienvenida
+    const greetings = ['hola', 'buenas', 'buen dia', 'buenos dias', 'buenas tardes', 'buenas noches', 'que tal', 'saludos', 'hey', 'alo'];
+    if (greetings.some(g => q === g || q.startsWith(g + ' ') || q.endsWith(' ' + g))) {
+        const html = `
+            ¡Hola! 👋 ¡Un placer saludarte! Estoy aquí para ayudarte en lo que necesites:<br><br>
+            • Buscar artículos escolares y de papelería en nuestro catálogo.<br>
+            • Informarte sobre métodos de pago (Pago Móvil y Transferencia).<br>
+            • Consultar delivery en Maracay o envíos nacionales.<br>
+            • Conectarte directamente con un asesor.<br><br>
+            ¿Qué te gustaría ver?
+            <div class="duribot-chips">
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Ver productos')">📦 Ver Productos</button>
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Formas de pago')">💳 Formas de Pago</button>
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Zonas de entrega')">🚚 Delivery / Envíos</button>
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Hablar con asesor')">🟢 Hablar con Asesor</button>
+            </div>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 0.1 Agradecimientos
+    if (q.includes('gracias') || q.includes('muchas gracias') || q.includes('agradecido') || q.includes('excelente gracias')) {
+        const html = `
+            ¡Siempre a tu orden! 😊 En <strong>Inversiones Duri C.A</strong> nos encanta atenderte. Si necesitas algo más, aquí estaré. ¡Que tengas un excelente día!
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
 
     // 1. Asesor Humano / WhatsApp
     if (q.includes('asesor') || q.includes('humano') || q.includes('persona') || q.includes('whatsapp') || q.includes('telefono') || q.includes('llamar')) {
@@ -411,6 +464,7 @@ async function processDuriQuery(rawQuery) {
 
     // 3. Envíos y Delivery
     if (q.includes('envio') || q.includes('delivery') || q.includes('entrega') || q.includes('maracay') || q.includes('cagua') || q.includes('turmero') || q.includes('valencia') || q.includes('caracas') || q.includes('mrw') || q.includes('zoom') || q.includes('tealca')) {
+        const pedidosUrl = (window.location.pathname.includes('/pages/') ? 'pedidos.html' : 'pages/pedidos.html');
         const html = `
             🚚 <strong>Zonas de Entrega y Envíos:</strong><br><br>
             • 🛵 <strong>Delivery en Maracay y Aragua:</strong> Contamos con entrega rápida con fijación GPS en Maracay (El Limón, Las Delicias, La Coromoto, San Ignacio), Cagua y Turmero.<br>
@@ -418,7 +472,7 @@ async function processDuriQuery(rawQuery) {
             ¿Deseas verificar si cubrimos tu sector específico?
             <div class="duribot-chips">
                 <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Preguntar por mi sector</button>
-                <button type="button" class="duribot-chip" onclick="window.location.href='pedidos.html'">📍 Ir a Pedidos con GPS</button>
+                <button type="button" class="duribot-chip" onclick="window.location.href='${pedidosUrl}'">📍 Ir a Pedidos con GPS</button>
             </div>
             <span class="duribot-time">${getFormattedTime()}</span>
         `;
@@ -427,7 +481,7 @@ async function processDuriQuery(rawQuery) {
     }
 
     // 4. Ubicación y Horarios
-    if (q.includes('ubicacion') || q.includes('donde estan') || q.includes('direccion') || q.includes('horario') || q.includes('hora') || q.includes('abren') || q.includes('cierran') || q.includes('tienda')) {
+    if (q.includes('ubicacion') || q.includes('donde estan') || q.includes('direccion') || q.includes('horario') || q.includes('hora') || q.includes('abren') || q.includes('cierran') || q.includes('tienda') || q.includes('local')) {
         const html = `
             📍 <strong>Ubicación y Horario de Atención:</strong><br><br>
             🏢 <strong>Sede:</strong> Maracay, Estado Aragua, Venezuela.<br>
@@ -442,7 +496,7 @@ async function processDuriQuery(rawQuery) {
 
     // 5. Cómo comprar / hacer pedidos
     if (q.includes('pedido') || q.includes('comprar') || q.includes('orden') || q.includes('carrito') || q.includes('pasos')) {
-        const pedidosUrl = isInPages ? 'pedidos.html' : 'pages/pedidos.html';
+        const pedidosUrl = (window.location.pathname.includes('/pages/') ? 'pedidos.html' : 'pages/pedidos.html');
         const html = `
             🛒 <strong>¿Cómo realizar tu pedido en 3 simples pasos?</strong><br><br>
             <strong>1.</strong> Explora nuestro catálogo y agrega los productos deseados al carrito.<br>
@@ -488,17 +542,18 @@ async function processDuriQuery(rawQuery) {
 
         if (matches.length > 0) {
             const top = matches.slice(0, 4);
+            const logoPath = isInPages ? '../img/logo-duri.png' : 'img/logo-duri.png';
             let cardsHtml = top.map(p => {
-                const img = getProductImageUrl(p);
+                const img = (typeof getProductImageUrl === 'function') ? getProductImageUrl(p) : logoPath;
                 const price = parseFloat(p.precio_venta || 0).toFixed(2);
                 return `
                     <div class="duribot-product-card">
-                        <img src="${img}" class="duribot-product-img" alt="${escapeHtml(p.nombre)}" onerror="this.src='${isInPages ? '../img/logo-duri.png' : 'img/logo-duri.png'}'">
+                        <img src="${img}" class="duribot-product-img" alt="${escapeHtml(p.nombre)}" onerror="this.src='${logoPath}'">
                         <div class="duribot-product-info">
                             <h5 class="duribot-product-title">${escapeHtml(p.nombre)}</h5>
                             <p class="duribot-product-price">$${price} <span style="font-size:0.7rem; color:#64748b; font-weight:normal;">(${p.stock_actual || 10} disp.)</span></p>
                         </div>
-                        <button type="button" class="duribot-product-add" onclick="addDuriBotProductToCart(${p.id}, '${escapeHtml(p.nombre)}', ${price})" title="Agregar al pedido">
+                        <button type="button" class="duribot-product-add" onclick="addDuriBotProductToCart(${p.id})" title="Agregar al pedido">
                             <i class="fas fa-cart-plus"></i> Pedir
                         </button>
                     </div>
