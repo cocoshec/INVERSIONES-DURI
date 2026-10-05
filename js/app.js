@@ -528,18 +528,88 @@ const DEFAULT_PRODUCTS_FALLBACK = [
   {"id":12,"codigo":"PRD-012","nombre":"Resma de Papel Carta","descripcion":"Resma de 500 hojas tamaño carta de alta blancura y gramaje","categoria_id":2,"precio_compra":"0.00","precio_venta":"5.20","stock_actual":45,"stock_minimo":15,"unidad_medida":"unidad","imagen":"img/productos/resma-papel.jpg","categoria_nombre":"Papelería"}
 ];
 
+const PRODUCT_IMAGE_FALLBACK = {
+    1: 'img/productos/lapices-color.jpg',
+    2: 'img/productos/marcadores-permanentes.jpg',
+    3: 'img/productos/cuadernos-universitarios.jpg',
+    4: 'img/productos/cartuchos-tinta.jpg',
+    5: 'img/productos/tijeras-oficina.jpg',
+    6: 'img/productos/clips-metalicos.jpg',
+    7: 'img/productos/borradores-premium.jpg',
+    8: 'img/productos/carpetas-archivador.jpg',
+    9: 'img/productos/resaltadores-fluorescentes.jpg',
+    10: 'img/productos/organizador-escritorio.jpg',
+    11: 'img/productos/mouse-optico.jpg',
+    12: 'img/productos/resma-papel.jpg',
+    'PRD-001': 'img/productos/lapices-color.jpg',
+    'PRD-002': 'img/productos/marcadores-permanentes.jpg',
+    'PRD-003': 'img/productos/cuadernos-universitarios.jpg',
+    'PRD-004': 'img/productos/cartuchos-tinta.jpg',
+    'PRD-005': 'img/productos/tijeras-oficina.jpg',
+    'PRD-006': 'img/productos/clips-metalicos.jpg',
+    'PRD-007': 'img/productos/borradores-premium.jpg',
+    'PRD-008': 'img/productos/carpetas-archivador.jpg',
+    'PRD-009': 'img/productos/resaltadores-fluorescentes.jpg',
+    'PRD-010': 'img/productos/organizador-escritorio.jpg',
+    'PRD-011': 'img/productos/mouse-optico.jpg',
+    'PRD-012': 'img/productos/resma-papel.jpg'
+};
+
+function getProductImageUrl(p) {
+    if (!p) return '';
+    let raw = p.imagen;
+    if (!raw || typeof raw !== 'string' || !raw.trim()) {
+        raw = PRODUCT_IMAGE_FALLBACK[p.id] || PRODUCT_IMAGE_FALLBACK[p.codigo];
+    }
+    if (!raw && p.nombre) {
+        const n = p.nombre.toLowerCase();
+        if (n.includes('color') || n.includes('lápiz') || n.includes('lapiz')) raw = 'img/productos/lapices-color.jpg';
+        else if (n.includes('marcador') || n.includes('permanente')) raw = 'img/productos/marcadores-permanentes.jpg';
+        else if (n.includes('cuaderno') || n.includes('libreta')) raw = 'img/productos/cuadernos-universitarios.jpg';
+        else if (n.includes('tinta') || n.includes('cartucho')) raw = 'img/productos/cartuchos-tinta.jpg';
+        else if (n.includes('tijera')) raw = 'img/productos/tijeras-oficina.jpg';
+        else if (n.includes('clip')) raw = 'img/productos/clips-metalicos.jpg';
+        else if (n.includes('borrador')) raw = 'img/productos/borradores-premium.jpg';
+        else if (n.includes('carpeta') || n.includes('archivador')) raw = 'img/productos/carpetas-archivador.jpg';
+        else if (n.includes('resaltador') || n.includes('fluorescente')) raw = 'img/productos/resaltadores-fluorescentes.jpg';
+        else if (n.includes('organizador') || n.includes('escritorio')) raw = 'img/productos/organizador-escritorio.jpg';
+        else if (n.includes('mouse') || n.includes('raton')) raw = 'img/productos/mouse-optico.jpg';
+        else if (n.includes('resma') || n.includes('papel')) raw = 'img/productos/resma-papel.jpg';
+    }
+    if (!raw) return '';
+
+    if (raw.startsWith('data:') || raw.startsWith('http://') || raw.startsWith('https://')) {
+        return raw;
+    }
+
+    const clean = raw.replace(/^(\.\.\/)+/, '').replace(/^\//, '');
+    const inPages = window.location.pathname.includes('/pages/') || window.location.href.includes('/pages/');
+    return inPages ? '../' + clean : clean;
+}
+
 async function getFallbackProducts() {
     try {
         const custom = JSON.parse(localStorage.getItem('duri_products_custom') || 'null');
-        if (Array.isArray(custom) && custom.length) return custom;
+        if (Array.isArray(custom) && custom.length) {
+            // Verificar si el custom antiguo no tenía fotos
+            const tieneFotos = custom.some(item => item.imagen);
+            if (tieneFotos) return custom;
+            localStorage.removeItem('duri_products_custom');
+        }
     } catch(e) {}
 
     try {
-        const staticUrl = isInPages ? '../data/productos.json' : 'data/productos.json';
+        const inPages = window.location.pathname.includes('/pages/') || window.location.href.includes('/pages/');
+        const staticUrl = inPages ? '../data/productos.json' : 'data/productos.json';
         const resStatic = await fetch(staticUrl);
         if (resStatic.ok) {
             const list = await resStatic.json();
-            if (Array.isArray(list) && list.length) return list;
+            if (Array.isArray(list) && list.length) {
+                return list.map(item => ({
+                    ...item,
+                    imagen: item.imagen || PRODUCT_IMAGE_FALLBACK[item.id] || PRODUCT_IMAGE_FALLBACK[item.codigo] || ''
+                }));
+            }
         }
     } catch(e) {}
 
@@ -628,16 +698,15 @@ function renderProductos(productos) {
                 : '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="buyNow(\'' + p.id + '\',\'' + p.nombre.replace(/'/g, "\\'") + '\',' + p.precio_venta + ',' + p.stock_actual + ')"><i class="fas fa-cart-plus"></i> Pedir</button>';
         }
         
-        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+        const imgSrc = getProductImageUrl(p);
         let imageHtml = '';
         const editPhotoBtn = canEdit ? `<button type="button" onclick="editProduct('${p.id}')" title="Cambiar foto o editar producto" style="position:absolute; top:10px; right:10px; background:rgba(15,23,42,0.75); color:#fff; border:1px solid rgba(255,255,255,0.25); border-radius:50%; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:5; box-shadow:0 3px 8px rgba(0,0,0,0.3); transition:transform 0.2s;"><i class="fas fa-camera" style="font-size:0.85rem;"></i></button>` : '';
 
-        if (p.imagen) {
-            const imgSrc = (p.imagen.startsWith('http') || p.imagen.startsWith('data:')) ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '');
+        if (imgSrc) {
             imageHtml = `
             <div class="product-image">
                 ${editPhotoBtn}
-                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="this.parentElement.className='product-image ${colores[i % colores.length]}'; this.parentElement.innerHTML='${editPhotoBtn}<i class=\\\'fas ${icons[p.categoria_nombre] || 'fa-box'}\\\'></i>';">
+                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="this.onerror=null; this.parentElement.className='product-image ${colores[i % colores.length]}'; this.parentElement.innerHTML='${editPhotoBtn}<i class=\\\'fas ${icons[p.categoria_nombre] || 'fa-box'}\\\'></i>';">
             </div>`;
         } else {
             imageHtml = `<div class="product-image ${colores[i % colores.length]}">${editPhotoBtn}<i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>`;
@@ -780,8 +849,7 @@ function renderInventarioTable(productos) {
             actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
         }
         
-        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
-        const thumbSrc = p.imagen ? ((p.imagen.startsWith('http') || p.imagen.startsWith('data:')) ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '')) : '';
+        const thumbSrc = getProductImageUrl(p);
         const thumbHtml = thumbSrc 
             ? `<img src="${thumbSrc}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1;flex-shrink:0;" onerror="this.style.display='none'">` 
             : `<div style="width:34px;height:34px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;"><i class="fas fa-box" style="font-size:0.9rem;"></i></div>`;
