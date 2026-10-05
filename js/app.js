@@ -1650,7 +1650,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     ` : filtered.map(p => {
         const safeName = (p.cliente_nombre || 'Cliente').replace(/'/g, "\\'");
         const safeCode = (p.codigo || '').replace(/'/g, "\\'");
-        const safePay = (p.forma_pago || 'efectivo').replace(/'/g, "\\'");
+        const safePay = (p.forma_pago || 'pago_movil').replace(/'/g, "\\'");
         const safeTotal = parseFloat(p.total || 0).toFixed(2);
         const safePhone = (p.cliente_telefono || '').replace(/'/g, "\\'");
         const safeCi = (p.cliente_ci || '').replace(/'/g, "\\'");
@@ -1687,12 +1687,12 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         }
 
         const formaPagoLabels = {
-            'efectivo': '💵 Efectivo',
             'pago_movil': '📱 Pago Móvil',
             'transferencia': '🏦 Transferencia Bancaria',
-            'tarjeta': '💳 Tarjeta'
+            'tarjeta': '💳 Tarjeta',
+            'efectivo': '💵 Efectivo'
         };
-        const formaPagoDisplay = formaPagoLabels[p.forma_pago] || p.forma_pago || 'Efectivo';
+        const formaPagoDisplay = formaPagoLabels[p.forma_pago] || p.forma_pago || 'Pago Móvil';
         
         // Formatear WhatsApp al NÚMERO DEL CLIENTE (no de la empresa)
         let phoneWaUrl = '';
@@ -1766,16 +1766,16 @@ function cerrarModalValidacionPago() {
 }
 window.cerrarModalValidacionPago = cerrarModalValidacionPago;
 
-function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'efectivo', clienteTelefono = '', clienteCi = '') {
+function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'pago_movil', clienteTelefono = '', clienteCi = '') {
     cerrarModalValidacionPago();
 
     const formaPagoLabels = {
-        'efectivo': '💵 Efectivo',
         'pago_movil': '📱 Pago Móvil',
         'transferencia': '🏦 Transferencia Bancaria',
-        'tarjeta': '💳 Tarjeta'
+        'tarjeta': '💳 Tarjeta',
+        'efectivo': '💵 Efectivo'
     };
-    const paymentDisplay = formaPagoLabels[formaPago] || formaPago || 'Efectivo';
+    const paymentDisplay = formaPagoLabels[formaPago] || formaPago || 'Pago Móvil';
     const totalDisplay = parseFloat(total || 0).toFixed(2);
 
     // Link de WhatsApp directo al cliente para consultar el comprobante
@@ -2141,8 +2141,8 @@ async function submitOrder() {
     const clientCi = newCi.value.trim().toUpperCase();
     const clientPhone = newPhone.value.trim();
     
-    const paymentLabels = { efectivo: 'Efectivo', pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria', tarjeta: 'Tarjeta' };
-    const paymentLabel = payment ? (paymentLabels[payment.value] || payment.value) : 'Efectivo';
+    const paymentLabels = { pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria', tarjeta: 'Tarjeta' };
+    const paymentLabel = payment ? (paymentLabels[payment.value] || payment.value) : 'Pago Móvil';
     const addr = address ? address.value.trim() : '';
 
     // Obtener coordenadas GPS si el usuario las fijó en el mapa
@@ -2176,7 +2176,7 @@ async function submitOrder() {
         cliente_id: clientSelect.value,
         direccion_entrega: fullDeliveryAddress,
         notas: notes ? notes.value : '',
-        forma_pago: payment ? payment.value : 'efectivo',
+        forma_pago: payment ? payment.value : 'pago_movil',
         productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price, nombre: it.name })),
         clientName,
         clientCi,
@@ -2342,7 +2342,7 @@ async function confirmAndSend() {
         cliente_telefono: data.clientPhone,
         direccion_entrega: data.direccion_entrega,
         notas: data.notas || '',
-        forma_pago: data.forma_pago || 'efectivo',
+        forma_pago: data.forma_pago || 'pago_movil',
         total: parseFloat(orderTotal).toFixed(2),
         subtotal: parseFloat(data.subtotal || 0).toFixed(2),
         impuesto: parseFloat(data.iva || 0).toFixed(2),

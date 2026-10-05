@@ -109,9 +109,9 @@ switch ($method) {
             $codigo = 'PED-' . str_pad(($row['max_id'] ?? 0) + 1, 3, '0', STR_PAD_LEFT);
 
             // Insertar pedido con los datos exactos que el cliente escribió en el formulario
-            $formaPago = $data['forma_pago'] ?? 'efectivo';
-            $formasValidas = ['efectivo', 'transferencia', 'pago_movil', 'tarjeta'];
-            if (!in_array($formaPago, $formasValidas)) $formaPago = 'efectivo';
+            $formaPago = $data['forma_pago'] ?? 'pago_movil';
+            $formasValidas = ['pago_movil', 'transferencia', 'tarjeta'];
+            if (!in_array($formaPago, $formasValidas)) $formaPago = 'pago_movil';
 
             $clienteNombre = $data['cliente_nombre'] ?? '';
             $clienteTelefono = $data['cliente_telefono'] ?? '';
