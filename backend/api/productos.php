@@ -85,16 +85,30 @@ switch ($method) {
             exit();
         }
 
-        $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ? WHERE id = ?");
-        $stmt->execute([
-            $data['nombre'],
-            $data['descripcion'] ?? '',
-            $data['categoria_id'] ?? 1,
-            $data['precio_venta'],
-            $data['stock_actual'] ?? 0,
-            $data['stock_minimo'] ?? 10,
-            $id
-        ]);
+        if (isset($data['imagen'])) {
+            $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ?, imagen = ? WHERE id = ?");
+            $stmt->execute([
+                $data['nombre'],
+                $data['descripcion'] ?? '',
+                $data['categoria_id'] ?? 1,
+                $data['precio_venta'],
+                $data['stock_actual'] ?? 0,
+                $data['stock_minimo'] ?? 10,
+                $data['imagen'],
+                $id
+            ]);
+        } else {
+            $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ? WHERE id = ?");
+            $stmt->execute([
+                $data['nombre'],
+                $data['descripcion'] ?? '',
+                $data['categoria_id'] ?? 1,
+                $data['precio_venta'],
+                $data['stock_actual'] ?? 0,
+                $data['stock_minimo'] ?? 10,
+                $id
+            ]);
+        }
 
         echo json_encode(["status" => "success", "message" => "Producto actualizado"]);
         break;

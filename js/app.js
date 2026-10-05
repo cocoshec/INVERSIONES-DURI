@@ -630,14 +630,17 @@ function renderProductos(productos) {
         
         const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
         let imageHtml = '';
+        const editPhotoBtn = canEdit ? `<button type="button" onclick="editProduct('${p.id}')" title="Cambiar foto o editar producto" style="position:absolute; top:10px; right:10px; background:rgba(15,23,42,0.75); color:#fff; border:1px solid rgba(255,255,255,0.25); border-radius:50%; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:5; box-shadow:0 3px 8px rgba(0,0,0,0.3); transition:transform 0.2s;"><i class="fas fa-camera" style="font-size:0.85rem;"></i></button>` : '';
+
         if (p.imagen) {
-            const imgSrc = p.imagen.startsWith('http') ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '');
+            const imgSrc = (p.imagen.startsWith('http') || p.imagen.startsWith('data:')) ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '');
             imageHtml = `
             <div class="product-image">
-                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="this.parentElement.className='product-image ${colores[i % colores.length]}'; this.parentElement.innerHTML='<i class=\\\'fas ${icons[p.categoria_nombre] || 'fa-box'}\\\'></i>';">
+                ${editPhotoBtn}
+                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="this.parentElement.className='product-image ${colores[i % colores.length]}'; this.parentElement.innerHTML='${editPhotoBtn}<i class=\\\'fas ${icons[p.categoria_nombre] || 'fa-box'}\\\'></i>';">
             </div>`;
         } else {
-            imageHtml = `<div class="product-image ${colores[i % colores.length]}"><i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>`;
+            imageHtml = `<div class="product-image ${colores[i % colores.length]}">${editPhotoBtn}<i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>`;
         }
         
         return `
@@ -777,8 +780,21 @@ function renderInventarioTable(productos) {
             actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
         }
         
+        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+        const thumbSrc = p.imagen ? ((p.imagen.startsWith('http') || p.imagen.startsWith('data:')) ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '')) : '';
+        const thumbHtml = thumbSrc 
+            ? `<img src="${thumbSrc}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1;flex-shrink:0;" onerror="this.style.display='none'">` 
+            : `<div style="width:34px;height:34px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;"><i class="fas fa-box" style="font-size:0.9rem;"></i></div>`;
+
         return `<tr>
-            <td><strong>${p.codigo}</strong></td><td>${p.nombre}</td><td>${p.categoria_nombre}</td>
+            <td><strong>${p.codigo}</strong></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    ${thumbHtml}
+                    <span>${p.nombre}</span>
+                </div>
+            </td>
+            <td>${p.categoria_nombre}</td>
             <td>$${parseFloat(p.precio_venta).toFixed(2)}</td><td class="${stockClass}">${p.stock_actual}</td><td>${p.stock_minimo}</td>
             <td><span class="status ${statusClass}">${statusText}</span></td>
             <td>${actionBtn}</td>
@@ -794,9 +810,25 @@ function filterInventory(val) {
 }
 
 // ============================================
-// EDITAR / ELIMINAR PRODUCTO
+// EDITAR / ELIMINAR PRODUCTO (SUPER USUARIO Y OPERADOR)
 // ============================================
 let _editingProductId = null;
+let _currentProductImageData = null;
+
+const GALERIA_PRESET_FOTOS = [
+    { label: 'Lápices de Color', url: 'img/productos/lapices-color.jpg' },
+    { label: 'Marcadores', url: 'img/productos/marcadores-permanentes.jpg' },
+    { label: 'Cuadernos', url: 'img/productos/cuadernos-universitarios.jpg' },
+    { label: 'Cartuchos Tinta', url: 'img/productos/cartuchos-tinta.jpg' },
+    { label: 'Tijeras Oficina', url: 'img/productos/tijeras-oficina.jpg' },
+    { label: 'Clips Metálicos', url: 'img/productos/clips-metalicos.jpg' },
+    { label: 'Borradores', url: 'img/productos/borradores-premium.jpg' },
+    { label: 'Carpetas Archivador', url: 'img/productos/carpetas-archivador.jpg' },
+    { label: 'Resaltadores', url: 'img/productos/resaltadores-fluorescentes.jpg' },
+    { label: 'Organizador', url: 'img/productos/organizador-escritorio.jpg' },
+    { label: 'Mouse Óptico', url: 'img/productos/mouse-optico.jpg' },
+    { label: 'Resma Papel', url: 'img/productos/resma-papel.jpg' }
+];
 
 async function editProduct(id) {
     try {
@@ -816,6 +848,12 @@ async function editProduct(id) {
             p = _cachedInventory.find(item => String(item.id) === String(id));
         }
 
+        if (!p) {
+            // Buscar en fallback
+            const staticList = await getFallbackProducts();
+            p = staticList.find(item => String(item.id) === String(id));
+        }
+
         if (!p) { showToast('Producto no encontrado', 'error'); return; }
 
         const catList = [
@@ -826,65 +864,177 @@ async function editProduct(id) {
         ];
 
         _editingProductId = id;
+        _currentProductImageData = p.imagen || '';
+
         const old = document.getElementById('editModal');
         if (old) old.remove();
+
+        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+        const currentImgSrc = p.imagen ? ((p.imagen.startsWith('http') || p.imagen.startsWith('data:')) ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '')) : '';
 
         const modal = document.createElement('div');
         modal.id = 'editModal';
         modal.className = 'modal show';
         modal.innerHTML = `
-            <div style="width:440px;max-width:95%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
-                <div style="background:linear-gradient(135deg,var(--dark),#2a1a4a);color:#fff;padding:20px 24px">
-                    <h3 style="margin:0;font-size:1.1rem"><i class="fas fa-edit" style="color:var(--accent)"></i> Editar Producto</h3>
-                    <p style="margin:4px 0 0;font-size:0.82rem;opacity:0.6">${p.codigo || ''}</p>
+            <div style="width:480px;max-width:95%;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:90vh;display:flex;flex-direction:column;">
+                <div style="background:linear-gradient(135deg,var(--dark,#1a0f2e),#2a1a4a);color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <h3 style="margin:0;font-size:1.1rem;color:#fff;"><i class="fas fa-edit" style="color:var(--accent,#e85d26);margin-right:6px;"></i> Editar Producto</h3>
+                        <p style="margin:3px 0 0;font-size:0.8rem;opacity:0.7;">${p.codigo || ''} - ${p.nombre || ''}</p>
+                    </div>
+                    <button type="button" onclick="closeEditModal()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;opacity:0.7;">&times;</button>
                 </div>
-                <div style="padding:24px">
-                    <div class="form-group">
-                        <label>Nombre</label>
-                        <input type="text" id="editNombre" value="${(p.nombre || '').replace(/"/g, '&quot;')}">
+
+                <div style="padding:20px 22px;overflow-y:auto;flex:1;">
+                    <!-- SECCIÓN: CAMBIAR FOTO -->
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:18px;">
+                        <label style="display:block;font-size:0.86rem;font-weight:700;color:#1e293b;margin-bottom:10px;">
+                            <i class="fas fa-camera" style="color:var(--accent,#e85d26);margin-right:6px;"></i> Foto del Producto
+                        </label>
+                        <div style="display:flex;gap:14px;align-items:center;">
+                            <div id="editImagePreviewWrapper" style="width:96px;height:96px;border-radius:12px;overflow:hidden;border:2px solid #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                                ${currentImgSrc 
+                                    ? `<img id="editImagePreview" src="${currentImgSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<i class=\\\'fas fa-image\\\' style=\\\'color:#94a3b8;font-size:2rem;\\\'></i>'">` 
+                                    : `<i id="editImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>`}
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <input type="file" id="editImageFileInput" accept="image/*" style="display:none;" onchange="handleProductImageFileChange(event)">
+                                <button type="button" onclick="document.getElementById('editImageFileInput').click()" style="width:100%;background:#e85d26;color:#fff;border:none;border-radius:8px;padding:9px 12px;font-weight:600;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;box-shadow:0 2px 6px rgba(232,93,38,0.25);">
+                                    <i class="fas fa-upload"></i> Subir Foto (Celular o PC)
+                                </button>
+                                <input type="text" id="editImageInput" placeholder="O escribe enlace / ruta de imagen..." value="${p.imagen || ''}" oninput="actualizarPreviewImagen(this.value)" style="width:100%;font-size:0.78rem;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                                    <button type="button" onclick="toggleGaleriaPredefinida()" style="background:none;border:none;color:#0284c7;font-size:0.75rem;cursor:pointer;font-weight:600;padding:0;">
+                                        <i class="fas fa-th"></i> Ver fotos predefinidas
+                                    </button>
+                                    <button type="button" onclick="quitarFotoProducto()" style="background:none;border:none;color:#ef4444;font-size:0.75rem;cursor:pointer;font-weight:600;padding:0;">
+                                        <i class="fas fa-trash"></i> Quitar foto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Galería de presets rápida -->
+                        <div id="galeriaPredefinidaBox" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">
+                            <span style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:8px;">Selecciona una foto del sistema:</span>
+                            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:130px;overflow-y:auto;">
+                                ${GALERIA_PRESET_FOTOS.map(item => `
+                                    <div onclick="seleccionarPresetFoto('${item.url}')" title="${item.label}" style="cursor:pointer;border:1.5px solid #e2e8f0;border-radius:6px;overflow:hidden;height:45px;display:flex;align-items:center;justify-content:center;background:#fff;transition:border-color 0.2s;">
+                                        <img src="${basePath + item.url}" style="width:100%;height:100%;object-fit:cover;">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Descripción</label>
-                        <textarea id="editDesc" rows="2">${p.descripcion || ''}</textarea>
+
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Nombre</label>
+                        <input type="text" id="editNombre" value="${(p.nombre || '').replace(/"/g, '&quot;')}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;">
                     </div>
-                    <div class="form-group">
-                        <label>Categoría</label>
-                        <select id="editCat">
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Descripción</label>
+                        <textarea id="editDesc" rows="2" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;">${p.descripcion || ''}</textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Categoría</label>
+                        <select id="editCat" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;">
                             ${catList.map(c => `<option value="${c.id}" ${c.id == p.categoria_id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
                         </select>
                     </div>
-                    <div style="display:flex;gap:12px">
-                        <div class="form-group" style="flex:1">
-                            <label>Precio ($)</label>
-                            <input type="number" id="editPrecio" step="0.01" min="0" value="${p.precio_venta || 0}">
+                    <div style="display:flex;gap:10px;">
+                        <div class="form-group" style="flex:1;">
+                            <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Precio ($)</label>
+                            <input type="number" id="editPrecio" step="0.01" min="0" value="${p.precio_venta || 0}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;">
                         </div>
-                        <div class="form-group" style="flex:1">
-                            <label>Stock Actual</label>
-                            <input type="number" id="editStock" min="0" value="${p.stock_actual || 0}">
+                        <div class="form-group" style="flex:1;">
+                            <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Stock Actual</label>
+                            <input type="number" id="editStock" min="0" value="${p.stock_actual || 0}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;">
                         </div>
-                        <div class="form-group" style="flex:1">
-                            <label>Stock Mínimo</label>
-                            <input type="number" id="editStockMin" min="0" value="${p.stock_minimo || 0}">
+                        <div class="form-group" style="flex:1;">
+                            <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Stock Mín.</label>
+                            <input type="number" id="editStockMin" min="0" value="${p.stock_minimo || 0}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
-                <div style="padding:16px 24px 24px;display:flex;gap:10px;border-top:1px solid #eee">
-                    <button onclick="closeEditModal()" style="flex:1;padding:12px;border:2px solid #ddd;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#666">Cancelar</button>
-                    <button onclick="saveEditProduct()" style="flex:2;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer"><i class="fas fa-save"></i> Guardar Cambios</button>
+
+                <div style="padding:14px 22px 18px;display:flex;gap:10px;border-top:1px solid #e2e8f0;background:#fff;">
+                    <button type="button" onclick="closeEditModal()" style="flex:1;padding:11px;border:1.5px solid #cbd5e1;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#475569;">Cancelar</button>
+                    <button type="button" onclick="saveEditProduct()" style="flex:2;padding:11px;background:#28a745;color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(40,167,69,0.3);"><i class="fas fa-save"></i> Guardar Cambios</button>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
         modal.addEventListener('click', function(e) { if (e.target === modal) closeEditModal(); });
     } catch (err) {
+        console.error('Error al editar producto:', err);
         showToast('Error al cargar producto', 'error');
     }
+}
+
+function handleProductImageFileChange(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        showToast('Por favor selecciona un archivo de imagen válido (JPG, PNG, WebP)', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        _currentProductImageData = dataUrl;
+        const imgInput = document.getElementById('editImageInput');
+        if (imgInput) imgInput.value = '';
+        actualizarPreviewImagen(dataUrl);
+        showToast('📷 Foto cargada desde tu dispositivo', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function actualizarPreviewImagen(src) {
+    const wrapper = document.getElementById('editImagePreviewWrapper');
+    if (!wrapper) return;
+    if (src && src.trim()) {
+        const clean = src.trim();
+        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+        const realSrc = (clean.startsWith('http') || clean.startsWith('data:')) ? clean : basePath + clean.replace(/^\.\.\//, '');
+        wrapper.innerHTML = `<img id="editImagePreview" src="${realSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<i class=\\\'fas fa-exclamation-circle\\\' style=\\\'color:#ef4444;font-size:2rem;\\\'></i>'">`;
+        _currentProductImageData = clean;
+    } else {
+        wrapper.innerHTML = `<i id="editImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>`;
+        _currentProductImageData = '';
+    }
+}
+
+function toggleGaleriaPredefinida() {
+    const box = document.getElementById('galeriaPredefinidaBox');
+    if (box) {
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function seleccionarPresetFoto(url) {
+    const imgInput = document.getElementById('editImageInput');
+    if (imgInput) imgInput.value = url;
+    actualizarPreviewImagen(url);
+    showToast('Foto seleccionada de la galería', 'info');
+}
+
+function quitarFotoProducto() {
+    const imgInput = document.getElementById('editImageInput');
+    if (imgInput) imgInput.value = '';
+    const fileInput = document.getElementById('editImageFileInput');
+    if (fileInput) fileInput.value = '';
+    actualizarPreviewImagen('');
+    showToast('Foto removida', 'info');
 }
 
 function closeEditModal() {
     const m = document.getElementById('editModal');
     if (m) m.remove();
     _editingProductId = null;
+    _currentProductImageData = null;
 }
 
 async function saveEditProduct() {
@@ -895,6 +1045,9 @@ async function saveEditProduct() {
     const precio = document.getElementById('editPrecio').value;
     const stock = document.getElementById('editStock').value;
     const stockMin = document.getElementById('editStockMin').value;
+
+    const inputVal = document.getElementById('editImageInput') ? document.getElementById('editImageInput').value.trim() : '';
+    const imagenFinal = _currentProductImageData !== null ? _currentProductImageData : inputVal;
 
     if (!nombre) { showToast('El nombre es requerido', 'error'); return; }
     if (!precio || parseFloat(precio) <= 0) { showToast('Precio inválido', 'error'); return; }
@@ -913,42 +1066,47 @@ async function saveEditProduct() {
                     categoria_id: parseInt(cat),
                     precio_venta: parseFloat(precio),
                     stock_actual: parseInt(stock),
-                    stock_minimo: parseInt(stockMin)
+                    stock_minimo: parseInt(stockMin),
+                    imagen: imagenFinal
                 })
             });
             if (res.ok) {
                 const data = await res.json();
                 if (data.status === 'success') saved = true;
             }
-        } catch (err) {}
+        } catch (err) {
+            console.warn('Error al guardar en API PHP, guardando localmente...', err);
+        }
     }
 
     // Persistencia local / GitHub Pages
-    if (!saved) {
-        if (Array.isArray(_cachedInventory)) {
-            const idx = _cachedInventory.findIndex(item => String(item.id) === String(_editingProductId));
-            const catNames = {1:'Útiles Escolares', 2:'Papelería', 3:'Tecnología', 4:'Accesorios'};
-            if (idx !== -1) {
-                _cachedInventory[idx] = {
-                    ..._cachedInventory[idx],
-                    nombre,
-                    descripcion: desc,
-                    categoria_id: parseInt(cat),
-                    categoria_nombre: catNames[cat] || _cachedInventory[idx].categoria_nombre || 'General',
-                    precio_venta: parseFloat(precio).toFixed(2),
-                    stock_actual: parseInt(stock),
-                    stock_minimo: parseInt(stockMin)
-                };
-                localStorage.setItem('duri_products_custom', JSON.stringify(_cachedInventory));
-                saved = true;
-            }
+    if (!saved || isGH) {
+        let currentList = await getFallbackProducts();
+        const idx = currentList.findIndex(item => String(item.id) === String(_editingProductId));
+        const catNames = {1:'Útiles Escolares', 2:'Papelería', 3:'Tecnología', 4:'Accesorios'};
+        if (idx !== -1) {
+            currentList[idx] = {
+                ...currentList[idx],
+                nombre,
+                descripcion: desc,
+                categoria_id: parseInt(cat),
+                categoria_nombre: catNames[cat] || currentList[idx].categoria_nombre || 'General',
+                precio_venta: parseFloat(precio).toFixed(2),
+                stock_actual: parseInt(stock),
+                stock_minimo: parseInt(stockMin),
+                imagen: imagenFinal
+            };
+            localStorage.setItem('duri_products_custom', JSON.stringify(currentList));
+            _cachedInventory = currentList;
+            saved = true;
         }
     }
 
     if (saved) {
-        showToast('Producto actualizado correctamente');
+        showToast('✅ Producto y fotografía actualizados con éxito', 'success');
         closeEditModal();
-        loadInventario();
+        if (typeof loadProductos === 'function') loadProductos();
+        if (typeof loadInventario === 'function') loadInventario();
     } else {
         showToast('Error al guardar cambios', 'error');
     }
