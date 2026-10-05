@@ -5,6 +5,24 @@
 const isInPages = window.location.pathname.includes('/pages/');
 const API_BASE = isInPages ? '../backend/api' : 'backend/api';
 
+// Limpieza garantizada de métodos de pago obsoletos (Efectivo / Tarjeta)
+function sanitizarMetodosPago() {
+    const sel = document.getElementById('paymentMethod');
+    if (sel) {
+        const obsoletos = sel.querySelectorAll('option[value="efectivo"], option[value="tarjeta_credito"]');
+        obsoletos.forEach(opt => opt.remove());
+        if (sel.value === 'efectivo' || sel.value === 'tarjeta_credito' || !sel.value) {
+            sel.value = 'pago_movil';
+        }
+    }
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sanitizarMetodosPago);
+} else {
+    sanitizarMetodosPago();
+}
+setInterval(sanitizarMetodosPago, 300);
+
 // ============================================
 // VALIDACIONES
 // ============================================

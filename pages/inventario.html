@@ -16,9 +16,9 @@
     <script>
     (function(){
         const user = localStorage.getItem('userDuri');
-        if(!user){ window.location.replace('../index.html?v=4'); return; }
+        if(!user){ window.location.replace('../index.html?v=15.0'); return; }
         const userData = JSON.parse(user);
-        if(userData.rol !== 'super_usuario'){ window.location.replace('../index.html?v=4'); return; }
+        if(userData.rol !== 'super_usuario'){ window.location.replace('../index.html?v=15.0'); return; }
     })();
     </script>
     <!-- Top Bar -->
@@ -37,14 +37,14 @@
     </div>
     <nav class="navbar">
         <div class="nav-container">
-            <a href="../index.html?v=4" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
+            <a href="../index.html?v=15.0" class="nav-logo"><img src="../img/logo-duri.png" alt="Duri"><span>Duri</span></a>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="../index.html?v=4" class="nav-link"><i class="fas fa-home" style="margin-right:6px; opacity:0.85;"></i> Inicio</a></li>
-                <li><a href="productos.html?v=4" class="nav-link"><i class="fas fa-box-open" style="margin-right:6px; opacity:0.85;"></i> Productos</a></li>
-                <li><a href="pedidos.html?v=4" class="nav-link"><i class="fas fa-shopping-cart" style="margin-right:6px; opacity:0.85;"></i> Pedidos</a></li>
-                <li><a href="servicios.html?v=4" class="nav-link"><i class="fas fa-tools" style="margin-right:6px; opacity:0.85;"></i> Servicios</a></li>
-                <li><a href="nosotros.html?v=4" class="nav-link"><i class="fas fa-users" style="margin-right:6px; opacity:0.85;"></i> Nosotros</a></li>
-                <li><a href="contacto.html?v=4" class="nav-link"><i class="fas fa-envelope" style="margin-right:6px; opacity:0.85;"></i> Contacto</a></li>
+                <li><a href="../index.html?v=15.0" class="nav-link"><i class="fas fa-home" style="margin-right:6px; opacity:0.85;"></i> Inicio</a></li>
+                <li><a href="productos.html?v=15.0" class="nav-link"><i class="fas fa-box-open" style="margin-right:6px; opacity:0.85;"></i> Productos</a></li>
+                <li><a href="pedidos.html?v=15.0" class="nav-link"><i class="fas fa-shopping-cart" style="margin-right:6px; opacity:0.85;"></i> Pedidos</a></li>
+                <li><a href="servicios.html?v=15.0" class="nav-link"><i class="fas fa-tools" style="margin-right:6px; opacity:0.85;"></i> Servicios</a></li>
+                <li><a href="nosotros.html?v=15.0" class="nav-link"><i class="fas fa-users" style="margin-right:6px; opacity:0.85;"></i> Nosotros</a></li>
+                <li><a href="contacto.html?v=15.0" class="nav-link"><i class="fas fa-envelope" style="margin-right:6px; opacity:0.85;"></i> Contacto</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" type="button" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
         </div>
