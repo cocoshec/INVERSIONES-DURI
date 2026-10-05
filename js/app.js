@@ -140,6 +140,7 @@ function bootApp() {
     try { initCinematicEffects(); } catch(e) {}
     try { initFloatingCart(); } catch(e) {}
     try { initWhatsApp(); } catch(e) {}
+    try { initDuriChatbot(); } catch(e) { console.error('initDuriChatbot error:', e); }
 }
 
 if (document.readyState === 'loading') {
@@ -183,6 +184,360 @@ function initFloatingCart() {
 function toggleCartPanel() {
     const panel = document.getElementById('cartPanel');
     if (panel) panel.classList.toggle('show');
+}
+
+// ============================================
+// CHATBOT INTELIGENTE: DURIBOT
+// ============================================
+function initDuriChatbot() {
+    if (document.getElementById('duribotWidget')) return;
+
+    const html = `
+    <div id="duribotWidget">
+        <!-- Botón Flotante -->
+        <div class="duribot-float">
+            <div class="duribot-tooltip" id="duribotTooltip">💬 ¡Hola! ¿En qué te ayudo?</div>
+            <button class="duribot-btn" id="duribotBtn" onclick="toggleDuriChatbot()" title="Asistente Virtual Duri" aria-label="Abrir asistente virtual">
+                <i class="fas fa-robot"></i>
+                <span class="duribot-online-dot"></span>
+            </button>
+        </div>
+
+        <!-- Ventana de Chat -->
+        <div class="duribot-window" id="duribotWindow">
+            <!-- Header -->
+            <div class="duribot-header">
+                <div class="duribot-header-info">
+                    <div class="duribot-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h4 class="duribot-header-title">DuriBot</h4>
+                        <span class="duribot-header-status">En línea • Respuestas al instante</span>
+                    </div>
+                </div>
+                <div class="duribot-header-actions">
+                    <button class="duribot-close-btn" onclick="toggleDuriChatbot()" title="Cerrar chat">&times;</button>
+                </div>
+            </div>
+
+            <!-- Body (Historial de Mensajes) -->
+            <div class="duribot-body" id="duribotBody">
+                <div class="duribot-msg-row bot">
+                    <div class="duribot-msg-bubble">
+                        ¡Hola! 👋 Soy <strong>DuriBot</strong>, el asistente virtual de <strong>Inversiones Duri C.A</strong>.<br><br>
+                        ¿En qué te puedo asesorar hoy? Puedes escribir lo que buscas o elegir una opción rápida:
+                        <div class="duribot-chips">
+                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Qué productos tienen en catálogo?')">📦 Ver productos</button>
+                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cuáles son las formas de pago?')">💳 Formas de pago</button>
+                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cómo son los envíos y entregas?')">🚚 Envíos y Delivery</button>
+                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Dónde están ubicados y cuál es el horario?')">📍 Ubicación y Horario</button>
+                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Hablar con un asesor</button>
+                        </div>
+                        <span class="duribot-time">${getFormattedTime()}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer (Input) -->
+            <div class="duribot-footer">
+                <form class="duribot-input-form" id="duribotForm" onsubmit="handleDuriSubmit(event)">
+                    <input type="text" class="duribot-input" id="duribotInput" placeholder="Escribe tu pregunta o producto..." autocomplete="off">
+                    <button type="submit" class="duribot-send-btn" title="Enviar mensaje">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                <p class="duribot-branding"><i class="fas fa-bolt" style="color:#e85d26;"></i> Inversiones Duri C.A • Asistente Virtual 24/7</p>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    // Mostrar tooltip automáticamente por 5 segundos al primer minuto
+    setTimeout(() => {
+        const tooltip = document.getElementById('duribotTooltip');
+        if (tooltip && !document.getElementById('duribotWindow').classList.contains('open')) {
+            tooltip.classList.add('show-auto');
+            setTimeout(() => tooltip.classList.remove('show-auto'), 5000);
+        }
+    }, 2500);
+}
+
+function getFormattedTime() {
+    const d = new Date();
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function toggleDuriChatbot() {
+    const win = document.getElementById('duribotWindow');
+    if (!win) return;
+    const isOpen = win.classList.toggle('open');
+    if (isOpen) {
+        const tooltip = document.getElementById('duribotTooltip');
+        if (tooltip) tooltip.classList.remove('show-auto');
+        setTimeout(() => {
+            const input = document.getElementById('duribotInput');
+            if (input) input.focus();
+            scrollDuriChat();
+        }, 150);
+    }
+}
+
+function scrollDuriChat() {
+    const body = document.getElementById('duribotBody');
+    if (body) {
+        body.scrollTop = body.scrollHeight;
+    }
+}
+
+function appendDuriMessage(text, sender = 'bot', customHtml = null) {
+    const body = document.getElementById('duribotBody');
+    if (!body) return;
+
+    const row = document.createElement('div');
+    row.className = `duribot-msg-row ${sender}`;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'duribot-msg-bubble';
+
+    if (customHtml) {
+        bubble.innerHTML = customHtml;
+    } else {
+        bubble.innerHTML = `${text}<span class="duribot-time">${getFormattedTime()}</span>`;
+    }
+
+    row.appendChild(bubble);
+    body.appendChild(row);
+    scrollDuriChat();
+}
+
+function showDuriTyping() {
+    const body = document.getElementById('duribotBody');
+    if (!body || document.getElementById('duribotTyping')) return;
+
+    const row = document.createElement('div');
+    row.className = 'duribot-msg-row bot';
+    row.id = 'duribotTyping';
+    row.innerHTML = `<div class="duribot-typing"><span></span><span></span><span></span></div>`;
+    body.appendChild(row);
+    scrollDuriChat();
+}
+
+function hideDuriTyping() {
+    const typing = document.getElementById('duribotTyping');
+    if (typing) typing.remove();
+}
+
+async function handleDuriSubmit(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('duribotInput');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    appendDuriMessage(escapeHtml(text), 'user');
+    showDuriTyping();
+
+    // Procesar respuesta con una pequeña pausa natural
+    setTimeout(async () => {
+        hideDuriTyping();
+        await processDuriQuery(text);
+    }, 600);
+}
+
+window.sendDuriQuickReply = function(text) {
+    const input = document.getElementById('duribotInput');
+    if (input) input.value = text;
+    handleDuriSubmit(null);
+};
+
+window.addDuriBotProductToCart = function(id, name, price) {
+    if (typeof addToCartById === 'function') {
+        addToCartById(id, name, parseFloat(price), 1);
+    } else {
+        const existing = cart.find(it => String(it.id) === String(id));
+        if (existing) {
+            existing.qty += 1;
+        } else {
+            cart.push({ id, name, price: parseFloat(price), qty: 1 });
+        }
+        try { saveCart(); } catch(e) {}
+        try { updateFloatingCart(); } catch(e) {}
+        showToast(`¡${name} agregado al pedido!`);
+    }
+
+    appendDuriMessage(`✅ ¡Listo! Agregué <strong>${escapeHtml(name)}</strong> a tu pedido. Puedes seguir navegando o pulsar <strong>Ver Pedido</strong> en el carrito para confirmar.`, 'bot');
+};
+
+async function processDuriQuery(rawQuery) {
+    const q = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    // 1. Asesor Humano / WhatsApp
+    if (q.includes('asesor') || q.includes('humano') || q.includes('persona') || q.includes('whatsapp') || q.includes('telefono') || q.includes('llamar')) {
+        const waText = encodeURIComponent(`Hola Inversiones Duri, necesito atención personalizada con un asesor. Estaba preguntando: "${rawQuery}"`);
+        const waUrl = `https://wa.me/584121234567?text=${waText}`;
+        const html = `
+            ¡Con gusto! Puedes comunicarte de inmediato con uno de nuestros ejecutivos de atención:<br><br>
+            📞 <strong>Teléfono:</strong> +58 412-1234567<br>
+            🟢 <strong>WhatsApp Directo:</strong><br>
+            <a href="${waUrl}" target="_blank" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:6px; background:#25D366; color:#ffffff; padding:8px 14px; border-radius:100px; text-decoration:none; font-weight:700; margin-top:8px; box-shadow:0 3px 10px rgba(37,211,102,0.3);">
+                <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Chatear con Asesor
+            </a>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 2. Formas de Pago
+    if (q.includes('pago') || q.includes('pagar') || q.includes('transferencia') || q.includes('cuenta') || q.includes('banco') || q.includes('dolar') || q.includes('bolivar') || q.includes('divisa') || q.includes('efectivo') || q.includes('tarjeta')) {
+        const html = `
+            💳 <strong>Formas de Pago Aceptadas:</strong><br><br>
+            Trabajamos con métodos rápidos y 100% verificados:<br>
+            • 📱 <strong>Pago Móvil:</strong> Banco Banesco y Banco de Venezuela (disponible de inmediato).<br>
+            • 🏦 <strong>Transferencia Bancaria:</strong> Cuentas nacionales autorizadas.<br><br>
+            💡 <em>Nota: Toda cotización se expresa en USD ($) y se valida el comprobante vía WhatsApp al procesar tu pedido.</em>
+            <div class="duribot-chips">
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cómo hago un pedido?')">🛒 ¿Cómo hacer un pedido?</button>
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Consultar datos bancarios</button>
+            </div>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 3. Envíos y Delivery
+    if (q.includes('envio') || q.includes('delivery') || q.includes('entrega') || q.includes('maracay') || q.includes('cagua') || q.includes('turmero') || q.includes('valencia') || q.includes('caracas') || q.includes('mrw') || q.includes('zoom') || q.includes('tealca')) {
+        const html = `
+            🚚 <strong>Zonas de Entrega y Envíos:</strong><br><br>
+            • 🛵 <strong>Delivery en Maracay y Aragua:</strong> Contamos con entrega rápida con fijación GPS en Maracay (El Limón, Las Delicias, La Coromoto, San Ignacio), Cagua y Turmero.<br>
+            • 📦 <strong>Envíos Nacionales:</strong> Enviamos a toda Venezuela por agencias de encomienda (<strong>MRW, Zoom, Tealca</strong>) con cobro a destino y embalaje seguro.<br><br>
+            ¿Deseas verificar si cubrimos tu sector específico?
+            <div class="duribot-chips">
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Preguntar por mi sector</button>
+                <button type="button" class="duribot-chip" onclick="window.location.href='pedidos.html'">📍 Ir a Pedidos con GPS</button>
+            </div>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 4. Ubicación y Horarios
+    if (q.includes('ubicacion') || q.includes('donde estan') || q.includes('direccion') || q.includes('horario') || q.includes('hora') || q.includes('abren') || q.includes('cierran') || q.includes('tienda')) {
+        const html = `
+            📍 <strong>Ubicación y Horario de Atención:</strong><br><br>
+            🏢 <strong>Sede:</strong> Maracay, Estado Aragua, Venezuela.<br>
+            ⏰ <strong>Horario:</strong> Lunes a Sábado de <strong>8:00 AM a 6:00 PM</strong>.<br>
+            📩 <strong>Correo:</strong> info@inversionesduri.com<br>
+            📞 <strong>Teléfono:</strong> +58 412-1234567<br>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 5. Cómo comprar / hacer pedidos
+    if (q.includes('pedido') || q.includes('comprar') || q.includes('orden') || q.includes('carrito') || q.includes('pasos')) {
+        const pedidosUrl = isInPages ? 'pedidos.html' : 'pages/pedidos.html';
+        const html = `
+            🛒 <strong>¿Cómo realizar tu pedido en 3 simples pasos?</strong><br><br>
+            <strong>1.</strong> Explora nuestro catálogo y agrega los productos deseados al carrito.<br>
+            <strong>2.</strong> Dirígete a la sección de <a href="${pedidosUrl}" style="color:#e85d26; font-weight:700;">Pedidos</a> para indicar tus datos y fijar tu dirección con el mapa/GPS.<br>
+            <strong>3.</strong> Pulsa <em>"Procesar Pedido"</em>: se generará tu orden oficial y se abrirá nuestro WhatsApp directo con tu comprobante listo para despachar.<br>
+            <div class="duribot-chips">
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Ver productos')">📦 Ver productos</button>
+                <button type="button" class="duribot-chip" onclick="window.location.href='${pedidosUrl}'">📝 Realizar Pedido Ahora</button>
+            </div>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 6. Búsqueda de Productos en el Catálogo
+    let allProducts = [];
+    try {
+        allProducts = await getFallbackProducts();
+    } catch(e) {}
+
+    const isCatalogIntent = q.includes('producto') || q.includes('catalogo') || q.includes('precio') || q.includes('tienen') || q.includes('venden') || q.includes('cuanto') || q.includes('costo') || q.length > 2;
+
+    if (isCatalogIntent && allProducts && allProducts.length > 0) {
+        // Filtrar productos que coincidan con la búsqueda
+        const stopWords = ['de', 'la', 'el', 'los', 'las', 'un', 'una', 'para', 'en', 'por', 'que', 'tienen', 'venden', 'precio', 'costo', 'cuanto', 'cuesta', 'productos', 'catalogo'];
+        const keywords = q.split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w));
+
+        let matches = [];
+        if (keywords.length > 0) {
+            matches = allProducts.filter(p => {
+                const normName = (p.nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const normDesc = (p.descripcion || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const normCat = (p.categoria_nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                return keywords.some(k => normName.includes(k) || normDesc.includes(k) || normCat.includes(k));
+            });
+        }
+
+        // Si fue una petición explícita de catálogo sin palabras específicas
+        if (matches.length === 0 && (q.includes('catalogo') || q.includes('productos') || q.includes('ver todo'))) {
+            matches = allProducts.slice(0, 4);
+        }
+
+        if (matches.length > 0) {
+            const top = matches.slice(0, 4);
+            let cardsHtml = top.map(p => {
+                const img = getProductImageUrl(p);
+                const price = parseFloat(p.precio_venta || 0).toFixed(2);
+                return `
+                    <div class="duribot-product-card">
+                        <img src="${img}" class="duribot-product-img" alt="${escapeHtml(p.nombre)}" onerror="this.src='${isInPages ? '../img/logo-duri.png' : 'img/logo-duri.png'}'">
+                        <div class="duribot-product-info">
+                            <h5 class="duribot-product-title">${escapeHtml(p.nombre)}</h5>
+                            <p class="duribot-product-price">$${price} <span style="font-size:0.7rem; color:#64748b; font-weight:normal;">(${p.stock_actual || 10} disp.)</span></p>
+                        </div>
+                        <button type="button" class="duribot-product-add" onclick="addDuriBotProductToCart(${p.id}, '${escapeHtml(p.nombre)}', ${price})" title="Agregar al pedido">
+                            <i class="fas fa-cart-plus"></i> Pedir
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            const productosUrl = isInPages ? 'productos.html' : 'pages/productos.html';
+            const html = `
+                📦 Encontré estos productos para ti:<br>
+                ${cardsHtml}
+                <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+                    <a href="${productosUrl}" class="btn btn-sm btn-outline" style="font-size:0.75rem; padding:5px 10px; border-radius:8px; text-decoration:none;">
+                        <i class="fas fa-th-list"></i> Ver todo el Catálogo
+                    </a>
+                    <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cuáles son las formas de pago?')">💳 ¿Cómo pagar?</button>
+                </div>
+                <span class="duribot-time">${getFormattedTime()}</span>
+            `;
+            appendDuriMessage('', 'bot', html);
+            return;
+        }
+    }
+
+    // 7. Respuesta por defecto
+    const productosUrlDefault = isInPages ? 'productos.html' : 'pages/productos.html';
+    const waUrlDefault = `https://wa.me/584121234567?text=${encodeURIComponent(`Hola Inversiones Duri, tengo una consulta: "${rawQuery}"`)}`;
+    const html = `
+        Entiendo tu consulta sobre <em>"${escapeHtml(rawQuery)}"</em>. 😊<br><br>
+        ¿Te gustaría revisar nuestro catálogo de artículos escolares y de oficina, o prefieres que un asesor te responda directamente por WhatsApp?<br><br>
+        <div class="duribot-chips">
+            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Ver productos')">📦 Ver Productos Disponibles</button>
+            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Formas de pago')">💳 Formas de Pago</button>
+            <a href="${waUrlDefault}" target="_blank" class="duribot-chip" style="background:#25D366; color:#ffffff; border-color:#25D366; text-decoration:none;">
+                <i class="fab fa-whatsapp"></i> Hablar por WhatsApp
+            </a>
+        </div>
+        <span class="duribot-time">${getFormattedTime()}</span>
+    `;
+    appendDuriMessage('', 'bot', html);
 }
 
 function updateFloatingCart() {

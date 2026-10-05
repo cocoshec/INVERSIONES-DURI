@@ -1201,3 +1201,466 @@ img { max-width:100%; }
     background: #fffdf8 !important;
 }
 
+/* ============================================
+   CHATBOT INTELIGENTE: DURIBOT
+   ============================================ */
+.duribot-float {
+    position: fixed;
+    bottom: 86px;
+    right: 24px;
+    z-index: 910;
+}
+
+.duribot-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e85d26 0%, #7928ca 100%);
+    color: #ffffff;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(232, 93, 38, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+}
+
+.duribot-btn:hover {
+    transform: scale(1.08) rotate(5deg);
+    box-shadow: 0 8px 24px rgba(121, 40, 202, 0.5);
+}
+
+.duribot-btn::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid rgba(232, 93, 38, 0.6);
+    animation: duribotPulse 2.2s infinite ease-out;
+    pointer-events: none;
+}
+
+@keyframes duribotPulse {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.25); opacity: 0; }
+    100% { transform: scale(0.95); opacity: 0; }
+}
+
+.duribot-online-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 13px;
+    height: 13px;
+    background: #28a745;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+}
+
+.duribot-tooltip {
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1e152f;
+    color: #ffffff;
+    padding: 7px 14px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+}
+
+.duribot-tooltip::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent transparent #1e152f;
+}
+
+.duribot-float:hover .duribot-tooltip,
+.duribot-tooltip.show-auto {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-4px);
+}
+
+/* Ventana de Conversación */
+.duribot-window {
+    position: fixed;
+    bottom: 90px;
+    right: 24px;
+    width: 370px;
+    max-width: calc(100vw - 32px);
+    height: 520px;
+    max-height: calc(100vh - 120px);
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    pointer-events: none;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.duribot-window.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+}
+
+/* Header del Bot */
+.duribot-header {
+    background: linear-gradient(135deg, #1e152f 0%, #2f1d4b 60%, #e85d26 140%);
+    color: #ffffff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.duribot-header-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.duribot-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e85d26 0%, #ff8a50 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    position: relative;
+}
+
+.duribot-header-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+    color: #ffffff;
+}
+
+.duribot-header-status {
+    font-size: 0.72rem;
+    color: #4ade80;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.duribot-header-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    display: inline-block;
+}
+
+.duribot-header-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.duribot-close-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.duribot-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Área de Mensajes */
+.duribot-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+}
+
+.duribot-msg-row {
+    display: flex;
+    gap: 8px;
+    max-width: 88%;
+}
+
+.duribot-msg-row.bot {
+    align-self: flex-start;
+}
+
+.duribot-msg-row.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.duribot-msg-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    position: relative;
+    word-break: break-word;
+}
+
+.duribot-msg-row.bot .duribot-msg-bubble {
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-top-left-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.duribot-msg-row.user .duribot-msg-bubble {
+    background: linear-gradient(135deg, #e85d26 0%, #d44d18 100%);
+    color: #ffffff;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(232, 93, 38, 0.25);
+}
+
+.duribot-time {
+    font-size: 0.65rem;
+    opacity: 0.65;
+    margin-top: 4px;
+    display: block;
+    text-align: right;
+}
+
+/* Chips de respuestas rápidas */
+.duribot-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.duribot-chip {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    color: #1e293b;
+    padding: 6px 11px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.duribot-chip:hover {
+    background: #e85d26;
+    color: #ffffff;
+    border-color: #e85d26;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(232, 93, 38, 0.25);
+}
+
+/* Tarjetas de productos en el Chat */
+.duribot-product-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.duribot-product-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f1f5f9;
+}
+
+.duribot-product-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.duribot-product-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.duribot-product-price {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #e85d26;
+    margin: 0;
+}
+
+.duribot-product-add {
+    background: #e85d26;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s;
+}
+
+.duribot-product-add:hover {
+    background: #d44d18;
+}
+
+/* Indicador de escribiendo */
+.duribot-typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    width: fit-content;
+}
+
+.duribot-typing span {
+    width: 6px;
+    height: 6px;
+    background: #94a3b8;
+    border-radius: 50%;
+    animation: duribotBounce 1.4s infinite ease-in-out both;
+}
+
+.duribot-typing span:nth-child(1) { animation-delay: -0.32s; }
+.duribot-typing span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes duribotBounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* Footer / Entrada de texto */
+.duribot-footer {
+    padding: 10px 12px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.duribot-input-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.duribot-input {
+    flex: 1;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 100px;
+    padding: 9px 16px;
+    font-size: 0.85rem;
+    outline: none;
+    color: #1e293b;
+    background: #f8fafc;
+    transition: border-color 0.2s;
+}
+
+.duribot-input:focus {
+    border-color: #e85d26;
+    background: #ffffff;
+}
+
+.duribot-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e85d26 0%, #7928ca 100%);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.duribot-send-btn:hover {
+    transform: scale(1.06);
+}
+
+.duribot-branding {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* Responsive para Móviles */
+@media (max-width: 480px) {
+    .duribot-float {
+        bottom: 76px;
+        right: 16px;
+    }
+    .duribot-window {
+        right: 8px;
+        left: 8px;
+        width: auto;
+        bottom: 78px;
+        height: 70vh;
+        max-height: 520px;
+    }
+}
+
+
