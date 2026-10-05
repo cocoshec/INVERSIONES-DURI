@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=9.0">
+    <link rel="stylesheet" href="../css/styles.css?v=10.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -107,6 +107,13 @@
                                 </button>
                             </div>
 
+                            <!-- Botón directo para abrir la app oficial de Google Maps si el usuario desea copiar su pin o enlace -->
+                            <div style="margin-bottom:8px;">
+                                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#1a73e8; text-decoration:none; padding:7px 10px; background:#f0f4f9; border-radius:8px; border:1px dashed #a8c7fa; font-weight:600; text-align:center;">
+                                    <i class="fab fa-google" style="color:#ea4335;"></i> Abrir App oficial de Google Maps (para copiar tu pin)
+                                </a>
+                            </div>
+
                             <!-- Tarjeta de Confirmación de Ubicación fijada con Google Maps -->
                             <div id="ubicacionConfirmadaCard" style="display:none; margin-bottom:8px; padding:10px 12px; background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:8px; font-size:0.82rem; color:#2e7d32; display:flex; justify-content:space-between; align-items:center;">
                                 <div style="display:flex; align-items:center; gap:8px;">
@@ -123,6 +130,9 @@
                             </div>
 
                             <textarea id="deliveryAddress" rows="2" placeholder="Describe tu dirección (Sector, calle, casa/apto y punto de referencia)..." required></textarea>
+                            <div style="font-size:0.74rem; color:#6c757d; margin-top:4px; display:flex; align-items:center; gap:5px;">
+                                <i class="fas fa-info-circle" style="color:#17a2b8;"></i> <span>Puedes escribir tu dirección o pegar aquí un enlace de Google Maps / coordenadas.</span>
+                            </div>
                             <input type="hidden" id="geoCoords" value="">
                         </div>
                         <div class="form-group">
@@ -176,7 +186,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=9.0"></script>
+    <script src="../js/app.js?v=10.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -253,6 +263,19 @@
             searchInput.addEventListener('blur', function() {
                 setTimeout(() => resultsBox.classList.remove('show'), 250);
             });
+
+            // Escuchar cambios y pegado de texto en Dirección para auto-detectar links de Google Maps o coordenadas
+            const deliveryInput = document.getElementById('deliveryAddress');
+            if (deliveryInput) {
+                deliveryInput.addEventListener('input', function() {
+                    analizarTextoDireccion(this.value);
+                });
+                deliveryInput.addEventListener('paste', function() {
+                    setTimeout(() => {
+                        analizarTextoDireccion(deliveryInput.value);
+                    }, 80);
+                });
+            }
         });
 
         function quickAdd(id, name, price, stock) {
@@ -297,6 +320,9 @@
             valencia: { nombre: 'Valencia, Carabobo', coords: [10.170026, -68.000398], zoom: 15 },
             naguanagua: { nombre: 'Naguanagua, Carabobo', coords: [10.258136, -68.012099], zoom: 15 },
             sandiego: { nombre: 'San Diego, Carabobo', coords: [10.229989, -67.961796], zoom: 15 },
+            trigal: { nombre: 'El Trigal, Valencia', coords: [10.218500, -67.994200], zoom: 16 },
+            vinedo: { nombre: 'El Viñedo, Valencia', coords: [10.216300, -68.006500], zoom: 16 },
+            guacara: { nombre: 'Guacara, Carabobo', coords: [10.231200, -67.876700], zoom: 15 },
             maracay: { nombre: 'Maracay, Aragua', coords: [10.2469, -67.5958], zoom: 15 },
             caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 14 },
             barquisimeto: { nombre: 'Barquisimeto, Lara', coords: [10.0678, -69.3474], zoom: 14 }
@@ -411,50 +437,8 @@
         }
 
         /**
-         * Motor ultra-robusto de geolocalización en tiempo real para Venezuela y móviles
+         * Motor de Geolocalización Satelital Real y Soporte de Google Maps Oficial
          */
-        async function obtenerUbicacionPorRedIp() {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3500);
-                const r = await fetch('https://freeipapi.com/api/json', { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (r.ok) {
-                    const d = await r.json();
-                    if (d && d.latitude && d.longitude) {
-                        return {
-                            latitude: parseFloat(d.latitude),
-                            longitude: parseFloat(d.longitude),
-                            city: d.cityName || d.regionName || 'Valencia',
-                            region: d.regionName || 'Carabobo',
-                            source: 'ip'
-                        };
-                    }
-                }
-            } catch(e) {}
-
-            try {
-                const controller2 = new AbortController();
-                const timeoutId2 = setTimeout(() => controller2.abort(), 3500);
-                const r2 = await fetch('https://ipwho.is/', { signal: controller2.signal });
-                clearTimeout(timeoutId2);
-                if (r2.ok) {
-                    const d2 = await r2.json();
-                    if (d2 && d2.latitude && d2.longitude) {
-                        return {
-                            latitude: parseFloat(d2.latitude),
-                            longitude: parseFloat(d2.longitude),
-                            city: d2.city || d2.region || 'Valencia',
-                            region: d2.region || 'Carabobo',
-                            source: 'ip'
-                        };
-                    }
-                }
-            } catch(e) {}
-
-            return null;
-        }
-
         let gpsWatchTrackerId = null;
         let gpsAccuracyCircle = null;
 
@@ -497,102 +481,135 @@
             abrirModalMapa(true, false);
         }
 
-        function capturarGpsTiempoReal(onSuccess, onError, onProgress) {
-            let resueltoConSatelite = false;
-            let mejorPrecision = 999999;
+        /**
+         * Detector inteligente de enlaces y coordenadas de Google Maps / WhatsApp
+         */
+        function analizarTextoDireccion(val) {
+            if (!val || typeof val !== 'string') return;
+            const text = val.trim();
 
-            detenerRastreoGps();
-
-            if (onProgress) onProgress('Buscando señal en tiempo real...');
-
-            // Disparar búsqueda por IP rápida como respaldo inmediato (3.2s)
-            const ipTimer = setTimeout(async () => {
-                if (!resueltoConSatelite) {
-                    const ipData = await obtenerUbicacionPorRedIp();
-                    if (ipData && !resueltoConSatelite) {
-                        onSuccess({
-                            coords: {
-                                latitude: ipData.latitude,
-                                longitude: ipData.longitude,
-                                accuracy: 1200
-                            },
-                            fuente: 'ip',
-                            ciudad: ipData.city
-                        });
-                    }
+            // 1. Enlace o texto con parámetros de Google Maps: ?q=lat,lon o query=lat,lon
+            const qMatch = text.match(/[?&](?:q|query)=(-?\d{1,2}\.\d{3,8}),(-?\d{1,3}\.\d{3,8})/i);
+            if (qMatch) {
+                const lat = parseFloat(qMatch[1]);
+                const lon = parseFloat(qMatch[2]);
+                aplicarUbicacionFijada(lat, lon);
+                if (gmap) {
+                    gmap.setView([lat, lon], 17);
+                    if (gmarker) gmarker.setLatLng([lat, lon]);
                 }
-            }, 3200);
-
-            if (!navigator.geolocation) {
-                clearTimeout(ipTimer);
-                obtenerUbicacionPorRedIp().then(ipData => {
-                    if (ipData) {
-                        onSuccess({
-                            coords: { latitude: ipData.latitude, longitude: ipData.longitude, accuracy: 1200 },
-                            fuente: 'ip',
-                            ciudad: ipData.city
-                        });
-                    } else if (onError) {
-                        onError('Dispositivo sin GPS. Toca el mapa para ubicar tu casa 📍');
-                    }
-                });
+                if (typeof showToast === 'function') showToast('📍 Enlace de Google Maps fijado con éxito', 'success');
                 return;
             }
 
-            // 1. Intento Rápido (red móvil / wifi / caché): 0 a 3 segundos
+            // 2. Enlace de Google Maps con @lat,lon
+            const atMatch = text.match(/@(-?\d{1,2}\.\d{3,8}),(-?\d{1,3}\.\d{3,8})/);
+            if (atMatch) {
+                const lat = parseFloat(atMatch[1]);
+                const lon = parseFloat(atMatch[2]);
+                aplicarUbicacionFijada(lat, lon);
+                if (gmap) {
+                    gmap.setView([lat, lon], 17);
+                    if (gmarker) gmarker.setLatLng([lat, lon]);
+                }
+                if (typeof showToast === 'function') showToast('📍 Ubicación de Google Maps fijada con éxito', 'success');
+                return;
+            }
+
+            // 3. Formato geo:lat,lon
+            const geoMatch = text.match(/geo:(-?\d{1,2}\.\d{3,8}),(-?\d{1,3}\.\d{3,8})/i);
+            if (geoMatch) {
+                const lat = parseFloat(geoMatch[1]);
+                const lon = parseFloat(geoMatch[2]);
+                aplicarUbicacionFijada(lat, lon);
+                if (gmap) {
+                    gmap.setView([lat, lon], 17);
+                    if (gmarker) gmarker.setLatLng([lat, lon]);
+                }
+                if (typeof showToast === 'function') showToast('📍 Coordenadas fijadas con éxito', 'success');
+                return;
+            }
+
+            // 4. Coordenadas directas: ej. 10.258136, -68.012099
+            const coordMatch = text.match(/(-?\d{1,2}\.\d{3,8})\s*,\s*(-?\d{1,3}\.\d{3,8})/);
+            if (coordMatch) {
+                const lat = parseFloat(coordMatch[1]);
+                const lon = parseFloat(coordMatch[2]);
+                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                    aplicarUbicacionFijada(lat, lon);
+                    if (gmap) {
+                        gmap.setView([lat, lon], 17);
+                        if (gmarker) gmarker.setLatLng([lat, lon]);
+                    }
+                    if (typeof showToast === 'function') showToast('📍 Coordenadas fijadas con éxito', 'success');
+                    return;
+                }
+            }
+        }
+
+        /**
+         * Rastreo Satelital Real sin intermediarios IP erróneos
+         */
+        function capturarGpsTiempoReal(onSuccess, onError, onProgress) {
+            detenerRastreoGps();
+
+            if (onProgress) onProgress('Buscando satélites GPS en tu teléfono...');
+
+            if (!navigator.geolocation) {
+                if (onError) onError('Tu navegador no soporta GPS. Usa el mapa para tocar tu casa 📍');
+                return;
+            }
+
+            let resuelto = false;
+
+            // 1. Consulta directa con alta precisión satelital
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    if (pos && pos.coords) {
-                        const acc = pos.coords.accuracy || 100;
-                        if (acc < mejorPrecision) {
-                            mejorPrecision = acc;
-                            onSuccess(pos, 'red');
-                        }
+                    if (pos && pos.coords && pos.coords.latitude) {
+                        resuelto = true;
+                        onSuccess(pos, 'satelite');
                     }
                 },
                 (err) => {
-                    console.warn('Geolocation fast fallback:', err);
-                    if (err.code === 1) { // PERMISSION_DENIED
-                        clearTimeout(ipTimer);
+                    console.warn('Geolocation direct error:', err);
+                    if (err.code === 1) { // Permiso denegado en Safari/Chrome
                         mostrarInstruccionesPermisoGps();
-                        obtenerUbicacionPorRedIp().then(ipData => {
-                            if (ipData) {
-                                onSuccess({
-                                    coords: { latitude: ipData.latitude, longitude: ipData.longitude, accuracy: 1200 },
-                                    fuente: 'ip',
-                                    ciudad: ipData.city
-                                });
-                            }
-                        });
+                        if (onError) onError('Permiso de GPS bloqueado. Actívalo en tu navegador para rastrear tu casa.');
+                    } else {
+                        // Si tarda en conectar con satélites, intentar un escaneo de antenas
+                        navigator.geolocation.getCurrentPosition(
+                            (pos2) => {
+                                if (pos2 && pos2.coords) {
+                                    resuelto = true;
+                                    onSuccess(pos2, 'red');
+                                }
+                            },
+                            (err2) => {
+                                if (!resuelto && onError) {
+                                    onError('Buscando satélite... También puedes tocar directamente tu casa en el mapa 📍');
+                                }
+                            },
+                            { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+                        );
                     }
                 },
-                { enableHighAccuracy: false, timeout: 3500, maximumAge: 120000 }
+                { enableHighAccuracy: true, timeout: 14000, maximumAge: 0 }
             );
 
-            // 2. Rastreo activo de alta precisión con watchPosition (despierta chip GPS satelital del teléfono)
+            // 2. Rastreo activo continuo en segundo plano para afinar metros
             try {
                 gpsWatchTrackerId = navigator.geolocation.watchPosition(
                     (pos) => {
                         if (pos && pos.coords && pos.coords.latitude) {
-                            clearTimeout(ipTimer);
-                            resueltoConSatelite = true;
+                            resuelto = true;
+                            onSuccess(pos, 'satelite');
                             const acc = pos.coords.accuracy || 15;
-                            if (acc <= mejorPrecision || mejorPrecision > 80) {
-                                mejorPrecision = acc;
-                                onSuccess(pos, 'satelite');
-                            }
                             if (acc < 25) {
-                                setTimeout(detenerRastreoGps, 6000);
+                                setTimeout(detenerRastreoGps, 5000);
                             }
                         }
                     },
-                    (err) => {
-                        console.warn('Geolocation satellite error:', err);
-                        if (err.code === 1) {
-                            clearTimeout(ipTimer);
-                            mostrarInstruccionesPermisoGps();
-                        }
-                    },
+                    () => {},
                     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
                 );
             } catch(e) {}
@@ -824,6 +841,15 @@
                     </button>
                     <button type="button" onclick="centrarEnCiudad('sandiego')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
                         📍 San Diego
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('trigal')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 El Trigal
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('vinedo')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 El Viñedo
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('guacara')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 Guacara
                     </button>
                     <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#fce8e6; color:#c5221f; border:1px solid #fad2cf; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
                         📍 Maracay
