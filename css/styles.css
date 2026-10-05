@@ -589,10 +589,12 @@ img { max-width:100%; }
    PRODUCT SEARCH
    ============================================ */
 .product-search-wrap { position:relative; }
-.product-search-box { display:flex; align-items:center; }
-.product-search-box i { position:absolute; left:14px; color:var(--text-tertiary); font-size:0.9rem; pointer-events:none; z-index:2; }
-.product-search-box input { width:100%; padding:13px 14px 13px 40px; border:2px solid var(--border-light); border-radius:12px; font-family:var(--font); font-size:0.95rem; transition:var(--transition); background:var(--bg); }
-.product-search-box input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(232,93,38,0.08); background:var(--bg-white); }
+.product-search-box { position:relative; display:flex; align-items:center; width:100%; }
+.product-search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-tertiary); font-size:0.95rem; pointer-events:none; z-index:2; }
+.product-search-box input,
+.form-group .product-search-box input { width:100%; padding:12px 14px 12px 42px !important; padding-left:42px !important; border:2px solid var(--border-light); border-radius:12px; font-family:var(--font); font-size:0.95rem; transition:var(--transition); background:var(--bg); }
+.product-search-box input:focus,
+.form-group .product-search-box input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 4px rgba(232,93,38,0.08); background:var(--bg-white); }
 
 .product-results { display:none; position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:50; background:var(--bg-white); border:1px solid var(--border-light); border-radius:12px; max-height:280px; overflow-y:auto; box-shadow:0 16px 48px rgba(0,0,0,0.15); }
 .product-results.show { display:block; }
@@ -826,6 +828,18 @@ img { max-width:100%; }
         font-size:16px !important;
         padding:10px 12px;
         border-radius:8px;
+    }
+    .form-group .product-search-box input,
+    .product-search-box input {
+        padding:11px 14px 11px 42px !important;
+        padding-left:42px !important;
+        border-radius:10px;
+    }
+    .product-search-box i {
+        left:14px;
+        top:50%;
+        transform:translateY(-50%);
+        font-size:0.92rem;
     }
 
     .inv-table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 16px; }
