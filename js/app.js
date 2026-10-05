@@ -1576,64 +1576,68 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
     const modal = document.createElement('div');
     modal.id = 'modalValidarPagoAdmin';
     modal.className = 'modal show';
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:rgba(15,23,42,0.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,12px)) max(12px,env(safe-area-inset-right,12px)) max(12px,env(safe-area-inset-bottom,12px)) max(12px,env(safe-area-inset-left,12px));box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch;';
 
     modal.innerHTML = `
-        <div style="background:#fff;border-radius:16px;width:100%;max-width:470px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);">
-            <div style="background:linear-gradient(135deg,#190c2e 0%,#2e1554 100%);color:#fff;padding:22px 24px;text-align:center;position:relative;">
-                <div style="width:58px;height:58px;border-radius:50%;background:rgba(40,167,69,0.18);border:2px solid #28a745;color:#28a745;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 10px;">
-                    <i class="fas fa-check-circle"></i>
+        <div style="background:#ffffff;border-radius:18px;width:100%;max-width:480px;max-height:min(90dvh,calc(100vh - 24px));display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);margin:auto;border:1px solid rgba(255,255,255,0.2);">
+            <div style="background:linear-gradient(135deg,#190c2e 0%,#2e1554 100%);color:#fff;padding:14px 18px;position:relative;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;align-items:center;gap:12px;padding-right:34px;">
+                    <div style="width:42px;height:42px;border-radius:50%;background:rgba(40,167,69,0.22);border:2px solid #28a745;color:#28a745;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div style="text-align:left;">
+                        <h3 style="margin:0;font-size:1.12rem;color:#ffffff;font-weight:700;line-height:1.2;">Validación de Pago</h3>
+                        <p style="margin:2px 0 0;font-size:0.75rem;color:#d8d2e6;font-weight:500;">Panel de Superusuario</p>
+                    </div>
                 </div>
-                <h3 style="margin:0;font-size:1.25rem;color:#ffffff;font-weight:700;">Validación de Pago</h3>
-                <p style="margin:4px 0 0;font-size:0.84rem;color:#d8d2e6;">Panel de Superusuario</p>
-                <button type="button" onclick="cerrarModalValidacionPago()" style="position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,0.7);font-size:1.4rem;cursor:pointer;line-height:1;">&times;</button>
+                <button type="button" onclick="cerrarModalValidacionPago()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.12);border:none;color:#ffffff;width:32px;height:32px;border-radius:50%;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:background 0.2s;" aria-label="Cerrar">&times;</button>
             </div>
             
-            <div style="padding:20px 24px;background:#fcfcfc;">
-                <div style="background:#ffffff;border:1.5px solid #edf0f2;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.02);margin-bottom:14px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #f0f0f0;">
-                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-hashtag"></i> Pedido:</span>
-                        <strong style="color:#251442;font-size:1rem;font-weight:700;">${codigo}</strong>
+            <div style="padding:14px 16px;background:#f8fafc;flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+                <div style="background:#ffffff;border:1.5px solid #edf0f2;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.02);margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #f1f5f9;">
+                        <span style="color:#64748b;font-size:0.83rem;"><i class="fas fa-hashtag"></i> Pedido:</span>
+                        <strong style="color:#251442;font-size:0.98rem;font-weight:800;">${codigo}</strong>
                     </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
-                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-user"></i> Cliente:</span>
-                        <strong style="color:#333;font-size:0.88rem;">${clienteNombre || 'Cliente'}${clienteCi ? ` (${clienteCi})` : ''}</strong>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                        <span style="color:#64748b;font-size:0.83rem;"><i class="fas fa-user"></i> Cliente:</span>
+                        <strong style="color:#1e293b;font-size:0.86rem;text-align:right;">${clienteNombre || 'Cliente'}${clienteCi ? ` (${clienteCi})` : ''}</strong>
                     </div>
                     ${clienteTelefono ? `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
-                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-phone"></i> Teléfono del Cliente:</span>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <strong style="color:#333;font-size:0.88rem;">${clienteTelefono}</strong>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;gap:6px;">
+                        <span style="color:#64748b;font-size:0.83rem;"><i class="fas fa-phone"></i> Teléfono:</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                            <strong style="color:#1e293b;font-size:0.86rem;">${clienteTelefono}</strong>
                             ${clientWaLink ? `
-                                <a href="${clientWaLink}" target="_blank" rel="noopener noreferrer" style="background:#25d366;color:#fff;padding:3px 9px;border-radius:12px;font-size:0.75rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Pedir captura de pago al cliente por WhatsApp">
+                                <a href="${clientWaLink}" target="_blank" rel="noopener noreferrer" style="background:#25d366;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Pedir captura de pago al cliente por WhatsApp">
                                     <i class="fab fa-whatsapp"></i> Chat Cliente
                                 </a>
                             ` : ''}
                         </div>
                     </div>
                     ` : ''}
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
-                        <span style="color:#666;font-size:0.85rem;"><i class="fas fa-credit-card"></i> Método de Pago:</span>
-                        <strong style="color:#333;font-size:0.88rem;">${paymentDisplay}</strong>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                        <span style="color:#64748b;font-size:0.83rem;"><i class="fas fa-credit-card"></i> Método de Pago:</span>
+                        <strong style="color:#1e293b;font-size:0.86rem;">${paymentDisplay}</strong>
                     </div>
                     ${prodsModalHtml}
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;">
-                        <span style="color:#333;font-weight:700;font-size:0.95rem;">Monto a Confirmar:</span>
-                        <span style="color:#28a745;font-weight:800;font-size:1.35rem;">$${totalDisplay}</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:9px;">
+                        <span style="color:#1e293b;font-weight:700;font-size:0.9rem;">Monto a Confirmar:</span>
+                        <span style="color:#16a34a;font-weight:800;font-size:1.3rem;">$${totalDisplay}</span>
                     </div>
                 </div>
 
-                <div style="background:#e8f4fd;border:1px solid #cbe5fb;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#035388;display:flex;align-items:center;gap:10px;">
-                    <i class="fas fa-info-circle" style="font-size:1.1rem;color:#007bff;flex-shrink:0;"></i>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 12px;font-size:0.78rem;color:#1e40af;display:flex;align-items:center;gap:8px;line-height:1.35;">
+                    <i class="fas fa-info-circle" style="font-size:1rem;color:#2563eb;flex-shrink:0;"></i>
                     <span>Al presionar <b>"Aceptar y Validar"</b>, la orden quedará como <b>Pago Confirmado</b> y se descontará del inventario.</span>
                 </div>
             </div>
 
-            <div style="padding:16px 24px 20px;display:flex;gap:10px;background:#ffffff;border-top:1px solid #eee;">
-                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;padding:12px 14px;background:#f8f9fa;border:1.5px solid #dee2e6;border-radius:8px;font-size:0.9rem;font-weight:600;color:#555;cursor:pointer;">
+            <div style="padding:10px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom,12px));display:flex;gap:10px;background:#ffffff;border-top:1px solid #e2e8f0;flex-shrink:0;position:sticky;bottom:0;z-index:2;">
+                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;min-height:44px;padding:10px 12px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;font-size:0.88rem;font-weight:600;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;">
                     Cancelar
                 </button>
-                <button type="button" id="btnAceptarYValidar" onclick="ejecutarAprobacionPago(${id}, '${codigo}')" style="flex:2;padding:12px 16px;background:linear-gradient(135deg,#28a745 0%,#1e7e34 100%);border:none;border-radius:8px;font-size:0.95rem;font-weight:700;color:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(40,167,69,0.35);">
+                <button type="button" id="btnAceptarYValidar" onclick="ejecutarAprobacionPago(${id}, '${codigo}')" style="flex:2;min-height:44px;padding:10px 14px;background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border:none;border-radius:10px;font-size:0.92rem;font-weight:700;color:#ffffff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(22,163,74,0.35);">
                     <i class="fas fa-check-circle"></i> Aceptar y Validar
                 </button>
             </div>
@@ -1671,28 +1675,31 @@ function confirmarCancelarPedido(id, codigo) {
     const modal = document.createElement('div');
     modal.id = 'modalValidarPagoAdmin';
     modal.className = 'modal show';
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:rgba(15,23,42,0.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,12px)) max(12px,env(safe-area-inset-right,12px)) max(12px,env(safe-area-inset-bottom,12px)) max(12px,env(safe-area-inset-left,12px));box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch;';
 
     modal.innerHTML = `
-        <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);text-align:center;">
-            <div style="padding:26px 24px 16px;">
-                <div style="width:54px;height:54px;border-radius:50%;background:rgba(220,53,69,0.15);border:2px solid #dc3545;color:#dc3545;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 12px;">
+        <div style="background:#fff;border-radius:18px;width:100%;max-width:400px;max-height:min(90dvh,calc(100vh - 24px));display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);margin:auto;text-align:center;">
+            <div style="padding:22px 20px 16px;flex:1 1 auto;overflow-y:auto;">
+                <div style="width:48px;height:48px;border-radius:50%;background:rgba(220,53,69,0.15);border:2px solid #dc3545;color:#dc3545;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 10px;">
                     <i class="fas fa-exclamation-triangle"></i>
                 </div>
-                <h3 style="margin:0 0 6px;font-size:1.2rem;color:#111;">¿Cancelar Pedido ${codigo}?</h3>
-                <p style="margin:0;font-size:0.85rem;color:#666;">El estado del pedido pasará a Cancelado.</p>
+                <h3 style="margin:0 0 6px;font-size:1.15rem;color:#0f172a;font-weight:700;">¿Cancelar Pedido ${codigo}?</h3>
+                <p style="margin:0;font-size:0.84rem;color:#64748b;">El estado del pedido pasará a Cancelado.</p>
             </div>
-            <div style="padding:16px 24px 22px;display:flex;gap:10px;">
-                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;padding:11px;background:#fff;border:1.5px solid #ccc;border-radius:8px;font-size:0.88rem;font-weight:600;color:#555;cursor:pointer;">
+            <div style="padding:12px 18px;padding-bottom:max(12px,env(safe-area-inset-bottom,12px));display:flex;gap:10px;background:#ffffff;border-top:1px solid #f1f5f9;flex-shrink:0;">
+                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;min-height:44px;padding:10px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;font-size:0.88rem;font-weight:600;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;">
                     Volver
                 </button>
-                <button type="button" onclick="actualizarEstadoPedidoDirecto(${id}, 'cancelado', '${codigo}'); cerrarModalValidacionPago(); showToast('Pedido ${codigo} cancelado', 'info');" style="flex:1;padding:11px;background:#dc3545;border:none;border-radius:8px;font-size:0.88rem;font-weight:700;color:#fff;cursor:pointer;">
+                <button type="button" onclick="actualizarEstadoPedidoDirecto(${id}, 'cancelado', '${codigo}'); cerrarModalValidacionPago(); showToast('Pedido ${codigo} cancelado', 'info');" style="flex:1;min-height:44px;padding:10px;background:#dc3545;border:none;border-radius:10px;font-size:0.88rem;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(220,53,69,0.3);">
                     Sí, Cancelar
                 </button>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModalValidacionPago();
+    });
 }
 window.confirmarCancelarPedido = confirmarCancelarPedido;
 
