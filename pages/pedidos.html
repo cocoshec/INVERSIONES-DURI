@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=12.0">
+    <link rel="stylesheet" href="../css/styles.css?v=13.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -186,7 +186,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=12.0"></script>
+    <script src="../js/app.js?v=13.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -566,75 +566,68 @@
 
             let resuelto = false;
 
-            // Timer de seguridad máximo (12 segundos)
+            // Timer de seguridad: 14 segundos para dar tiempo suficiente a que el chip GPS satelital responda
             const safetyTimer = setTimeout(() => {
                 if (!resuelto) {
                     resuelto = true;
                     detenerRastreoGps();
-                    if (onError) onError('El GPS tardó en responder. Asegúrate de tener la ubicación encendida en tu celular o toca tu casa en el mapa 📍');
+                    if (onError) onError('Señal de satélite lenta. Toca tu casa directamente en el mapa o usa los botones de ciudad 📍');
                 }
-            }, 12000);
+            }, 14000);
 
-            // Intentar primero con watchPosition: en móviles es el más rápido y confiable
+            // 1. INTENTO RÁPIDO (Caché reciente / Antenas / Wi-Fi): Responde en menos de 1 segundo si está disponible
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    if (pos && pos.coords && pos.coords.latitude) {
+                        resuelto = true;
+                        onSuccess(pos, 'red');
+                    }
+                },
+                (err) => {
+                    console.warn('Geolocation rápido aviso:', err.code, err.message);
+                    if (err.code === 1) { // PERMISSION_DENIED
+                        resuelto = true;
+                        clearTimeout(safetyTimer);
+                        detenerRastreoGps();
+                        mostrarInstruccionesPermisoGps();
+                        if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 en la barra superior para permitirlo.');
+                    }
+                },
+                { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
+            );
+
+            // 2. EN PARALELO: Rastreo continuo de alta precisión satelital (afina los metros exactos)
             try {
                 gpsWatchTrackerId = navigator.geolocation.watchPosition(
                     (pos) => {
                         if (pos && pos.coords && pos.coords.latitude) {
-                            if (!resuelto) {
-                                resuelto = true;
-                                clearTimeout(safetyTimer);
-                                onSuccess(pos, 'satelite');
-                            }
+                            resuelto = true;
+                            clearTimeout(safetyTimer);
+                            onSuccess(pos, 'satelite');
                             const acc = pos.coords.accuracy || 15;
-                            if (acc < 25) {
-                                setTimeout(detenerRastreoGps, 3000);
+                            // Si la precisión es óptima (< 20 metros), detener para ahorrar batería
+                            if (acc < 20) {
+                                setTimeout(detenerRastreoGps, 2500);
                             }
                         }
                     },
                     (err) => {
-                        console.warn('Geolocation watch error:', err);
+                        console.warn('Geolocation watch aviso:', err.code, err.message);
                         if (err.code === 1) { // PERMISSION_DENIED
                             resuelto = true;
                             clearTimeout(safetyTimer);
                             detenerRastreoGps();
                             mostrarInstruccionesPermisoGps();
                             if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 en la barra superior para permitirlo.');
-                            return;
                         }
-                        if (err.code === 2) { // POSITION_UNAVAILABLE
-                            resuelto = true;
-                            clearTimeout(safetyTimer);
-                            detenerRastreoGps();
-                            if (onError) onError('Ubicación apagada en el celular. Enciende el botón "Ubicación / GPS" en los ajustes de tu teléfono.');
-                            return;
-                        }
+                        // NOTA CLAVE: No abortar en err.code === 2 (POSITION_UNAVAILABLE) ni 3 (TIMEOUT),
+                        // porque en teléfonos y PC el GPS suele emitir este estado temporal mientras establece conexión con satélites.
                     },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                    { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
                 );
             } catch(e) {
-                console.error(e);
+                console.error('Error iniciando watchPosition:', e);
             }
-
-            // Fallback con getCurrentPosition por si watchPosition no arranca
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    if (!resuelto && pos && pos.coords && pos.coords.latitude) {
-                        resuelto = true;
-                        clearTimeout(safetyTimer);
-                        onSuccess(pos, 'satelite');
-                    }
-                },
-                (err) => {
-                    if (err && err.code === 1 && !resuelto) {
-                        resuelto = true;
-                        clearTimeout(safetyTimer);
-                        detenerRastreoGps();
-                        mostrarInstruccionesPermisoGps();
-                        if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 para permitirlo.');
-                    }
-                },
-                { enableHighAccuracy: false, timeout: 8000, maximumAge: 180000 }
-            );
         }
 
         function obtenerGpsDirecto() {
