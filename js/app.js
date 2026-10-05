@@ -670,6 +670,17 @@ function getUser() {
     try { return JSON.parse(localStorage.getItem('userDuri')); } catch(e) { return null; }
 }
 
+function handleImgError(img, cat) {
+    if (!img || !img.parentElement) return;
+    img.style.display = 'none';
+    const icons = {'Útiles Escolares':'fa-pencil','Papelería':'fa-book','Tecnología':'fa-print','Accesorios':'fa-paperclip'};
+    const iconClass = icons[cat] || 'fa-box';
+    const fallbackBox = document.createElement('div');
+    fallbackBox.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:#94a3b8;background:#f8fafc;';
+    fallbackBox.innerHTML = `<i class="fas ${iconClass}"></i>`;
+    img.parentElement.appendChild(fallbackBox);
+}
+
 function renderProductos(productos) {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
@@ -706,7 +717,7 @@ function renderProductos(productos) {
             imageHtml = `
             <div class="product-image">
                 ${editPhotoBtn}
-                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="this.onerror=null; this.parentElement.className='product-image ${colores[i % colores.length]}'; this.parentElement.innerHTML='${editPhotoBtn}<i class=\\\'fas ${icons[p.categoria_nombre] || 'fa-box'}\\\'></i>';">
+                <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="handleImgError(this, '${p.categoria_nombre}')">
             </div>`;
         } else {
             imageHtml = `<div class="product-image ${colores[i % colores.length]}">${editPhotoBtn}<i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>`;
