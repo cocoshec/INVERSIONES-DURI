@@ -2141,7 +2141,7 @@ async function submitOrder() {
     const clientCi = newCi.value.trim().toUpperCase();
     const clientPhone = newPhone.value.trim();
     
-    const paymentLabels = { pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria', tarjeta: 'Tarjeta' };
+    const paymentLabels = { pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria' };
     const paymentLabel = payment ? (paymentLabels[payment.value] || payment.value) : 'Pago Móvil';
     const addr = address ? address.value.trim() : '';
 

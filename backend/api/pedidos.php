@@ -110,7 +110,7 @@ switch ($method) {
 
             // Insertar pedido con los datos exactos que el cliente escribió en el formulario
             $formaPago = $data['forma_pago'] ?? 'pago_movil';
-            $formasValidas = ['pago_movil', 'transferencia', 'tarjeta'];
+            $formasValidas = ['pago_movil', 'transferencia'];
             if (!in_array($formaPago, $formasValidas)) $formaPago = 'pago_movil';
 
             $clienteNombre = $data['cliente_nombre'] ?? '';
