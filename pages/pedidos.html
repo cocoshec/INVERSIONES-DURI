@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=5.8">
+    <link rel="stylesheet" href="../css/styles.css?v=8.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -75,9 +75,9 @@
                         <div class="form-group">
                             <label><i class="fas fa-box"></i> Buscar Producto</label>
                             <div class="product-search-wrap">
-                                <div class="product-search-box" style="position:relative; display:flex; align-items:center; width:100%;">
-                                    <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-tertiary); font-size:0.92rem; pointer-events:none; z-index:3;"></i>
-                                    <input type="text" id="productSearch" placeholder="Escribe para buscar..." autocomplete="off" style="padding-left:42px !important;">
+                                <div class="product-search-box" onclick="document.getElementById('productSearch').focus()" style="display:flex; align-items:center; width:100%; background:#ffffff; border:1.5px solid #d0d7de; border-radius:12px; padding:0 14px; height:46px; box-sizing:border-box; cursor:text;">
+                                    <i class="fas fa-search" style="position:static !important; transform:none !important; color:#8c959f; font-size:1rem; margin-right:12px !important; flex-shrink:0; pointer-events:none;"></i>
+                                    <input type="text" id="productSearch" placeholder="Escribe para buscar..." autocomplete="off" style="flex:1 1 auto !important; min-width:0 !important; width:100% !important; border:none !important; background:transparent !important; outline:none !important; padding:0 !important; margin:0 !important; font-size:16px !important; color:#1e293b !important; box-shadow:none !important; height:100% !important;">
                                 </div>
                                 <div id="productResults" class="product-results"></div>
                             </div>
@@ -176,7 +176,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=6.4"></script>
+    <script src="../js/app.js?v=8.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
