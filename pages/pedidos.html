@@ -315,17 +315,18 @@
         let gmarker = null;
         let selectedCoords = null;
         let selectedAddressText = '';
-        const DEFAULT_COORD = [10.1700, -68.0004]; // Valencia por defecto / ajustable
+        const DEFAULT_COORD = [10.2469, -67.5958]; // Maracay Centro, Edo. Aragua
         const CIUDADES_VE = {
-            valencia: { nombre: 'Valencia, Carabobo', coords: [10.170026, -68.000398], zoom: 15 },
-            naguanagua: { nombre: 'Naguanagua, Carabobo', coords: [10.258136, -68.012099], zoom: 15 },
-            sandiego: { nombre: 'San Diego, Carabobo', coords: [10.229989, -67.961796], zoom: 15 },
-            trigal: { nombre: 'El Trigal, Valencia', coords: [10.218500, -67.994200], zoom: 16 },
-            vinedo: { nombre: 'El Viñedo, Valencia', coords: [10.216300, -68.006500], zoom: 16 },
-            guacara: { nombre: 'Guacara, Carabobo', coords: [10.231200, -67.876700], zoom: 15 },
-            maracay: { nombre: 'Maracay, Aragua', coords: [10.2469, -67.5958], zoom: 15 },
-            caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 14 },
-            barquisimeto: { nombre: 'Barquisimeto, Lara', coords: [10.0678, -69.3474], zoom: 14 }
+            maracay: { nombre: 'Maracay Centro, Aragua', coords: [10.2469, -67.5958], zoom: 15 },
+            delicias: { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zoom: 16 },
+            sanjacinto: { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zoom: 16 },
+            limon: { nombre: 'El Limón, Maracay', coords: [10.2798, -67.6322], zoom: 15 },
+            coromoto: { nombre: 'La Coromoto, Maracay', coords: [10.2520, -67.6180], zoom: 16 },
+            cagua: { nombre: 'Cagua / Turmero, Aragua', coords: [10.1856, -67.4589], zoom: 15 },
+            valencia: { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zoom: 15 },
+            naguanagua: { nombre: 'Naguanagua, Carabobo', coords: [10.2581, -68.0121], zoom: 15 },
+            sandiego: { nombre: 'San Diego, Carabobo', coords: [10.2300, -67.9618], zoom: 15 },
+            caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 14 }
         };
 
         const googlePinIcon = L.icon({
@@ -744,15 +745,15 @@
 
             if (typeof showToast === 'function') showToast('🔍 Buscando "' + q + '" en toda Venezuela...', 'info');
 
-            // Buscar en todo el territorio nacional de Venezuela (sin restringir a ningún estado)
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ve&q=${encodeURIComponent(q)}&limit=1`)
+            // 1. Intentar primero con ", Aragua, Venezuela" para ubicar el sector en Maracay/Aragua
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ve&q=${encodeURIComponent(q + ', Aragua, Venezuela')}&limit=1`)
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.length > 0) {
                         const lat = parseFloat(data[0].lat);
                         const lon = parseFloat(data[0].lon);
                         if (gmap) {
-                            gmap.flyTo([lat, lon], 16, { animate: true, duration: 1.2 });
+                            gmap.flyTo([lat, lon], 16, { animate: true, duration: 1.0 });
                             if (gmarker) gmarker.setLatLng([lat, lon]);
                         }
                         actualizarPuntoSeleccionado(lat, lon);
@@ -760,15 +761,15 @@
                         const nombreCorto = partes.slice(0, 2).join(',');
                         if (typeof showToast === 'function') showToast('📍 Encontrado: ' + nombreCorto, 'success');
                     } else {
-                        // Fallback con ", Venezuela"
-                        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Venezuela')}&limit=1`)
+                        // 2. Fallback en toda Venezuela
+                        fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ve&q=${encodeURIComponent(q + ', Venezuela')}&limit=1`)
                             .then(r2 => r2.json())
                             .then(d2 => {
                                 if (d2 && d2.length > 0) {
                                     const lat2 = parseFloat(d2[0].lat);
                                     const lon2 = parseFloat(d2[0].lon);
                                     if (gmap) {
-                                        gmap.flyTo([lat2, lon2], 16, { animate: true, duration: 1.2 });
+                                        gmap.flyTo([lat2, lon2], 16, { animate: true, duration: 1.0 });
                                         if (gmarker) gmarker.setLatLng([lat2, lon2]);
                                     }
                                     actualizarPuntoSeleccionado(lat2, lon2);
@@ -776,7 +777,7 @@
                                     const nombreCorto2 = partes2.slice(0, 2).join(',');
                                     if (typeof showToast === 'function') showToast('📍 Encontrado: ' + nombreCorto2, 'success');
                                 } else {
-                                    if (typeof showToast === 'function') showToast('No se encontró "' + q + '". Toca los botones de Valencia/Maracay o toca tu casa en el mapa 📍', 'warning');
+                                    if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa o usa los botones de sector 📍', 'info');
                                 }
                             })
                             .catch(() => {
@@ -839,32 +840,32 @@
             <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:8px 12px; display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
                 <div style="display:flex; gap:6px; background:#fff; border:1.5px solid #d0d7de; border-radius:8px; padding:2px 6px; align-items:center;">
                     <i class="fas fa-search" style="color:#5f6368; padding-left:6px; font-size:0.85rem;"></i>
-                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu ciudad, sector o calle (ej: Valencia, Naguanagua, Maracay)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
+                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Limón)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
                     <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">Buscar</button>
                 </div>
-                <!-- Botones rápidos de ciudades principales -->
+                <!-- Botones rápidos de ciudades y sectores principales -->
                 <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                     <span style="font-size:0.72rem; color:#5f6368; font-weight:600;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Ir a:</span>
-                    <button type="button" onclick="centrarEnCiudad('valencia')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Valencia
-                    </button>
-                    <button type="button" onclick="centrarEnCiudad('naguanagua')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 Naguanagua
-                    </button>
-                    <button type="button" onclick="centrarEnCiudad('sandiego')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 San Diego
-                    </button>
-                    <button type="button" onclick="centrarEnCiudad('trigal')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 El Trigal
-                    </button>
-                    <button type="button" onclick="centrarEnCiudad('vinedo')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 El Viñedo
-                    </button>
-                    <button type="button" onclick="centrarEnCiudad('guacara')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 Guacara
-                    </button>
                     <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#fce8e6; color:#c5221f; border:1px solid #fad2cf; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Maracay
+                        📍 Maracay Centro
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('delicias')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 Las Delicias
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 San Jacinto
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('limon')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 El Limón
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('coromoto')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 La Coromoto
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('cagua')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 Cagua / Turmero
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('valencia')" style="background:#f1f3f4; color:#3c4043; border:1px solid #dadce0; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
+                        📍 Valencia
                     </button>
                     <button type="button" onclick="centrarEnCiudad('caracas')" style="background:#f1f3f4; color:#3c4043; border:1px solid #dadce0; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
                         📍 Caracas
