@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=13.0">
+    <link rel="stylesheet" href="../css/styles.css?v=14.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -186,7 +186,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=13.0"></script>
+    <script src="../js/app.js?v=14.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -467,6 +467,8 @@
             }
         }
 
+        let yaIntentoConPermiso = false;
+
         function mostrarInstruccionesPermisoGps() {
             const modal = document.getElementById('modalPedirPermisoGps');
             if (modal) modal.style.display = 'flex';
@@ -479,7 +481,9 @@
 
         function intentarGpsConPermiso() {
             cerrarModalPermisoGps();
+            yaIntentoConPermiso = true;
             abrirModalMapa(true, false);
+            setTimeout(() => { yaIntentoConPermiso = false; }, 6000);
         }
 
         /**
@@ -590,8 +594,10 @@
                         resuelto = true;
                         clearTimeout(safetyTimer);
                         detenerRastreoGps();
-                        mostrarInstruccionesPermisoGps();
-                        if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 en la barra superior para permitirlo.');
+                        if (!yaIntentoConPermiso) {
+                            mostrarInstruccionesPermisoGps();
+                        }
+                        if (onError) onError('Safari tiene la ubicación bloqueada en este iPhone. Toca directamente tu casa en el mapa 📍');
                     }
                 },
                 { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
@@ -618,8 +624,10 @@
                             resuelto = true;
                             clearTimeout(safetyTimer);
                             detenerRastreoGps();
-                            mostrarInstruccionesPermisoGps();
-                            if (onError) onError('Permiso de GPS bloqueado. Toca el candado 🔒 en la barra superior para permitirlo.');
+                            if (!yaIntentoConPermiso) {
+                                mostrarInstruccionesPermisoGps();
+                            }
+                            if (onError) onError('Safari tiene la ubicación bloqueada en este iPhone. Toca directamente tu casa en el mapa 📍');
                         }
                         // NOTA CLAVE: No abortar en err.code === 2 (POSITION_UNAVAILABLE) ni 3 (TIMEOUT),
                         // porque en teléfonos y PC el GPS suele emitir este estado temporal mientras establece conexión con satélites.
@@ -911,32 +919,32 @@
             <div style="width:56px; height:56px; background:#fee8e7; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
                 <i class="fas fa-location-arrow" style="font-size:1.6rem; color:#ea4335;"></i>
             </div>
-            <h3 style="margin:0 0 6px; font-size:1.15rem; color:#202124; font-weight:700;">¡Por favor enciende tu Ubicación!</h3>
-            <p style="font-size:0.84rem; color:#5f6368; line-height:1.45; margin:0 0 14px;">
-                Para ubicar tu casa automáticamente en el mapa y que el repartidor llegue a tu puerta sin problemas:
+            <h3 style="margin:0 0 6px; font-size:1.15rem; color:#202124; font-weight:700;">¡Permiso de Ubicación requerido!</h3>
+            <p style="font-size:0.83rem; color:#5f6368; line-height:1.45; margin:0 0 12px;">
+                Por seguridad de Apple (iOS), una página web no puede activar el GPS de tu iPhone automáticamente. Para que Safari te ubique:
             </p>
             
-            <div style="text-align:left; background:#f8f9fa; border:1px solid #e8eaed; border-radius:12px; padding:12px 14px; margin-bottom:16px; font-size:0.82rem; color:#3c4043; line-height:1.5;">
+            <div style="text-align:left; background:#f8f9fa; border:1px solid #e8eaed; border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:0.82rem; color:#3c4043; line-height:1.5;">
                 <div style="display:flex; gap:10px; margin-bottom:10px; align-items:flex-start;">
-                    <i class="fab fa-apple" style="color:#111; font-size:1.25rem; margin-top:2px; flex-shrink:0;"></i>
-                    <span><strong>En iPhone (Safari):</strong> Toca las letras <b>"aA"</b> en la barra de abajo (o candado) &gt; <b>Configuración del sitio web</b> &gt; <b>Ubicación</b> &gt; elige <b>Permitir</b>.</span>
+                    <i class="fab fa-apple" style="color:#111; font-size:1.3rem; margin-top:2px; flex-shrink:0;"></i>
+                    <span><strong>En tu iPhone (Safari):</strong> En la barra inferior, toca el botón al lado de <b>cocoshec.github.io</b> &gt; <b>Ajustes del sitio web</b> &gt; <b>Ubicación</b> &gt; selecciona <b>Permitir</b>.</span>
                 </div>
                 <div style="display:flex; gap:10px; margin-bottom:10px; align-items:flex-start;">
-                    <i class="fab fa-android" style="color:#28a745; font-size:1.25rem; margin-top:2px; flex-shrink:0;"></i>
-                    <span><strong>En Android (Chrome):</strong> Toca el <b>candado 🔒</b> a la izquierda del enlace &gt; <b>Permisos</b> &gt; <b>Ubicación</b> &gt; elige <b>Permitir</b>.</span>
+                    <i class="fas fa-cog" style="color:#6c757d; font-size:1.15rem; margin-top:2px; flex-shrink:0;"></i>
+                    <span><strong>O en Ajustes del iPhone:</strong> Ve a <b>Ajustes &gt; Privacidad &gt; Localización &gt; Sitios web de Safari</b> y asegúrate de que esté en <b>Al usar la app</b>.</span>
                 </div>
                 <div style="display:flex; gap:10px; align-items:flex-start;">
-                    <i class="fas fa-crosshairs" style="color:#007bff; font-size:1.1rem; margin-top:2px; flex-shrink:0;"></i>
-                    <span><strong>GPS del teléfono:</strong> Asegúrate de que el botón "Ubicación" esté encendido en los ajustes rápidos de tu celular.</span>
+                    <i class="fas fa-map-pin" style="color:#28a745; font-size:1.15rem; margin-top:2px; flex-shrink:0;"></i>
+                    <span><strong>¿Sin dar permiso?</strong> No te preocupes, puedes tocar el botón gris abajo y <b>marcar tu casa en el mapa con 1 solo toque</b>.</span>
                 </div>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <button type="button" onclick="intentarGpsConPermiso()" style="width:100%; min-height:44px; padding:12px; background:#28a745; color:#fff; border:none; border-radius:10px; font-weight:700; font-size:0.92rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 12px rgba(40,167,69,0.3);">
-                    <i class="fas fa-crosshairs"></i> Ya la encendí, detectar mi ubicación
+                    <i class="fas fa-crosshairs"></i> Ya lo permití en Safari, ubicarme
                 </button>
-                <button type="button" onclick="cerrarModalPermisoGps(); abrirModalMapa(false);" style="width:100%; min-height:44px; padding:10px; background:#f1f3f4; color:#3c4043; border:none; border-radius:10px; font-weight:600; font-size:0.88rem; cursor:pointer;">
-                    Prefiero ubicar mi casa tocando el Mapa
+                <button type="button" onclick="cerrarModalPermisoGps(); abrirModalMapa(false);" style="width:100%; min-height:44px; padding:11px; background:#f1f3f4; color:#202124; border:1px solid #dadce0; border-radius:10px; font-weight:700; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <i class="fas fa-map-marked-alt" style="color:#ea4335;"></i> Prefiero tocar mi casa en el Mapa
                 </button>
             </div>
         </div>
