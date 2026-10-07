@@ -53,13 +53,14 @@
         <div class="container">
             <div class="contact-grid">
                 <div class="contact-items">
-                    <div class="contact-item">
+                    <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" class="contact-item" style="text-decoration:none; color:inherit; transition:transform 0.2s ease;">
                         <div class="contact-icon orange"><i class="fas fa-map-marker-alt"></i></div>
                         <div>
-                            <h4>Ubicación</h4>
-                            <p>Maracay, Estado Aragua, Venezuela</p>
+                            <h4>Sede Principal</h4>
+                            <p style="font-weight:600; color:var(--dark-brown);">Feria Escolar Inversiones Duri</p>
+                            <p style="font-size:0.82rem; color:var(--gray);">Maracay, Estado Aragua • Ver en Maps 📍</p>
                         </div>
-                    </div>
+                    </a>
                     <div class="contact-item">
                         <div class="contact-icon yellow"><i class="fas fa-phone"></i></div>
                         <div>
@@ -137,6 +138,52 @@
                             <i class="fas fa-paper-plane"></i> Enviar Mensaje
                         </button>
                     </form>
+                </div>
+            </div>
+
+            <!-- Mapa Interactivo Oficial de la Sede -->
+            <div class="contact-map-wrapper" style="margin-top: 40px; background: #ffffff; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); overflow: hidden; transition: box-shadow 0.3s ease;">
+                <div style="padding: 22px 24px; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); border-bottom: 1px solid #fed7aa; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px;">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div style="width: 48px; height: 48px; border-radius: 12px; background: #ea4335; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 4px 10px rgba(234, 67, 53, 0.3);">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--orange); display: block;">Ubicación Oficial</span>
+                            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--dark-brown); margin: 0;">Feria Escolar Inversiones Duri</h3>
+                            <p style="font-size: 0.85rem; color: var(--gray); margin: 2px 0 0 0;"><i class="fas fa-map-pin" style="color: #ea4335;"></i> Maracay, Estado Aragua, Venezuela</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" class="btn" style="background: #ea4335; color: #ffffff; border-radius: 10px; padding: 10px 18px; font-weight: 600; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 3px 8px rgba(234, 67, 53, 0.25); transition: transform 0.2s, box-shadow 0.2s;">
+                            <i class="fab fa-google"></i> Cómo Llegar en Google Maps
+                        </a>
+                        <a href="https://wa.me/584121234567?text=Hola%20Inversiones%20Duri%2C%20quisiera%20saber%20c%C3%B3mo%20llegar%20a%20su%20sede%20en%20Maracay" target="_blank" rel="noopener noreferrer" class="btn" style="background: #25D366; color: #ffffff; border-radius: 10px; padding: 10px 18px; font-weight: 600; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 3px 8px rgba(37, 211, 102, 0.25); transition: transform 0.2s, box-shadow 0.2s;">
+                            <i class="fab fa-whatsapp"></i> Preguntar por WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Iframe Google Maps interactivo centrado en Feria Escolar Inversiones Duri -->
+                <div style="position: relative; width: 100%; height: 380px; background: #e5e3df;">
+                    <iframe
+                        title="Ubicación oficial de Feria Escolar Inversiones Duri"
+                        src="https://maps.google.com/maps?q=10.2502976,-67.5961389&hl=es&z=17&output=embed"
+                        width="100%"
+                        height="100%"
+                        style="border: 0; display: block;"
+                        allowfullscreen=""
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+
+                <div style="padding: 12px 24px; background: #fafaf9; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.82rem; color: var(--gray);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-info-circle" style="color: var(--orange);"></i>
+                        <span>Puedes interactuar, hacer zoom y mover el mapa directamente aquí o pulsar <b>"Cómo Llegar"</b> para abrirlo en tu app móvil.</span>
+                    </div>
+                    <span style="font-weight: 600; color: var(--dark-brown);">Coordenadas: 10.2503° N, 67.5961° W</span>
                 </div>
             </div>
         </div>

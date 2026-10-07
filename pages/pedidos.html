@@ -105,10 +105,13 @@
                                 </button>
                             </div>
 
-                            <!-- Botón directo para abrir la app oficial de Google Maps si el usuario desea copiar su pin o enlace -->
-                            <div style="margin-bottom:8px;">
-                                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#1a73e8; text-decoration:none; padding:7px 10px; background:#f0f4f9; border-radius:8px; border:1px dashed #a8c7fa; font-weight:600; text-align:center;">
-                                    <i class="fab fa-google" style="color:#ea4335;"></i> Abrir App oficial de Google Maps (para copiar tu pin)
+                            <!-- Botón directo para abrir la app oficial de Google Maps o ver la sede oficial -->
+                            <div style="margin-bottom:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="flex:1; min-width:190px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#c5221f; text-decoration:none; padding:7px 10px; background:#fce8e6; border-radius:8px; border:1px solid #fad2cf; font-weight:600; text-align:center;">
+                                    <i class="fas fa-store"></i> Ver Sede Duri en Google Maps
+                                </a>
+                                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" style="flex:1; min-width:180px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#1a73e8; text-decoration:none; padding:7px 10px; background:#f0f4f9; border-radius:8px; border:1px dashed #a8c7fa; font-weight:600; text-align:center;">
+                                    <i class="fab fa-google" style="color:#ea4335;"></i> App Google Maps (copiar pin)
                                 </a>
                             </div>
 
@@ -313,8 +316,9 @@
         let gmarker = null;
         let selectedCoords = null;
         let selectedAddressText = '';
-        const DEFAULT_COORD = [10.2469, -67.5958]; // Maracay Centro, Edo. Aragua
+        const DEFAULT_COORD = [10.2502976, -67.5961389]; // Feria Escolar Inversiones Duri, Maracay
         const CIUDADES_VE = {
+            duri: { nombre: 'Sede Inversiones Duri (Feria Escolar)', coords: [10.2502976, -67.5961389], zoom: 17 },
             maracay: { nombre: 'Maracay Centro, Aragua', coords: [10.2469, -67.5958], zoom: 15 },
             delicias: { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zoom: 16 },
             sanjacinto: { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zoom: 16 },
@@ -852,6 +856,9 @@
                 <!-- Botones rápidos de ciudades y sectores principales -->
                 <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                     <span style="font-size:0.72rem; color:#5f6368; font-weight:600;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Ir a:</span>
+                    <button type="button" onclick="centrarEnCiudad('duri')" style="background:#e85d26; color:#ffffff; border:none; border-radius:14px; padding:3px 11px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(232,93,38,0.25);">
+                        🏢 Sede Inversiones Duri
+                    </button>
                     <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#fce8e6; color:#c5221f; border:1px solid #fad2cf; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
                         📍 Maracay Centro
                     </button>

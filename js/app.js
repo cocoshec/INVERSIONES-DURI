@@ -522,12 +522,17 @@ async function processDuriQuery(rawQuery) {
 
     // 4. Ubicación, Contacto y Horarios
     if (q.includes('ubicacion') || q.includes('donde estan') || q.includes('direccion') || q.includes('horario') || q.includes('hora') || q.includes('abren') || q.includes('cierran') || q.includes('tienda') || q.includes('local') || q.includes('correo') || q.includes('email') || q.includes('contacto')) {
+        const contactoUrl = (window.location.pathname.includes('/pages/') ? 'contacto.html' : 'pages/contacto.html');
         const html = `
-            📍 <strong>Ubicación y Canales de Contacto:</strong><br><br>
-            🏢 <strong>Sede:</strong> Maracay, Estado Aragua, Venezuela.<br>
+            📍 <strong>Ubicación y Canales Oficiales:</strong><br><br>
+            🏢 <strong>Sede:</strong> Feria Escolar Inversiones Duri, Maracay, Edo. Aragua.<br>
             ⏰ <strong>Horario:</strong> Lunes a Sábado de <strong>8:00 AM a 6:00 PM</strong>.<br>
             📩 <strong>Correo Oficial:</strong> <a href="mailto:inversionesduri@gmail.com" style="color:#e85d26; font-weight:700;">inversionesduri@gmail.com</a><br>
             📞 <strong>Teléfono:</strong> +58 412-1234567<br>
+            <div class="duribot-chips" style="margin-top:8px;">
+                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" class="duribot-chip" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:600;">📍 Abrir en Google Maps</a>
+                <button type="button" class="duribot-chip" onclick="window.location.href='${contactoUrl}'">📞 Ir a Contacto</button>
+            </div>
             <span class="duribot-time">${getFormattedTime()}</span>
         `;
         appendDuriMessage('', 'bot', html);
