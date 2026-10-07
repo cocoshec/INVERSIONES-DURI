@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css?v=20.0">
+    <link rel="stylesheet" href="css/styles.css?v=21.0">
     <style>
         /* Alineación vertical permanente para DuriBot y Carrito */
         .floating-actions-stack {
@@ -81,6 +81,43 @@
             .floating-actions-stack .floating-cart-btn {
                 width: 48px !important;
                 height: 48px !important;
+            }
+        /* Centrado perfecto de los íconos de características */
+        .icons-grid {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            gap: 40px !important;
+            flex-wrap: wrap !important;
+        }
+        .icon-item {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            text-align: center !important;
+        }
+        .icon-circle {
+            margin: 0 auto 10px !important;
+        }
+        .icon-item span {
+            text-align: center !important;
+            display: block !important;
+            width: 100% !important;
+            line-height: 1.35 !important;
+            margin: 0 auto !important;
+        }
+        @media (max-width: 480px) {
+            .icons-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 26px 16px !important;
+                justify-items: center !important;
+            }
+            .icon-item {
+                width: 100% !important;
+                max-width: 150px !important;
+                margin: 0 auto !important;
             }
         }
     </style>
@@ -179,27 +216,27 @@
             <div class="icons-grid">
                 <div class="icon-item">
                     <div class="icon-circle"><i class="fas fa-truck-fast"></i></div>
-                    <span>Entrega Rápida</span>
+                    <span style="text-align:center;display:block;">Entrega Rápida</span>
                 </div>
                 <div class="icon-item">
                     <div class="icon-circle"><i class="fas fa-shield-halved"></i></div>
-                    <span>Calidad Garantizada</span>
+                    <span style="text-align:center;display:block;">Calidad Garantizada</span>
                 </div>
                 <div class="icon-item">
                     <div class="icon-circle"><i class="fas fa-headset"></i></div>
-                    <span>Soporte 24/7</span>
+                    <span style="text-align:center;display:block;">Soporte 24/7</span>
                 </div>
                 <div class="icon-item">
                     <div class="icon-circle"><i class="fas fa-tags"></i></div>
-                    <span>Mejores Precios</span>
+                    <span style="text-align:center;display:block;">Mejores Precios</span>
                 </div>
                 <div class="icon-item">
                     <div class="icon-circle"><i class="fas fa-credit-card"></i></div>
-                    <span>Facilidades de Pago</span>
+                    <span style="text-align:center;display:block;">Facilidades de Pago</span>
                 </div>
                 <div class="icon-item">
                     <div class="icon-circle"><i class="fas fa-file-invoice"></i></div>
-                    <span>Facturación Electrónica</span>
+                    <span style="text-align:center;display:block;">Facturación Electrónica</span>
                 </div>
             </div>
         </div>

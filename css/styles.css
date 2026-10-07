@@ -144,11 +144,11 @@ img { max-width:100%; }
    ============================================ */
 .icons-row { background:var(--bg-white); padding:48px 0; border-bottom:1px solid var(--border-light); }
 .icons-grid { display:flex; justify-content:center; gap:40px; flex-wrap:wrap; }
-.icon-item { display:flex; flex-direction:column; align-items:center; gap:10px; transition:var(--transition); }
+.icon-item { display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; transition:var(--transition); }
 .icon-item:hover { transform:translateY(-3px); }
-.icon-circle { width:72px; height:72px; border-radius:50%; background:var(--accent-subtle); display:flex; align-items:center; justify-content:center; font-size:1.6rem; color:var(--accent); transition:var(--transition); border:2px solid transparent; }
+.icon-circle { width:72px; height:72px; border-radius:50%; background:var(--accent-subtle); display:flex; align-items:center; justify-content:center; font-size:1.6rem; color:var(--accent); transition:var(--transition); border:2px solid transparent; margin:0 auto; }
 .icon-item:hover .icon-circle { background:var(--accent); color:var(--white); border-color:var(--accent); box-shadow:0 8px 24px rgba(232,93,38,0.25); }
-.icon-item span { font-size:0.82rem; font-weight:600; color:var(--text-primary); }
+.icon-item span { font-size:0.85rem; font-weight:600; color:var(--text-primary); text-align:center; display:block; width:100%; line-height:1.35; }
 
 /* ============================================
    SECTIONS
@@ -998,9 +998,40 @@ img { max-width:100%; }
     .stat-info span { font-size:0.85rem; }
     .hero-image { display:none; }
 
-    .icons-grid { grid-template-columns:repeat(2,1fr); gap:18px; }
-    .icon-circle { width:76px; height:76px; font-size:1.8rem; border-radius:50%; }
-    .icon-item span { font-size:0.9rem; font-weight:600; }
+    .icons-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 26px 16px !important;
+        justify-items: center !important;
+        align-items: start !important;
+    }
+    .icon-item {
+        width: 100% !important;
+        max-width: 150px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: center !important;
+        margin: 0 auto !important;
+    }
+    .icon-circle {
+        width: 76px !important;
+        height: 76px !important;
+        font-size: 1.8rem !important;
+        border-radius: 50% !important;
+        margin: 0 auto 10px !important;
+    }
+    .icon-item span {
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+        color: var(--text-primary) !important;
+        text-align: center !important;
+        display: block !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        line-height: 1.35 !important;
+    }
 
     .about-image-wrap img { height:220px; }
     .about-text h2 { font-size:1.4rem; text-align:left; }
