@@ -520,13 +520,13 @@ async function processDuriQuery(rawQuery) {
         return;
     }
 
-    // 4. Ubicación y Horarios
-    if (q.includes('ubicacion') || q.includes('donde estan') || q.includes('direccion') || q.includes('horario') || q.includes('hora') || q.includes('abren') || q.includes('cierran') || q.includes('tienda') || q.includes('local')) {
+    // 4. Ubicación, Contacto y Horarios
+    if (q.includes('ubicacion') || q.includes('donde estan') || q.includes('direccion') || q.includes('horario') || q.includes('hora') || q.includes('abren') || q.includes('cierran') || q.includes('tienda') || q.includes('local') || q.includes('correo') || q.includes('email') || q.includes('contacto')) {
         const html = `
-            📍 <strong>Ubicación y Horario de Atención:</strong><br><br>
+            📍 <strong>Ubicación y Canales de Contacto:</strong><br><br>
             🏢 <strong>Sede:</strong> Maracay, Estado Aragua, Venezuela.<br>
             ⏰ <strong>Horario:</strong> Lunes a Sábado de <strong>8:00 AM a 6:00 PM</strong>.<br>
-            📩 <strong>Correo:</strong> info@inversionesduri.com<br>
+            📩 <strong>Correo Oficial:</strong> <a href="mailto:inversionesduri@gmail.com" style="color:#e85d26; font-weight:700;">inversionesduri@gmail.com</a><br>
             📞 <strong>Teléfono:</strong> +58 412-1234567<br>
             <span class="duribot-time">${getFormattedTime()}</span>
         `;

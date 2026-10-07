@@ -159,7 +159,8 @@ if ($action === 'recuperar_solicitar' && $method === 'POST') {
     
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: Inversiones Duri <no-reply@inversionesduri.com>\r\n";
+    $headers .= "From: Inversiones Duri <inversionesduri@gmail.com>\r\n";
+    $headers .= "Reply-To: inversionesduri@gmail.com\r\n";
     
     $mailEnviado = @mail($email, $asunto, $cuerpoHtml, $headers);
     
