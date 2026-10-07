@@ -1134,10 +1134,6 @@ async function loadProductos(categoria = null) {
     }
 }
 
-function getUser() {
-    try { return JSON.parse(localStorage.getItem('userDuri')); } catch(e) { return null; }
-}
-
 function handleImgError(img, cat) {
     if (!img || !img.parentElement) return;
     img.style.display = 'none';

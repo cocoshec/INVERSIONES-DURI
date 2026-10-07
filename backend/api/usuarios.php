@@ -15,8 +15,8 @@ if (!class_exists('Database')) {
 $database = new Database();
 $db = $database->getConnection();
 
-$action = $_GET['action'] ?? $_SERVER['REQUEST_METHOD'];
-$method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? null;
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 // ============================================
 // LOGIN

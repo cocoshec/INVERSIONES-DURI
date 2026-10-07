@@ -23,7 +23,7 @@
             <div class="top-bar-right">
                 <a href="https://www.facebook.com/InversionesDuri?locale=es_LA" target="_blank" rel="noopener noreferrer" title="Facebook"><i class="fab fa-facebook-f"></i></a>
                 <a href="https://www.instagram.com/inversionesdurica/" target="_blank" rel="noopener noreferrer" title="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-whatsapp"></i></a>
+                <a href="https://wa.me/584121234567?text=Hola%20Inversiones%20Duri%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n" target="_blank" rel="noopener noreferrer" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
             </div>
         </div>
     </div>
@@ -162,9 +162,11 @@
         </div>
     </footer>
 
+    <script src="../js/app.js?v=20.0"></script>
     <script>
     const API = '../backend/api/usuarios.php';
     let currentUser = null;
+    let loadedUsersList = [];
 
     // Verificar sesión
     document.addEventListener('DOMContentLoaded', function(){
@@ -191,30 +193,38 @@
     }
 
     function renderUsers(usuarios){
+        loadedUsersList = usuarios || [];
         const tbody = document.getElementById('usersBody');
         const roles = {super_usuario:'SuperUsuario', operador:'Operador', usuario:'Usuario'};
         const roleColors = {super_usuario:'background:rgba(239,126,38,0.15);color:var(--orange)', operador:'background:rgba(243,199,58,0.25);color:#B8960A', usuario:'background:rgba(40,167,69,0.15);color:var(--green)'};
         
         let counts = {super_usuario:0, operador:0, usuario:0};
-        usuarios.forEach(u => counts[u.rol]++);
+        (usuarios || []).forEach(u => {
+            if (counts[u.rol] !== undefined) counts[u.rol]++;
+        });
         document.getElementById('countSuper').textContent = counts.super_usuario;
         document.getElementById('countOperador').textContent = counts.operador;
         document.getElementById('countUsuario').textContent = counts.usuario;
         
-        tbody.innerHTML = usuarios.map(u => `
+        tbody.innerHTML = (usuarios || []).map(u => `
             <tr>
                 <td><strong>${u.nombre}</strong></td>
                 <td>${u.email}</td>
-                <td><span style="padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;${roleColors[u.rol]}">${roles[u.rol]}</span></td>
+                <td><span style="padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;${roleColors[u.rol] || ''}">${roles[u.rol] || u.rol}</span></td>
                 <td>${u.telefono || '-'}</td>
                 <td>${u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-VE') : 'Nunca'}</td>
                 <td><span class="status ${u.activo ? 'available' : 'out'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
-                    <button class="btn btn-sm" style="background:var(--cream)" onclick='editUser(${JSON.stringify(u)})'><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm" style="background:var(--cream)" onclick="editUserById(${u.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm" style="background:${u.activo ? 'rgba(220,53,69,0.15)' : 'rgba(40,167,69,0.15)'};color:${u.activo ? '#dc3545' : '#28a745'}" onclick="toggleUser(${u.id},${u.activo})"><i class="fas fa-${u.activo ? 'ban' : 'check'}"></i></button>
                 </td>
             </tr>
         `).join('');
+    }
+
+    function editUserById(id) {
+        const user = loadedUsersList.find(u => u.id == id);
+        if (user) editUser(user);
     }
 
     async function loadLog(){

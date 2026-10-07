@@ -15,7 +15,7 @@ if (!class_exists('Database')) {
 $database = new Database();
 $db = $database->getConnection();
 
-$method = $_SERVER['REQUEST_METHOD'];
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 switch ($method) {
     case 'GET':
