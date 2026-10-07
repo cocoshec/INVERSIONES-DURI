@@ -465,14 +465,19 @@ async function processDuriQuery(rawQuery) {
         return;
     }
 
-    // 1.1 Redes Sociales / Instagram
-    if (q.includes('instagram') || q.includes('ig') || q.includes('redes') || q.includes('red social') || q.includes('facebook') || q.includes('cuenta de instagram')) {
+    // 1.1 Redes Sociales / Instagram & Facebook
+    if (q.includes('instagram') || q.includes('ig') || q.includes('redes') || q.includes('red social') || q.includes('facebook') || q.includes('fb') || q.includes('cuenta de instagram') || q.includes('cuenta de facebook')) {
         const html = `
-            📸 <strong>¡Síguenos en nuestras Redes Sociales!</strong><br><br>
+            🌐 <strong>¡Síguenos en nuestras Redes Oficiales!</strong><br><br>
             Entérate de nuevas ofertas, promociones y novedades:<br><br>
-            <a href="https://www.instagram.com/inversionesdurica/" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#ffffff; padding:9px 16px; border-radius:100px; text-decoration:none; font-weight:700; margin-top:4px; box-shadow:0 3px 12px rgba(220,39,67,0.35);">
-                <i class="fab fa-instagram" style="font-size:1.2rem;"></i> @inversionesdurica
-            </a>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+                <a href="https://www.instagram.com/inversionesdurica/" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#ffffff; padding:9px 16px; border-radius:100px; text-decoration:none; font-weight:700; box-shadow:0 3px 12px rgba(220,39,67,0.35);">
+                    <i class="fab fa-instagram" style="font-size:1.2rem;"></i> Instagram (@inversionesdurica)
+                </a>
+                <a href="https://www.facebook.com/InversionesDuri?locale=es_LA" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:8px; background:#1877F2; color:#ffffff; padding:9px 16px; border-radius:100px; text-decoration:none; font-weight:700; box-shadow:0 3px 12px rgba(24,119,242,0.35);">
+                    <i class="fab fa-facebook-f" style="font-size:1.1rem;"></i> Facebook (Inversiones Duri)
+                </a>
+            </div>
             <span class="duribot-time">${getFormattedTime()}</span>
         `;
         appendDuriMessage('', 'bot', html);
