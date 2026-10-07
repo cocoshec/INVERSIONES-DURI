@@ -156,28 +156,48 @@ function initWhatsApp() {
     document.body.appendChild(div);
 }
 
+function getOrCreateFloatingStack() {
+    let stack = document.getElementById('floatingActionsStack');
+    if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'floatingActionsStack';
+        stack.className = 'floating-actions-stack';
+        document.body.appendChild(stack);
+    }
+    return stack;
+}
+
 function initFloatingCart() {
-    const html = `
-    <div class="floating-cart">
-        <div class="cart-panel" id="cartPanel">
-            <div class="cart-panel-header">
-                <h4><i class="fas fa-shopping-cart"></i> Mi Pedido</h4>
-                <button onclick="toggleCartPanel()">&times;</button>
-            </div>
-            <div class="cart-panel-body" id="cartPanelBody">
-                <div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>
-            </div>
-            <div class="cart-panel-footer">
-                <div class="cart-panel-total"><span>Total:</span><strong id="cartPanelTotal">$0.00</strong></div>
-                <a href="pedidos.html" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Ver Pedido</a>
-            </div>
+    if (document.querySelector('.floating-cart-btn')) return;
+
+    // Cart Panel (Drawer modal independiente)
+    const panelHtml = `
+    <div class="cart-panel" id="cartPanel">
+        <div class="cart-panel-header">
+            <h4><i class="fas fa-shopping-cart"></i> Mi Pedido</h4>
+            <button onclick="toggleCartPanel()">&times;</button>
         </div>
-        <button class="floating-cart-btn" onclick="toggleCartPanel()">
+        <div class="cart-panel-body" id="cartPanelBody">
+            <div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>
+        </div>
+        <div class="cart-panel-footer">
+            <div class="cart-panel-total"><span>Total:</span><strong id="cartPanelTotal">$0.00</strong></div>
+            <a href="pedidos.html" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Ver Pedido</a>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', panelHtml);
+
+    // Botón del Carrito dentro del contenedor unificado
+    const stack = getOrCreateFloatingStack();
+    const cartWrapper = document.createElement('div');
+    cartWrapper.className = 'floating-cart-item';
+    cartWrapper.innerHTML = `
+        <button class="floating-cart-btn" onclick="toggleCartPanel()" title="Ver carrito" aria-label="Abrir carrito">
             <i class="fas fa-shopping-cart"></i>
             <span class="cart-count" id="floatingCartCount" style="display:none">0</span>
         </button>
-    </div>`;
-    document.body.insertAdjacentHTML('beforeend', html);
+    `;
+    stack.appendChild(cartWrapper);
     updateFloatingCart();
 }
 
@@ -200,71 +220,72 @@ function escapeHtml(str) {
 }
 
 function initDuriChatbot() {
-    if (document.getElementById('duribotWidget')) return;
+    if (document.getElementById('duribotWindow') || document.getElementById('duribotBtn')) return;
 
-    const html = `
-    <div id="duribotWidget">
-        <!-- Botón Flotante -->
-        <div class="duribot-float">
-            <div class="duribot-tooltip" id="duribotTooltip">💬 ¡Hola! ¿En qué te ayudo?</div>
-            <button class="duribot-btn" id="duribotBtn" onclick="toggleDuriChatbot()" title="Asistente Virtual Duri" aria-label="Abrir asistente virtual">
-                <i class="fas fa-robot"></i>
-                <span class="duribot-online-dot"></span>
-            </button>
+    // Ventana de Chat independiente
+    const windowHtml = `
+    <div class="duribot-window" id="duribotWindow">
+        <!-- Header -->
+        <div class="duribot-header">
+            <div class="duribot-header-info">
+                <div class="duribot-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <h4 class="duribot-header-title">DuriBot</h4>
+                    <span class="duribot-header-status">En línea • Respuestas al instante</span>
+                </div>
+            </div>
+            <div class="duribot-header-actions">
+                <button class="duribot-close-btn" onclick="toggleDuriChatbot()" title="Cerrar chat">&times;</button>
+            </div>
         </div>
 
-        <!-- Ventana de Chat -->
-        <div class="duribot-window" id="duribotWindow">
-            <!-- Header -->
-            <div class="duribot-header">
-                <div class="duribot-header-info">
-                    <div class="duribot-avatar">
-                        <i class="fas fa-robot"></i>
+        <!-- Body (Historial de Mensajes) -->
+        <div class="duribot-body" id="duribotBody">
+            <div class="duribot-msg-row bot">
+                <div class="duribot-msg-bubble">
+                    ¡Hola! 👋 Soy <strong>DuriBot</strong>, el asistente virtual de <strong>Inversiones Duri C.A</strong>.<br><br>
+                    ¿En qué te puedo asesorar hoy? Puedes escribir lo que buscas o elegir una opción rápida:
+                    <div class="duribot-chips">
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Qué productos tienen en catálogo?')">📦 Ver productos</button>
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cuáles son las formas de pago?')">💳 Formas de pago</button>
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cómo son los envíos y entregas?')">🚚 Envíos y Delivery</button>
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Dónde están ubicados y cuál es el horario?')">📍 Ubicación y Horario</button>
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Hablar con un asesor</button>
                     </div>
-                    <div>
-                        <h4 class="duribot-header-title">DuriBot</h4>
-                        <span class="duribot-header-status">En línea • Respuestas al instante</span>
-                    </div>
-                </div>
-                <div class="duribot-header-actions">
-                    <button class="duribot-close-btn" onclick="toggleDuriChatbot()" title="Cerrar chat">&times;</button>
+                    <span class="duribot-time">${getFormattedTime()}</span>
                 </div>
             </div>
+        </div>
 
-            <!-- Body (Historial de Mensajes) -->
-            <div class="duribot-body" id="duribotBody">
-                <div class="duribot-msg-row bot">
-                    <div class="duribot-msg-bubble">
-                        ¡Hola! 👋 Soy <strong>DuriBot</strong>, el asistente virtual de <strong>Inversiones Duri C.A</strong>.<br><br>
-                        ¿En qué te puedo asesorar hoy? Puedes escribir lo que buscas o elegir una opción rápida:
-                        <div class="duribot-chips">
-                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Qué productos tienen en catálogo?')">📦 Ver productos</button>
-                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cuáles son las formas de pago?')">💳 Formas de pago</button>
-                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cómo son los envíos y entregas?')">🚚 Envíos y Delivery</button>
-                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Dónde están ubicados y cuál es el horario?')">📍 Ubicación y Horario</button>
-                            <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Hablar con un asesor</button>
-                        </div>
-                        <span class="duribot-time">${getFormattedTime()}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer (Input) -->
-            <div class="duribot-footer">
-                <form class="duribot-input-form" id="duribotForm" onsubmit="handleDuriSubmit(event)">
-                    <input type="text" class="duribot-input" id="duribotInput" placeholder="Escribe tu pregunta o producto..." autocomplete="off">
-                    <button type="submit" class="duribot-send-btn" title="Enviar mensaje">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </form>
-                <p class="duribot-branding"><i class="fas fa-bolt" style="color:#e85d26;"></i> Inversiones Duri C.A • Asistente Virtual 24/7</p>
-            </div>
+        <!-- Footer (Input) -->
+        <div class="duribot-footer">
+            <form class="duribot-input-form" id="duribotForm" onsubmit="handleDuriSubmit(event)">
+                <input type="text" class="duribot-input" id="duribotInput" placeholder="Escribe tu pregunta o producto..." autocomplete="off">
+                <button type="submit" class="duribot-send-btn" title="Enviar mensaje">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+            <p class="duribot-branding"><i class="fas fa-bolt" style="color:#e85d26;"></i> Inversiones Duri C.A • Asistente Virtual 24/7</p>
         </div>
     </div>`;
+    document.body.insertAdjacentHTML('beforeend', windowHtml);
 
-    document.body.insertAdjacentHTML('beforeend', html);
+    // Botón de DuriBot dentro del contenedor unificado (arriba del carrito)
+    const stack = getOrCreateFloatingStack();
+    const duriWrapper = document.createElement('div');
+    duriWrapper.className = 'duribot-float-item';
+    duriWrapper.innerHTML = `
+        <div class="duribot-tooltip" id="duribotTooltip">💬 ¡Hola! ¿En qué te ayudo?</div>
+        <button class="duribot-btn" id="duribotBtn" onclick="toggleDuriChatbot()" title="Asistente Virtual Duri" aria-label="Abrir asistente virtual">
+            <i class="fas fa-robot"></i>
+            <span class="duribot-online-dot"></span>
+        </button>
+    `;
+    stack.prepend(duriWrapper);
 
-    // Mostrar tooltip automáticamente por 5 segundos al primer minuto
+    // Mostrar tooltip automáticamente por 5 segundos
     setTimeout(() => {
         const tooltip = document.getElementById('duribotTooltip');
         if (tooltip && !document.getElementById('duribotWindow').classList.contains('open')) {

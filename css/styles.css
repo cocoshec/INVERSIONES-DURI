@@ -539,8 +539,47 @@ img { max-width:100%; }
 .toast i { font-size:1rem; }
 
 /* ============================================
-   FLOATING CART & WHATSAPP
+   FLOATING ACTIONS STACK & WHATSAPP
    ============================================ */
+.floating-actions-stack {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    z-index: 910;
+    pointer-events: none;
+}
+.floating-actions-stack > * {
+    pointer-events: auto;
+}
+.floating-actions-stack .duribot-float,
+.floating-actions-stack .floating-cart,
+.floating-actions-stack .duribot-float-item,
+.floating-actions-stack .floating-cart-item {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 52px !important;
+    height: 52px !important;
+}
+.floating-actions-stack .duribot-btn,
+.floating-actions-stack .floating-cart-btn {
+    width: 52px !important;
+    height: 52px !important;
+    margin: 0 !important;
+}
+
 .floating-cart { position:fixed; bottom:24px; right:24px; z-index:900; }
 .floating-cart-btn { width:52px; height:52px; border-radius:50%; background:var(--accent); color:white; border:none; font-size:1.05rem; cursor:pointer; box-shadow:0 4px 16px rgba(232,93,38,0.3); display:flex; align-items:center; justify-content:center; transition:var(--transition); position:relative; }
 .floating-cart-btn:hover { transform:scale(1.05); box-shadow:0 6px 20px rgba(232,93,38,0.4); }
@@ -897,6 +936,20 @@ img { max-width:100%; }
     .btn { padding:10px 20px; font-size:0.92rem; }
     .btn-lg { padding:14px 26px; font-size:1rem; }
 
+    .floating-actions-stack {
+        bottom: 16px;
+        right: 16px;
+        gap: 10px;
+    }
+    .floating-actions-stack .duribot-float,
+    .floating-actions-stack .floating-cart,
+    .floating-actions-stack .duribot-float-item,
+    .floating-actions-stack .floating-cart-item,
+    .floating-actions-stack .duribot-btn,
+    .floating-actions-stack .floating-cart-btn {
+        width: 50px !important;
+        height: 50px !important;
+    }
     .floating-cart { bottom:16px; right:16px; }
     .floating-cart-btn { width:52px; height:52px; font-size:1.2rem; }
     .duribot-float { bottom:78px; right:16px; }
@@ -1015,6 +1068,20 @@ img { max-width:100%; }
     .login-right p { font-size:0.88rem; }
     .whatsapp-float { bottom:14px; left:14px; }
     .whatsapp-float a { padding:10px 14px; font-size:0.85rem; }
+    .floating-actions-stack {
+        bottom: 14px;
+        right: 14px;
+        gap: 10px;
+    }
+    .floating-actions-stack .duribot-float,
+    .floating-actions-stack .floating-cart,
+    .floating-actions-stack .duribot-float-item,
+    .floating-actions-stack .floating-cart-item,
+    .floating-actions-stack .duribot-btn,
+    .floating-actions-stack .floating-cart-btn {
+        width: 48px !important;
+        height: 48px !important;
+    }
     .floating-cart { bottom:14px; right:14px; }
     .floating-cart-btn { width:48px; height:48px; font-size:1.05rem; }
     .duribot-float { bottom:70px; right:14px; }

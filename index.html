@@ -10,7 +10,80 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css?v=16.0">
+    <link rel="stylesheet" href="css/styles.css?v=20.0">
+    <style>
+        /* Alineación vertical permanente para DuriBot y Carrito */
+        .floating-actions-stack {
+            position: fixed !important;
+            bottom: 24px !important;
+            right: 24px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 12px !important;
+            z-index: 910 !important;
+            pointer-events: none !important;
+        }
+        .floating-actions-stack > * {
+            pointer-events: auto !important;
+        }
+        .floating-actions-stack .duribot-float,
+        .floating-actions-stack .floating-cart,
+        .floating-actions-stack .duribot-float-item,
+        .floating-actions-stack .floating-cart-item {
+            position: relative !important;
+            bottom: auto !important;
+            right: auto !important;
+            left: auto !important;
+            top: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 52px !important;
+            height: 52px !important;
+        }
+        .floating-actions-stack .duribot-btn,
+        .floating-actions-stack .floating-cart-btn {
+            width: 52px !important;
+            height: 52px !important;
+            margin: 0 !important;
+        }
+        @media (max-width: 768px) {
+            .floating-actions-stack {
+                bottom: 16px !important;
+                right: 16px !important;
+                gap: 10px !important;
+            }
+            .floating-actions-stack .duribot-float,
+            .floating-actions-stack .floating-cart,
+            .floating-actions-stack .duribot-float-item,
+            .floating-actions-stack .floating-cart-item,
+            .floating-actions-stack .duribot-btn,
+            .floating-actions-stack .floating-cart-btn {
+                width: 50px !important;
+                height: 50px !important;
+            }
+        }
+        @media (max-width: 480px) {
+            .floating-actions-stack {
+                bottom: 14px !important;
+                right: 14px !important;
+                gap: 10px !important;
+            }
+            .floating-actions-stack .duribot-float,
+            .floating-actions-stack .floating-cart,
+            .floating-actions-stack .duribot-float-item,
+            .floating-actions-stack .floating-cart-item,
+            .floating-actions-stack .duribot-btn,
+            .floating-actions-stack .floating-cart-btn {
+                width: 48px !important;
+                height: 48px !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Top Bar -->
@@ -341,6 +414,6 @@
         </div>
     </footer>
 
-    <script src="js/app.js?v=6.1"></script>
+    <script src="js/app.js?v=20.0"></script>
 </body>
 </html>
