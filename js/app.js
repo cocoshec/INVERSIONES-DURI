@@ -465,6 +465,20 @@ async function processDuriQuery(rawQuery) {
         return;
     }
 
+    // 1.1 Redes Sociales / Instagram
+    if (q.includes('instagram') || q.includes('ig') || q.includes('redes') || q.includes('red social') || q.includes('facebook') || q.includes('cuenta de instagram')) {
+        const html = `
+            📸 <strong>¡Síguenos en nuestras Redes Sociales!</strong><br><br>
+            Entérate de nuevas ofertas, promociones y novedades:<br><br>
+            <a href="https://www.instagram.com/inversionesdurica/" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#ffffff; padding:9px 16px; border-radius:100px; text-decoration:none; font-weight:700; margin-top:4px; box-shadow:0 3px 12px rgba(220,39,67,0.35);">
+                <i class="fab fa-instagram" style="font-size:1.2rem;"></i> @inversionesdurica
+            </a>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
     // 2. Formas de Pago
     if (q.includes('pago') || q.includes('pagar') || q.includes('transferencia') || q.includes('cuenta') || q.includes('banco') || q.includes('dolar') || q.includes('bolivar') || q.includes('divisa') || q.includes('efectivo') || q.includes('tarjeta')) {
         const html = `
