@@ -1703,14 +1703,14 @@ function renderInventarioStats(stats) {
     if (chipOut) chipOut.textContent = stats.agotados;
     if (chipInStock) chipInStock.textContent = stats.en_stock;
 
-    // Alerta de stock crítico superior
+    // Alerta de stock crítico superior (temporal y auto-dismissible en 6 segundos)
     const alertEl = document.getElementById('invCriticalAlert');
     if (alertEl) {
         const totalCrit = Number(stats.stock_bajo || 0) + Number(stats.agotados || 0);
-        if (totalCrit > 0) {
+        if (totalCrit > 0 && !window._invAlertDismissed) {
             alertEl.style.display = 'block';
             alertEl.innerHTML = `
-                <div class="inv-critical-alert">
+                <div class="inv-critical-alert" id="invCriticalAlertBox">
                     <div class="inv-critical-alert-content">
                         <div class="inv-critical-alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
                         <div class="inv-critical-alert-text">
@@ -1718,16 +1718,48 @@ function renderInventarioStats(stats) {
                             <span>Te sugerimos revisar estos artículos prioritarios para coordinar su reposición.</span>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm" onclick="setInventoryStatusFilter('low', document.querySelectorAll('.inv-quick-chip')[1])" style="background:#ef4444;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;">
-                        <i class="fas fa-filter"></i> Ver Artículos Críticos
-                    </button>
+                    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                        <button type="button" class="btn btn-sm" onclick="setInventoryStatusFilter('low', document.querySelectorAll('.inv-quick-chip')[1]); dismissCriticalAlert();" style="background:#ef4444;color:#fff;border:none;padding:7px 12px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:0.8rem;">
+                            <i class="fas fa-filter"></i> Ver Críticos
+                        </button>
+                        <button type="button" onclick="dismissCriticalAlert()" title="Cerrar advertencia" style="background:rgba(0,0,0,0.06);border:none;color:#991b1b;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.15rem;line-height:1;transition:background 0.2s;">
+                            &times;
+                        </button>
+                    </div>
                 </div>
             `;
-        } else {
+            // Se quita automáticamente a los 6 segundos para que no sea permanente
+            if (window._invAlertTimer) clearTimeout(window._invAlertTimer);
+            window._invAlertTimer = setTimeout(() => {
+                dismissCriticalAlert();
+            }, 6000);
+        } else if (totalCrit === 0) {
             alertEl.style.display = 'none';
         }
     }
 }
+
+function dismissCriticalAlert() {
+    window._invAlertDismissed = true;
+    if (window._invAlertTimer) {
+        clearTimeout(window._invAlertTimer);
+        window._invAlertTimer = null;
+    }
+    const alertEl = document.getElementById('invCriticalAlert');
+    if (!alertEl) return;
+    const alertBox = alertEl.querySelector('.inv-critical-alert');
+    if (alertBox) {
+        alertBox.classList.add('fade-out');
+        setTimeout(() => {
+            alertEl.style.display = 'none';
+            alertEl.innerHTML = '';
+        }, 450);
+    } else {
+        alertEl.style.display = 'none';
+        alertEl.innerHTML = '';
+    }
+}
+window.dismissCriticalAlert = dismissCriticalAlert;
 
 function renderInventarioTable(productos) {
     const tbody = document.getElementById('invBody');
@@ -2154,7 +2186,16 @@ async function saveEditProduct() {
     }
 
     if (saved) {
-        showToast('✅ Producto y fotografía actualizados con éxito', 'success');
+        window._invAlertDismissed = false;
+        const numStock = parseInt(stock);
+        const numMin = parseInt(stockMin);
+        if (numStock <= 0) {
+            showToast('⚠️ Producto guardado. Advertencia: Este artículo quedó Agotado', 'warning');
+        } else if (numStock <= numMin) {
+            showToast('⚠️ Producto guardado. Advertencia: Stock bajo (' + numStock + ' unidades)', 'warning');
+        } else {
+            showToast('✅ Producto y fotografía actualizados con éxito', 'success');
+        }
         closeEditModal();
         if (typeof loadProductos === 'function') loadProductos();
         if (typeof loadInventario === 'function') loadInventario();
@@ -3432,10 +3473,20 @@ function showToast(msg, type = 'success') {
         document.body.appendChild(toast);
     }
     toast.querySelector('span').textContent = msg;
-    toast.querySelector('i').className = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
-    toast.querySelector('i').style.color = type === 'error' ? '#dc3545' : '#28a745';
+    const icon = toast.querySelector('i');
+    if (type === 'error') {
+        icon.className = 'fas fa-exclamation-circle';
+        icon.style.color = '#ef4444';
+    } else if (type === 'warning') {
+        icon.className = 'fas fa-exclamation-triangle';
+        icon.style.color = '#f59e0b';
+    } else {
+        icon.className = 'fas fa-check-circle';
+        icon.style.color = '#10b981';
+    }
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    if (window._toastTimer) clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
 document.addEventListener('submit', function(e) {
