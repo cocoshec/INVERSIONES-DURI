@@ -190,6 +190,10 @@ function enviarCodigoRecuperacionDirecto($to, $nombre, $codigo) {
         require_once $mailConfigFile;
     }
 
+    if (function_exists('enviarCodigoRecuperacion')) {
+        return enviarCodigoRecuperacion($to, $nombre, $codigo);
+    }
+
     $host = defined('MAIL_HOST') ? MAIL_HOST : 'smtp.gmail.com';
     $port = defined('MAIL_PORT') ? MAIL_PORT : 465;
     $user = defined('MAIL_USER') ? MAIL_USER : (getenv('MAIL_USER') ?: '');
@@ -366,9 +370,18 @@ if ($action === 'recuperar_solicitar' && $method === 'POST') {
     
     // Enviar correo de recuperación con SMTP SSL nativo (Gmail)
     $mailRes = enviarCodigoRecuperacionDirecto($email, $usuario['nombre'], $codigo);
-    $mailEnviado = $mailRes['success'];
+    $mailEnviado = !empty($mailRes['success']);
     $mailDetalle = $mailRes['message'] ?? '';
     
+    if (!$mailEnviado) {
+        http_response_code(500);
+        echo json_encode([
+            "status" => "error",
+            "message" => "No se pudo enviar el correo de verificación (" . $mailDetalle . "). Por favor verifica la conexión SMTP o intenta de nuevo."
+        ]);
+        exit();
+    }
+
     try {
         $stmt = $db->prepare("INSERT INTO log_actividad (usuario_id, accion, ip_address, user_agent) VALUES (?, 'SOLICITUD_RECUPERAR_PASSWORD', ?, ?)");
         $stmt->execute([$usuario['id'], $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $_SERVER['HTTP_USER_AGENT'] ?? '']);
@@ -376,14 +389,10 @@ if ($action === 'recuperar_solicitar' && $method === 'POST') {
     
     echo json_encode([
         "status" => "success",
-        "message" => $mailEnviado 
-            ? "Código de verificación enviado exitosamente a tu correo." 
-            : "Código de recuperación generado.",
+        "message" => "¡Código de verificación enviado exitosamente a tu correo!",
         "data" => [
             "email" => $email,
-            "mail_enviado" => $mailEnviado,
-            "mail_detalle" => $mailDetalle,
-            "codigo_dev" => $mailEnviado ? null : $codigo // Si el correo se envió de verdad, no revelamos el código en pantalla
+            "mail_enviado" => true
         ]
     ]);
     exit();

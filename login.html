@@ -206,13 +206,6 @@
                 <div id="recAlertError" style="display:none;background:var(--red-light);border:1px solid rgba(239,68,68,0.2);color:var(--red);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:0.85rem"></div>
                 <div id="recAlertInfo" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:0.85rem"></div>
                 
-                <!-- Caja para código dev/demo si no hay SMTP configurado -->
-                <div id="recDevBox" style="display:none;" class="dev-code-box">
-                    <div>
-                        <i class="fas fa-info-circle"></i> Código de verificación: <strong id="recDevCodeVal" style="font-size:0.95rem;letter-spacing:1px;"></strong>
-                    </div>
-                    <button type="button" onclick="aplicarCodigoDev()">Usar código</button>
-                </div>
 
                 <!-- PASO 1: SOLICITAR CÓDIGO -->
                 <div id="recStep1">
@@ -374,7 +367,6 @@
     function limpiarAlertasRec() {
         document.getElementById('recAlertError').style.display = 'none';
         document.getElementById('recAlertInfo').style.display = 'none';
-        document.getElementById('recDevBox').style.display = 'none';
     }
 
     function irALoginConCorreo() {
@@ -399,44 +391,52 @@
         const btn = document.getElementById('recRequestBtn');
         const errDiv = document.getElementById('recAlertError');
         const infoDiv = document.getElementById('recAlertInfo');
-        const devBox = document.getElementById('recDevBox');
         
         const email = document.getElementById('recEmail').value.trim().toLowerCase();
         currentRecoveryEmail = email;
 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando correo...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando código a tu correo...';
         btn.disabled = true;
         errDiv.style.display = 'none';
         infoDiv.style.display = 'none';
-        devBox.style.display = 'none';
 
         const isGH = window.location.hostname.includes('github.io');
 
-        // En caso de GitHub Pages (modo demo sin backend PHP)
+        // En caso de GitHub Pages (modo con envío por servicio FormSubmit directo al correo)
         if (isGH) {
-            setTimeout(() => {
-                const demo = demoUsers[email];
-                if (!demo) {
-                    errDiv.textContent = 'No se encontró ninguna cuenta registrada con este correo en la demo.';
-                    errDiv.style.display = 'block';
-                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Código de Verificación';
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Generar código simulado
-                const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-                lastGeneratedCode = randomCode;
-                sessionStorage.setItem('demoResetCode_' + email, randomCode);
-
-                avanzarAPaso2(email, randomCode, true);
+            const demo = demoUsers[email];
+            if (!demo) {
+                errDiv.textContent = 'No se encontró ninguna cuenta registrada con este correo.';
+                errDiv.style.display = 'block';
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Código de Verificación';
                 btn.disabled = false;
-            }, 600);
+                return;
+            }
+
+            const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+            sessionStorage.setItem('demoResetCode_' + email, randomCode);
+
+            try {
+                await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(email), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        _subject: 'Código de Verificación: ' + randomCode + ' - Inversiones Duri C.A',
+                        email: email,
+                        mensaje: 'Hola ' + demo.nombre + ',\n\nTu código de verificación para restablecer tu contraseña en Inversiones Duri C.A es: ' + randomCode + '\n\nEste código vence en 5 minutos.',
+                        _template: 'table',
+                        _captcha: 'false'
+                    })
+                });
+            } catch(e) {}
+
+            avanzarAPaso2(email);
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Código de Verificación';
+            btn.disabled = false;
             return;
         }
 
-        // Llamada al backend PHP
+        // Llamada al backend PHP en servidor local o producción (envío por Gmail SMTP)
         try {
             const res = await fetch('backend/api/usuarios.php?action=recuperar_solicitar', {
                 method: 'POST',
@@ -447,46 +447,28 @@
             const data = await res.json();
 
             if (data.status === 'success') {
-                const codigoDev = data.data && data.data.codigo_dev ? data.data.codigo_dev : '';
-                lastGeneratedCode = codigoDev;
-                avanzarAPaso2(email, codigoDev, !data.data.mail_enviado);
+                avanzarAPaso2(email);
             } else {
-                errDiv.textContent = data.message || 'Error al solicitar recuperación';
+                errDiv.textContent = data.message || 'Error al enviar código de recuperación al correo.';
                 errDiv.style.display = 'block';
             }
         } catch(err) {
-            // Fallback en desarrollo si PHP no responde
-            const demo = demoUsers[email];
-            if (demo) {
-                const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-                lastGeneratedCode = randomCode;
-                sessionStorage.setItem('demoResetCode_' + email, randomCode);
-                avanzarAPaso2(email, randomCode, true);
-            } else {
-                errDiv.textContent = 'No se pudo conectar con el servidor. Verifica tu conexión o base de datos.';
-                errDiv.style.display = 'block';
-            }
+            errDiv.textContent = 'Error al conectar con el servidor. Verifica que tu servidor web esté activo.';
+            errDiv.style.display = 'block';
         } finally {
             btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Código de Verificación';
             btn.disabled = false;
         }
     });
 
-    function avanzarAPaso2(email, codeDev, mostrarDevBox) {
+    function avanzarAPaso2(email) {
         document.getElementById('recStep1').style.display = 'none';
         document.getElementById('recStep2').style.display = 'block';
         
         document.getElementById('recSubtitle').innerHTML = 'Código enviado a <strong>' + email + '</strong>.';
 
         const infoDiv = document.getElementById('recAlertInfo');
-        if (codeDev) {
-            infoDiv.innerHTML = '<i class="fas fa-info-circle"></i> Modo desarrollo: El código se muestra abajo (recuerda configurar Gmail para envío real).';
-            document.getElementById('recDevCodeVal').textContent = codeDev;
-            document.getElementById('recDevBox').style.display = 'flex';
-        } else {
-            infoDiv.innerHTML = '<i class="fas fa-envelope-open-text"></i> <strong>¡Código enviado!</strong> Revisa tu bandeja de entrada (o Spam) y cópialo aquí.';
-            document.getElementById('recDevBox').style.display = 'none';
-        }
+        infoDiv.innerHTML = '<i class="fas fa-envelope-open-text"></i> <strong>¡Código de verificación enviado!</strong> Revisa la bandeja de entrada o Spam de tu correo <strong>' + email + '</strong> e ingresa el código de 6 dígitos a continuación.';
         infoDiv.style.display = 'block';
 
         // Enfocar campo de código
@@ -498,13 +480,6 @@
 
     let validatedRecoveryToken = '';
     let validatedRecoveryCode = '';
-
-    function aplicarCodigoDev() {
-        if (lastGeneratedCode) {
-            document.getElementById('recCode').value = lastGeneratedCode;
-            document.getElementById('recVerifyBtn').focus();
-        }
-    }
 
     function cambiarCorreoRecuperacion() {
         document.getElementById('recStep2').style.display = 'none';
@@ -669,7 +644,6 @@
     function avanzarAPaso3() {
         document.getElementById('recStep2').style.display = 'none';
         document.getElementById('recStep3').style.display = 'block';
-        document.getElementById('recDevBox').style.display = 'none';
         document.getElementById('recAlertError').style.display = 'none';
 
         document.getElementById('recSubtitle').innerHTML = 'Código verificado con éxito para <strong>' + currentRecoveryEmail + '</strong>.';
@@ -768,7 +742,6 @@
         document.getElementById('recStep2').style.display = 'none';
         document.getElementById('recStep3').style.display = 'none';
         document.getElementById('recStep4').style.display = 'block';
-        document.getElementById('recDevBox').style.display = 'none';
         document.getElementById('recAlertInfo').style.display = 'none';
         document.getElementById('recAlertError').style.display = 'none';
         document.getElementById('recSubtitle').textContent = 'Tu contraseña ha sido actualizada con éxito.';
