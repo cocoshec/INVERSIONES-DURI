@@ -12,6 +12,14 @@ if (!class_exists('Database')) {
     include $dbPath;
 }
 
+$mailInitPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php';
+if (!@file_exists($mailInitPath)) {
+    $mailInitPath = __DIR__ . '/../config/mail.php';
+}
+if (@file_exists($mailInitPath)) {
+    include $mailInitPath;
+}
+
 $database = new Database();
 $db = $database->getConnection();
 
@@ -185,9 +193,20 @@ if ($action === 'login' && $method === 'POST') {
 // FUNCIÓN AUXILIAR: ENVÍO SMTP DIRECTO (GMAIL SSL)
 // ============================================
 function enviarCodigoRecuperacionDirecto($to, $nombre, $codigo) {
-    $mailConfigFile = __DIR__ . '/../config/mail.php';
-    if (file_exists($mailConfigFile)) {
-        require_once $mailConfigFile;
+    $mailPaths = [
+        'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php',
+        __DIR__ . '/../config/mail.php',
+        dirname(__DIR__) . '/config/mail.php',
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/backend/config/mail.php',
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/inversiones-duri/backend/config/mail.php'
+    ];
+    foreach ($mailPaths as $p) {
+        if (!empty($p) && @file_exists($p)) {
+            @include_once $p;
+            if (function_exists('enviarCodigoRecuperacion')) {
+                break;
+            }
+        }
     }
 
     if (function_exists('enviarCodigoRecuperacion')) {
