@@ -59,10 +59,30 @@
 
     <section class="page-content">
         <div class="container">
+            <!-- Banner de Alerta de Stock Crítico -->
+            <div id="invCriticalAlert" style="display:none;"></div>
+
+            <!-- KPIs y Estadísticas de Inventario -->
             <div class="stats-row" id="invStats">
                 <div class="stat-card">
                     <div class="stat-card-icon orange"><i class="fas fa-spinner fa-spin"></i></div>
-                    <div><div class="stat-card-label">Cargando...</div></div>
+                    <div><div class="stat-card-label">Cargando métricas...</div></div>
+                </div>
+            </div>
+
+            <!-- Barra de Acciones y Filtros Rápidos -->
+            <div class="inv-actions-toolbar">
+                <div class="inv-quick-chips" id="invQuickChips">
+                    <button type="button" class="inv-quick-chip active" onclick="setInventoryStatusFilter('all', this)">Todos</button>
+                    <button type="button" class="inv-quick-chip" onclick="setInventoryStatusFilter('low', this)">⚠️ Stock Bajo (<span id="chipLowCount">0</span>)</button>
+                    <button type="button" class="inv-quick-chip" onclick="setInventoryStatusFilter('out', this)">🚫 Agotados (<span id="chipOutCount">0</span>)</button>
+                    <button type="button" class="inv-quick-chip" onclick="setInventoryStatusFilter('available', this)">✅ En Stock (<span id="chipInStockCount">0</span>)</button>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="btn-export-excel" onclick="exportInventoryToExcel()" title="Descargar inventario en formato CSV compatible con Microsoft Excel">
+                        <i class="fas fa-file-excel"></i> Exportar a Excel (CSV)
+                    </button>
                 </div>
             </div>
 
@@ -71,7 +91,7 @@
                     <h3><i class="fas fa-list"></i> Inventario Completo</h3>
                     <div class="inv-search">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Buscar producto..." onkeyup="filterInventory(this.value)">
+                        <input type="text" id="invSearchInput" placeholder="Buscar producto por nombre, código o categoría..." onkeyup="filterInventory(this.value)">
                     </div>
                 </div>
                 <table class="inv-table">

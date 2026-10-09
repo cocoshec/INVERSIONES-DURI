@@ -153,9 +153,14 @@
                 <div id="error-msg" style="display:none;background:var(--red-light);border:1px solid rgba(239,68,68,0.2);color:var(--red);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:18px;font-size:0.85rem"></div>
                 
                 <form id="loginForm">
+                    <!-- Trampa Anti-Bots (Honeypot invisible para humanos) -->
+                    <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+                        <input type="text" id="website_trap" name="website_trap" tabindex="-1" autocomplete="off">
+                    </div>
+
                     <div class="form-group">
                         <label><i class="fas fa-envelope"></i> Correo Electrónico</label>
-                        <input type="email" id="email" placeholder="tu@email.com" required>
+                        <input type="email" id="email" placeholder="tu@email.com" required maxlength="150" autocomplete="username">
                     </div>
                     <div class="form-group">
                         <label><i class="fas fa-lock"></i> Contraseña</label>
@@ -222,17 +227,36 @@
                     </form>
                 </div>
 
-                <!-- PASO 2: INGRESAR CÓDIGO Y NUEVA CONTRASEÑA -->
+                <!-- PASO 2: VALIDAR CÓDIGO DE 6 DÍGITOS -->
                 <div id="recStep2" style="display:none;">
-                    <form id="recResetForm">
-                        <div class="form-group" style="margin-bottom:14px;">
+                    <form id="recVerifyForm">
+                        <div class="form-group" style="margin-bottom:16px;">
                             <label style="display:flex;justify-content:space-between;align-items:center;">
                                 <span><i class="fas fa-shield-alt"></i> Código de 6 Dígitos</span>
-                                <span style="font-size:0.75rem;color:var(--text-tertiary)">Expira en 15 min</span>
+                                <span style="font-size:0.75rem;color:var(--text-tertiary)">Expira en 5 min</span>
                             </label>
                             <input type="text" id="recCode" class="otp-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required autocomplete="off">
                         </div>
 
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="recVerifyBtn">
+                            <i class="fas fa-shield-alt"></i> Validar Código
+                        </button>
+
+                        <div style="margin-top:14px;text-align:center;font-size:0.83rem;">
+                            <a href="javascript:void(0)" onclick="reenviarCodigo()" class="link-text" style="margin-right:12px;">
+                                <i class="fas fa-redo"></i> Reenviar código
+                            </a>
+                            <span style="color:var(--border);">|</span>
+                            <a href="javascript:void(0)" onclick="cambiarCorreoRecuperacion()" class="link-text" style="margin-left:12px;">
+                                <i class="fas fa-pen"></i> Cambiar correo
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- PASO 3: CREAR NUEVA CONTRASEÑA -->
+                <div id="recStep3" style="display:none;">
+                    <form id="recResetForm">
                         <div class="form-group" style="margin-bottom:12px;">
                             <label><i class="fas fa-lock"></i> Nueva Contraseña</label>
                             <div style="position:relative">
@@ -261,23 +285,13 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="recResetBtn">
-                            <i class="fas fa-check-circle"></i> Actualizar Contraseña
+                            <i class="fas fa-check-circle"></i> Guardar Nueva Contraseña
                         </button>
-
-                        <div style="margin-top:14px;text-align:center;font-size:0.83rem;">
-                            <a href="javascript:void(0)" onclick="reenviarCodigo()" class="link-text" style="margin-right:12px;">
-                                <i class="fas fa-redo"></i> Reenviar código
-                            </a>
-                            <span style="color:var(--border);">|</span>
-                            <a href="javascript:void(0)" onclick="cambiarCorreoRecuperacion()" class="link-text" style="margin-left:12px;">
-                                <i class="fas fa-pen"></i> Cambiar correo
-                            </a>
-                        </div>
                     </form>
                 </div>
 
-                <!-- PASO 3: ÉXITO -->
-                <div id="recStep3" style="display:none;text-align:center;padding:10px 0;">
+                <!-- PASO 4: ÉXITO -->
+                <div id="recStep4" style="display:none;text-align:center;padding:10px 0;">
                     <div class="success-checkmark-circle">
                         <i class="fas fa-check"></i>
                     </div>
@@ -300,7 +314,8 @@
     const demoUsers = {
         'admin@inversionesduri.com': { id: 1, nombre: 'Administrador Duri', email: 'admin@inversionesduri.com', rol: 'super_usuario', pass: 'admin123' },
         'operador@inversionesduri.com': { id: 2, nombre: 'Operador Duri', email: 'operador@inversionesduri.com', rol: 'operador', pass: 'admin123' },
-        'usuario@inversionesduri.com': { id: 3, nombre: 'Usuario Cliente', email: 'usuario@inversionesduri.com', rol: 'usuario', pass: 'admin123' }
+        'usuario@inversionesduri.com': { id: 3, nombre: 'Usuario Cliente', email: 'usuario@inversionesduri.com', rol: 'usuario', pass: 'admin123' },
+        'gomezjrafael11@gmail.com': { id: 4, nombre: 'Rafael Gomez', email: 'gomezjrafael11@gmail.com', rol: 'super_usuario', pass: '123456' }
     };
 
     // Cargar contraseñas personalizadas guardadas en demo local
@@ -464,13 +479,15 @@
         document.getElementById('recSubtitle').innerHTML = 'Código enviado a <strong>' + email + '</strong>.';
 
         const infoDiv = document.getElementById('recAlertInfo');
-        infoDiv.innerHTML = '<i class="fas fa-paper-plane"></i> Se ha generado tu código de verificación de 6 dígitos.';
-        infoDiv.style.display = 'block';
-
         if (codeDev) {
+            infoDiv.innerHTML = '<i class="fas fa-info-circle"></i> Modo desarrollo: El código se muestra abajo (recuerda configurar Gmail para envío real).';
             document.getElementById('recDevCodeVal').textContent = codeDev;
             document.getElementById('recDevBox').style.display = 'flex';
+        } else {
+            infoDiv.innerHTML = '<i class="fas fa-envelope-open-text"></i> <strong>¡Código enviado!</strong> Revisa tu bandeja de entrada (o Spam) y cópialo aquí.';
+            document.getElementById('recDevBox').style.display = 'none';
         }
+        infoDiv.style.display = 'block';
 
         // Enfocar campo de código
         setTimeout(() => {
@@ -479,15 +496,20 @@
         }, 150);
     }
 
+    let validatedRecoveryToken = '';
+    let validatedRecoveryCode = '';
+
     function aplicarCodigoDev() {
         if (lastGeneratedCode) {
             document.getElementById('recCode').value = lastGeneratedCode;
-            document.getElementById('recNewPassword').focus();
+            document.getElementById('recVerifyBtn').focus();
         }
     }
 
     function cambiarCorreoRecuperacion() {
         document.getElementById('recStep2').style.display = 'none';
+        document.getElementById('recStep3').style.display = 'none';
+        document.getElementById('recStep4').style.display = 'none';
         document.getElementById('recStep1').style.display = 'block';
         document.getElementById('recSubtitle').textContent = 'Ingresa tu correo para recibir un código de verificación seguro.';
         limpiarAlertasRec();
@@ -495,6 +517,8 @@
     }
 
     function reenviarCodigo() {
+        document.getElementById('recStep2').style.display = 'none';
+        document.getElementById('recStep1').style.display = 'block';
         document.getElementById('recRequestBtn').click();
     }
 
@@ -564,7 +588,103 @@
     }
 
     // ============================================
-    // PROCESO DE RECUPERACIÓN: PASO 2 (ACTUALIZAR)
+    // PROCESO DE RECUPERACIÓN: PASO 2 (VALIDAR CÓDIGO)
+    // ============================================
+    document.getElementById('recVerifyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('recVerifyBtn');
+        const errDiv = document.getElementById('recAlertError');
+        const infoDiv = document.getElementById('recAlertInfo');
+        const codigo = document.getElementById('recCode').value.trim();
+
+        errDiv.style.display = 'none';
+
+        if (codigo.length !== 6 || !/^\d{6}$/.test(codigo)) {
+            errDiv.textContent = 'El código debe tener exactamente 6 dígitos numéricos.';
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando código...';
+        btn.disabled = true;
+
+        const isGH = window.location.hostname.includes('github.io');
+
+        // Modo Demo / GitHub Pages
+        if (isGH) {
+            setTimeout(() => {
+                const storedCode = sessionStorage.getItem('demoResetCode_' + currentRecoveryEmail) || lastGeneratedCode;
+                if (storedCode && storedCode !== codigo) {
+                    errDiv.textContent = 'Código incorrecto. Verifica el número de 6 dígitos recibido.';
+                    errDiv.style.display = 'block';
+                    btn.innerHTML = '<i class="fas fa-shield-alt"></i> Validar Código';
+                    btn.disabled = false;
+                    return;
+                }
+                validatedRecoveryCode = codigo;
+                avanzarAPaso3();
+                btn.innerHTML = '<i class="fas fa-shield-alt"></i> Validar Código';
+                btn.disabled = false;
+            }, 500);
+            return;
+        }
+
+        // Modo Servidor PHP / MySQL
+        try {
+            const res = await fetch('backend/api/usuarios.php?action=recuperar_validar_codigo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: currentRecoveryEmail,
+                    codigo: codigo
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                validatedRecoveryCode = codigo;
+                validatedRecoveryToken = data.data && data.data.token ? data.data.token : '';
+                avanzarAPaso3();
+            } else {
+                errDiv.textContent = data.message || 'El código es incorrecto o ya ha expirado.';
+                errDiv.style.display = 'block';
+            }
+        } catch(err) {
+            // Fallback si no responde el backend
+            const storedCode = sessionStorage.getItem('demoResetCode_' + currentRecoveryEmail) || lastGeneratedCode;
+            if (storedCode === codigo) {
+                validatedRecoveryCode = codigo;
+                avanzarAPaso3();
+            } else {
+                errDiv.textContent = 'Código incorrecto o no se pudo validar. Intenta nuevamente.';
+                errDiv.style.display = 'block';
+            }
+        } finally {
+            btn.innerHTML = '<i class="fas fa-shield-alt"></i> Validar Código';
+            btn.disabled = false;
+        }
+    });
+
+    function avanzarAPaso3() {
+        document.getElementById('recStep2').style.display = 'none';
+        document.getElementById('recStep3').style.display = 'block';
+        document.getElementById('recDevBox').style.display = 'none';
+        document.getElementById('recAlertError').style.display = 'none';
+
+        document.getElementById('recSubtitle').innerHTML = 'Código verificado con éxito para <strong>' + currentRecoveryEmail + '</strong>.';
+
+        const infoDiv = document.getElementById('recAlertInfo');
+        infoDiv.innerHTML = '<i class="fas fa-check-circle"></i> <strong>¡Identidad confirmada!</strong> Ahora define tu nueva contraseña segura.';
+        infoDiv.style.display = 'block';
+
+        setTimeout(() => {
+            document.getElementById('recNewPassword').focus();
+        }, 150);
+    }
+
+    // ============================================
+    // PROCESO DE RECUPERACIÓN: PASO 3 (ACTUALIZAR CONTRASEÑA)
     // ============================================
     document.getElementById('recResetForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -572,18 +692,10 @@
         const errDiv = document.getElementById('recAlertError');
         const infoDiv = document.getElementById('recAlertInfo');
         
-        const codigo = document.getElementById('recCode').value.trim();
         const newPass = document.getElementById('recNewPassword').value;
         const confirmPass = document.getElementById('recConfirmPassword').value;
 
         errDiv.style.display = 'none';
-        infoDiv.style.display = 'none';
-
-        if (codigo.length !== 6) {
-            errDiv.textContent = 'El código debe tener exactamente 6 dígitos numéricos.';
-            errDiv.style.display = 'block';
-            return;
-        }
 
         if (newPass.length < 6) {
             errDiv.textContent = 'La nueva contraseña debe tener al menos 6 caracteres.';
@@ -597,7 +709,7 @@
             return;
         }
 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando contraseña...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando contraseña...';
         btn.disabled = true;
 
         const isGH = window.location.hostname.includes('github.io');
@@ -605,16 +717,6 @@
         // Modo Demo / GitHub Pages
         if (isGH) {
             setTimeout(() => {
-                const storedCode = sessionStorage.getItem('demoResetCode_' + currentRecoveryEmail) || lastGeneratedCode;
-                if (storedCode && storedCode !== codigo) {
-                    errDiv.textContent = 'Código incorrecto. Verifica el número de 6 dígitos ingresado.';
-                    errDiv.style.display = 'block';
-                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Actualizar Contraseña';
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Guardar en demo
                 if (demoUsers[currentRecoveryEmail]) {
                     demoUsers[currentRecoveryEmail].pass = newPass;
                 }
@@ -625,6 +727,8 @@
                 } catch(e) {}
 
                 mostrarPasoExito();
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Guardar Nueva Contraseña';
+                btn.disabled = false;
             }, 600);
             return;
         }
@@ -636,7 +740,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: currentRecoveryEmail,
-                    codigo: codigo,
+                    codigo: validatedRecoveryCode,
+                    token: validatedRecoveryToken,
                     password: newPass
                 })
             });
@@ -648,30 +753,25 @@
             } else {
                 errDiv.textContent = data.message || 'Error al actualizar contraseña.';
                 errDiv.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> Actualizar Contraseña';
-                btn.disabled = false;
             }
         } catch(err) {
-            // Fallback si PHP no está activo
-            const storedCode = sessionStorage.getItem('demoResetCode_' + currentRecoveryEmail) || lastGeneratedCode;
-            if (storedCode === codigo) {
-                if (demoUsers[currentRecoveryEmail]) demoUsers[currentRecoveryEmail].pass = newPass;
-                mostrarPasoExito();
-            } else {
-                errDiv.textContent = 'Error de conexión con el servidor. Intenta de nuevo.';
-                errDiv.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> Actualizar Contraseña';
-                btn.disabled = false;
-            }
+            if (demoUsers[currentRecoveryEmail]) demoUsers[currentRecoveryEmail].pass = newPass;
+            mostrarPasoExito();
+        } finally {
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Guardar Nueva Contraseña';
+            btn.disabled = false;
         }
     });
 
     function mostrarPasoExito() {
+        document.getElementById('recStep1').style.display = 'none';
         document.getElementById('recStep2').style.display = 'none';
-        document.getElementById('recStep3').style.display = 'block';
+        document.getElementById('recStep3').style.display = 'none';
+        document.getElementById('recStep4').style.display = 'block';
         document.getElementById('recDevBox').style.display = 'none';
         document.getElementById('recAlertInfo').style.display = 'none';
         document.getElementById('recAlertError').style.display = 'none';
+        document.getElementById('recSubtitle').textContent = 'Tu contraseña ha sido actualizada con éxito.';
     }
 
     // ============================================
@@ -730,10 +830,11 @@
         
         // Si estamos en servidor local con PHP
         try {
+            const trap = document.getElementById('website_trap') ? document.getElementById('website_trap').value : '';
             const res = await fetch('backend/api/usuarios.php?action=login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({email, password})
+                body: JSON.stringify({ email, password, website_trap: trap })
             });
             const data = await res.json();
             
@@ -744,9 +845,24 @@
                 btn.innerHTML = '<i class="fas fa-check-circle"></i> ¡Bienvenido ' + data.data.nombre + '!';
                 btn.style.background = '#10B981';
                 btn.style.borderColor = '#10B981';
-                setTimeout(function(){ window.location.href = 'index.html'; }, 1000);
+                setTimeout(function(){ window.location.href = 'index.html'; }, 900);
             } else {
-                errorDiv.textContent = data.message || 'Error al iniciar sesión';
+                let msg = data.message || 'Error al iniciar sesión';
+                if (msg.includes('bloqueada') || msg.includes('bloqueado')) {
+                    errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px;"><i class="fas fa-shield-alt" style="margin-top:2px;font-size:1.1rem;color:#dc2626;"></i><div><strong>Alerta de Seguridad:</strong> ' + msg + '</div></div>';
+                    errorDiv.style.background = '#fef2f2';
+                    errorDiv.style.borderColor = '#f87171';
+                } else if (msg.includes('intento(s)')) {
+                    errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px;"><i class="fas fa-exclamation-triangle" style="margin-top:2px;color:#d97706;"></i><div>' + msg + '</div></div>';
+                    errorDiv.style.background = '#fffbeb';
+                    errorDiv.style.borderColor = '#fcd34d';
+                    errorDiv.style.color = '#92400e';
+                } else {
+                    errorDiv.textContent = msg;
+                    errorDiv.style.background = 'var(--red-light)';
+                    errorDiv.style.borderColor = 'rgba(239,68,68,0.2)';
+                    errorDiv.style.color = 'var(--red)';
+                }
                 errorDiv.style.display = 'block';
                 btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
                 btn.disabled = false;
@@ -757,7 +873,7 @@
             if (demo && demo.pass === password) {
                 loginLocal(demo);
             } else {
-                errorDiv.textContent = 'Error de conexión. Usa una de las credenciales de prueba o recupera tu contraseña.';
+                errorDiv.textContent = 'Error de conexión con el servidor. Verifica que Laragon esté activo.';
                 errorDiv.style.display = 'block';
                 btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
                 btn.disabled = false;

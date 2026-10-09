@@ -51,19 +51,42 @@
 
     <section class="page-content">
         <div class="container">
-            <div class="filters-bar">
-                <button class="filter-btn active" onclick="filterProducts('all',this)">Todos</button>
-                <button class="filter-btn" onclick="filterProducts('Útiles Escolares',this)">Útiles Escolares</button>
-                <button class="filter-btn" onclick="filterProducts('Papelería',this)">Papelería</button>
-                <button class="filter-btn" onclick="filterProducts('Tecnología',this)">Tecnología</button>
-                <button class="filter-btn" onclick="filterProducts('Accesorios',this)">Accesorios</button>
+            <!-- Buscador Predictivo en Vivo -->
+            <div class="catalog-search-wrap" id="catalogSearchWrap">
+                <div class="catalog-search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="catalogSearchInput" class="catalog-search-input" placeholder="Buscar cuadernos, lápices, resmas, cartuchos..." autocomplete="off" oninput="handleCatalogSearchInput(this.value)">
+                    <button type="button" id="catalogSearchClear" class="catalog-search-clear" onclick="clearCatalogSearch()">&times;</button>
+                </div>
+                <div id="catalogPredictiveDropdown" class="catalog-predictive-dropdown"></div>
+            </div>
+
+            <!-- Filtros por Categoría, Disponibilidad y Ordenamiento -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; margin-bottom:26px;">
+                <div class="filters-bar" style="margin-bottom:0;" id="categoryFilterBar">
+                    <button class="filter-btn active" onclick="filterProducts('all',this)">Todos <span id="countAll"></span></button>
+                    <button class="filter-btn" onclick="filterProducts('Útiles Escolares',this)">Útiles Escolares <span id="countUtiles"></span></button>
+                    <button class="filter-btn" onclick="filterProducts('Papelería',this)">Papelería <span id="countPapeleria"></span></button>
+                    <button class="filter-btn" onclick="filterProducts('Tecnología',this)">Tecnología <span id="countTecnologia"></span></button>
+                    <button class="filter-btn" onclick="filterProducts('Accesorios',this)">Accesorios <span id="countAccesorios"></span></button>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                    <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.84rem; color:var(--text-secondary); cursor:pointer; user-select:none;">
+                        <input type="checkbox" id="filterInStockOnly" onchange="applyCatalogFilters()" style="cursor:pointer; accent-color:var(--accent); width:15px; height:15px;">
+                        <span>Solo en stock</span>
+                    </label>
+                    <select id="catalogSortSelect" onchange="applyCatalogFilters()" style="padding:7px 14px; border-radius:100px; border:1px solid var(--border); font-size:0.82rem; background:#fff; color:var(--text-primary); cursor:pointer; outline:none; font-family:var(--font);">
+                        <option value="featured">Destacados</option>
+                        <option value="price_asc">Precio: Menor a Mayor</option>
+                        <option value="price_desc">Precio: Mayor a Menor</option>
+                        <option value="name_asc">Nombre: A - Z</option>
+                    </select>
+                </div>
             </div>
 
             <div class="products-grid" id="productsGrid">
-                <div style="text-align:center;padding:60px;color:var(--gray)">
-                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--orange)"></i>
-                    <p style="margin-top:15px">Cargando productos...</p>
-                </div>
+                <!-- Skeletons se cargan dinámicamente -->
             </div>
         </div>
     </section>

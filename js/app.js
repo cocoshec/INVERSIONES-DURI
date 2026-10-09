@@ -130,9 +130,154 @@ function logout() {
 window.logout = logout;
 
 // ============================================
+// GESTOR DE TASA OFICIAL BCV Y MONEDA DUAL
+// ============================================
+const BcvManager = {
+    rate: 875.65, // Tasa de respaldo oficial inicial
+    source: 'oficial',
+    lastUpdated: null,
+    isLoaded: false,
+
+    async init() {
+        this.loadCachedRate();
+        this.renderTopBarWidget();
+        this.updateStaticPrices();
+        await this.fetchLiveRate();
+        this.renderTopBarWidget();
+        this.updateStaticPrices();
+    },
+
+    loadCachedRate() {
+        try {
+            const cached = localStorage.getItem('duri_bcv_rate');
+            if (cached) {
+                const data = JSON.parse(cached);
+                if (data && data.rate > 0) {
+                    this.rate = parseFloat(data.rate);
+                    this.lastUpdated = data.lastUpdated || null;
+                    this.isLoaded = true;
+                }
+            }
+        } catch(e) {}
+    },
+
+    async fetchLiveRate() {
+        try {
+            const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.promedio > 0) {
+                    this.rate = parseFloat(data.promedio);
+                    this.lastUpdated = data.fechaActualizacion || new Date().toISOString();
+                    this.isLoaded = true;
+                    localStorage.setItem('duri_bcv_rate', JSON.stringify({
+                        rate: this.rate,
+                        lastUpdated: this.lastUpdated,
+                        savedAt: Date.now()
+                    }));
+                }
+            }
+        } catch(err) {
+            console.warn('No se pudo conectar a la API del BCV en vivo, utilizando tasa de respaldo:', err);
+        }
+    },
+
+    toBs(usd) {
+        return (parseFloat(usd) || 0) * this.rate;
+    },
+
+    formatBs(amount) {
+        const val = parseFloat(amount) || 0;
+        return 'Bs. ' + val.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+
+    formatUsd(amount) {
+        const val = parseFloat(amount) || 0;
+        return '$' + val.toFixed(2);
+    },
+
+    renderDualHtml(usd) {
+        const u = parseFloat(usd) || 0;
+        const bs = this.toBs(u);
+        return `
+            <div class="product-price-dual">
+                <span class="product-price-usd">${this.formatUsd(u)}</span>
+                <span class="product-price-bs">≈ ${this.formatBs(bs)}</span>
+            </div>
+        `;
+    },
+
+    renderTopBarWidget() {
+        // Remueve la tasa BCV de la barra superior para mantener el diseño limpio
+        document.querySelectorAll('#topBarBcvWidget, .top-bar-bcv').forEach(el => el.remove());
+    },
+
+    updateStaticPrices() {
+        document.querySelectorAll('.product-card').forEach(card => {
+            const priceEl = card.querySelector('.product-price');
+            if (priceEl && !priceEl.dataset.bcvRendered) {
+                const text = priceEl.textContent.trim();
+                const match = text.match(/\$?([0-9]+(?:\.[0-9]+)?)/);
+                if (match) {
+                    const usd = parseFloat(match[1]);
+                    priceEl.dataset.bcvRendered = "true";
+                    priceEl.innerHTML = `
+                        <div class="product-price-dual">
+                            <span class="product-price-usd">${this.formatUsd(usd)}</span>
+                            <span class="product-price-bs">≈ ${this.formatBs(this.toBs(usd))}</span>
+                        </div>
+                    `;
+                }
+            }
+        });
+    }
+};
+window.BcvManager = BcvManager;
+
+// Función para copiar datos de Pago Móvil o texto con 1 clic
+function copyTextToClipboard(text, btnElement = null) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (btnElement) {
+                const originalHtml = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+                btnElement.style.background = '#10B981';
+                btnElement.style.color = '#ffffff';
+                setTimeout(() => {
+                    btnElement.innerHTML = originalHtml;
+                    btnElement.style.background = '';
+                    btnElement.style.color = '';
+                }, 1600);
+            }
+            showToast('¡Copiado al portapapeles!');
+        }).catch(() => fallbackCopyText(text, btnElement));
+    } else {
+        fallbackCopyText(text, btnElement);
+    }
+}
+function fallbackCopyText(text, btnElement) {
+    const input = document.createElement('textarea');
+    input.value = text;
+    document.body.appendChild(input);
+    input.select();
+    try {
+        document.execCommand('copy');
+        showToast('¡Copiado al portapapeles!');
+        if (btnElement) {
+            const originalHtml = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+            setTimeout(() => { btnElement.innerHTML = originalHtml; }, 1600);
+        }
+    } catch(e) {}
+    document.body.removeChild(input);
+}
+window.copyTextToClipboard = copyTextToClipboard;
+
+// ============================================
 // NAVBAR
 function bootApp() {
     try { initNav(); } catch(e) { console.error('initNav error:', e); }
+    try { BcvManager.init(); } catch(e) { console.error('BcvManager error:', e); }
     try { initPage(); } catch(e) { console.error('initPage error:', e); }
     try { showUserBadge(); } catch(e) {}
     try { showInventoryLink(); } catch(e) {}
@@ -248,8 +393,9 @@ function initDuriChatbot() {
                     ¡Hola! 👋 Soy <strong>DuriBot</strong>, el asistente virtual de <strong>Inversiones Duri C.A</strong>.<br><br>
                     ¿En qué te puedo asesorar hoy? Puedes escribir lo que buscas o elegir una opción rápida:
                     <div class="duribot-chips">
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Tasa BCV del día')">🇻🇪 Tasa BCV</button>
+                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Datos para Pago Móvil')">📱 Pago Móvil</button>
                         <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Qué productos tienen en catálogo?')">📦 Ver productos</button>
-                        <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cuáles son las formas de pago?')">💳 Formas de pago</button>
                         <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cómo son los envíos y entregas?')">🚚 Envíos y Delivery</button>
                         <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Dónde están ubicados y cuál es el horario?')">📍 Ubicación y Horario</button>
                         <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Hablar con un asesor</button>
@@ -484,17 +630,61 @@ async function processDuriQuery(rawQuery) {
         return;
     }
 
-    // 2. Formas de Pago
-    if (q.includes('pago') || q.includes('pagar') || q.includes('transferencia') || q.includes('cuenta') || q.includes('banco') || q.includes('dolar') || q.includes('bolivar') || q.includes('divisa') || q.includes('efectivo') || q.includes('tarjeta')) {
+    // 1.2 Tasa Oficial BCV / Dólar / Bolívares
+    if (q.includes('tasa') || q.includes('bcv') || q.includes('a como') || q.includes('precio del dolar') || q.includes('dolar hoy') || q.includes('bolivares') || q.includes('cambio')) {
+        const rateStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
+        const html = `
+            🇻🇪 <strong>Tasa Oficial BCV del Día:</strong><br><br>
+            Nuestra tasa de hoy es de <strong style="color:#d97706;font-size:1.15rem;">${rateStr} Bs/$</strong> (Banco Central de Venezuela).<br><br>
+            • Todos los precios del catálogo se recalculan en tiempo real a esta tasa.<br>
+            • Aceptamos Pagos Móviles y Transferencias en Bolívares al monto exacto.<br>
+            <div class="duribot-chips" style="margin-top:8px;">
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Ver productos')">📦 Ver Productos en Catálogo</button>
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Datos para Pago Móvil')">📱 Datos de Pago Móvil</button>
+            </div>
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 1.3 Datos de Pago Móvil directos
+    if (q.includes('datos pago') || q.includes('pago movil') || q.includes('datos bancarios') || q.includes('como pago')) {
+        const rateStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
+        const pedidosUrl = (window.location.pathname.includes('/pages/') ? 'pedidos.html' : 'pages/pedidos.html');
+        const html = `
+            📱 <strong>Datos Oficiales para Pago Móvil:</strong><br><br>
+            <div class="pago-movil-card" style="margin:6px 0;padding:12px;background:#fff8f5;border:1px solid #fed7aa;border-radius:10px;">
+                <div style="font-size:0.82rem;line-height:1.7;">
+                    • 🏦 <strong>Banco:</strong> Banco de Venezuela (0102)<br>
+                    • 📱 <strong>Teléfono:</strong> 0412-1234567<br>
+                    • 🪪 <strong>RIF:</strong> J-50123456-7<br>
+                    • 🇻🇪 <strong>Tasa BCV del día:</strong> ${rateStr} Bs/$<br>
+                </div>
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+                    <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('04121234567', this)">📋 Copiar Teléfono</button>
+                    <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('J501234567', this)">📋 Copiar RIF</button>
+                </div>
+            </div>
+            Puedes armar tu orden en la página de <a href="${pedidosUrl}" style="color:#e85d26;font-weight:700;">Pedidos</a> y validar tu comprobante.
+            <span class="duribot-time">${getFormattedTime()}</span>
+        `;
+        appendDuriMessage('', 'bot', html);
+        return;
+    }
+
+    // 2. Formas de Pago Generales
+    if (q.includes('pago') || q.includes('pagar') || q.includes('transferencia') || q.includes('cuenta') || q.includes('banco') || q.includes('divisa') || q.includes('efectivo') || q.includes('tarjeta')) {
+        const rateStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
         const html = `
             💳 <strong>Formas de Pago Aceptadas:</strong><br><br>
             Trabajamos con métodos rápidos y 100% verificados:<br>
-            • 📱 <strong>Pago Móvil:</strong> Banco Banesco y Banco de Venezuela (disponible de inmediato).<br>
+            • 📱 <strong>Pago Móvil:</strong> Banco de Venezuela y Banesco (al cambio oficial BCV de <strong>${rateStr} Bs/$</strong>).<br>
             • 🏦 <strong>Transferencia Bancaria:</strong> Cuentas nacionales autorizadas.<br><br>
-            💡 <em>Nota: Toda cotización se expresa en USD ($) y se valida el comprobante vía WhatsApp al procesar tu pedido.</em>
+            💡 <em>Al enviar tu pedido por la web, puedes adjuntar tu referencia y confirmar por WhatsApp.</em>
             <div class="duribot-chips">
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Datos para Pago Móvil')">📱 Ver Datos Pago Móvil</button>
                 <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cómo hago un pedido?')">🛒 ¿Cómo hacer un pedido?</button>
-                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Consultar datos bancarios</button>
             </div>
             <span class="duribot-time">${getFormattedTime()}</span>
         `;
@@ -557,7 +747,7 @@ async function processDuriQuery(rawQuery) {
         return;
     }
 
-    // 6. Búsqueda de Productos en el Catálogo
+    // 6. Búsqueda de Productos en el Catálogo con Moneda Dual
     let allProducts = [];
     try {
         allProducts = await getFallbackProducts();
@@ -590,13 +780,18 @@ async function processDuriQuery(rawQuery) {
             const logoPath = isInPages ? '../img/logo-duri.png' : 'img/logo-duri.png';
             let cardsHtml = top.map(p => {
                 const img = (typeof getProductImageUrl === 'function') ? getProductImageUrl(p) : logoPath;
-                const price = parseFloat(p.precio_venta || 0).toFixed(2);
+                const priceUsd = parseFloat(p.precio_venta || 0).toFixed(2);
+                const priceBs = BcvManager.formatBs(BcvManager.toBs(p.precio_venta));
                 return `
                     <div class="duribot-product-card">
                         <img src="${img}" class="duribot-product-img" alt="${escapeHtml(p.nombre)}" onerror="this.src='${logoPath}'">
                         <div class="duribot-product-info">
                             <h5 class="duribot-product-title">${escapeHtml(p.nombre)}</h5>
-                            <p class="duribot-product-price">$${price} <span style="font-size:0.7rem; color:#64748b; font-weight:normal;">(${p.stock_actual || 10} disp.)</span></p>
+                            <p class="duribot-product-price">
+                                <strong>$${priceUsd}</strong>
+                                <span style="font-size:0.7rem; color:#64748b; margin-left:4px;">(≈ ${priceBs})</span>
+                                <span style="font-size:0.7rem; color:#10b981; margin-left:4px; font-weight:600;">• ${p.stock_actual || 10} disp.</span>
+                            </p>
                         </div>
                         <button type="button" class="duribot-product-add" onclick="addDuriBotProductToCart(${p.id})" title="Agregar al pedido">
                             <i class="fas fa-cart-plus"></i> Pedir
@@ -613,7 +808,8 @@ async function processDuriQuery(rawQuery) {
                     <a href="${productosUrl}" class="btn btn-sm btn-outline" style="font-size:0.75rem; padding:5px 10px; border-radius:8px; text-decoration:none;">
                         <i class="fas fa-th-list"></i> Ver todo el Catálogo
                     </a>
-                    <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('¿Cuáles son las formas de pago?')">💳 ¿Cómo pagar?</button>
+                    <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Tasa BCV del día')">🇻🇪 Ver Tasa BCV</button>
+                    <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Datos para Pago Móvil')">📱 Pago Móvil</button>
                 </div>
                 <span class="duribot-time">${getFormattedTime()}</span>
             `;
@@ -1090,10 +1286,29 @@ async function getFallbackProducts() {
 }
 
 // ============================================
-// PRODUCTOS
+// PRODUCTOS CON MONEDA DUAL Y SKELETON LOADERS
 // ============================================
+window._allCatalogProducts = [];
+window._catalogProducts = [];
+
 async function loadProductos(categoria = null) {
     const grid = document.getElementById('productsGrid');
+    
+    // 1. Mostrar Skeleton Shimmer mientras cargan los datos
+    if (grid) {
+        grid.innerHTML = Array(6).fill(0).map(() => `
+            <div class="skeleton-card">
+                <div class="skeleton-shimmer skeleton-image"></div>
+                <div class="skeleton-shimmer skeleton-badge"></div>
+                <div class="skeleton-shimmer skeleton-title"></div>
+                <div class="skeleton-shimmer skeleton-desc"></div>
+                <div class="skeleton-shimmer skeleton-desc short"></div>
+                <div class="skeleton-shimmer skeleton-price"></div>
+                <div class="skeleton-shimmer skeleton-button"></div>
+            </div>
+        `).join('');
+    }
+
     try {
         let productos = [];
         const isGH = window.location.hostname.includes('github.io');
@@ -1102,7 +1317,6 @@ async function loadProductos(categoria = null) {
         if (!isGH) {
             try {
                 let url = `${API_BASE}/productos.php`;
-                if (categoria && categoria !== 'all') url += `?categoria=${encodeURIComponent(categoria)}`;
                 const res = await fetch(url);
                 if (res.ok) {
                     const data = await res.json();
@@ -1119,12 +1333,6 @@ async function loadProductos(categoria = null) {
         if (!productos || !productos.length) {
             let staticList = await getFallbackProducts();
             productos = staticList;
-            if (categoria && categoria !== 'all') {
-                productos = productos.filter(p => 
-                    p.categoria_nombre === categoria || 
-                    String(p.categoria_id) === String(categoria)
-                );
-            }
         }
 
         if (!productos || !productos.length) {
@@ -1132,11 +1340,36 @@ async function loadProductos(categoria = null) {
             return;
         }
 
-        renderProductos(productos);
+        window._allCatalogProducts = productos;
+        window._catalogProducts = productos;
+
+        // Actualizar contadores de categorías si existen
+        updateCategoryCounts(productos);
+
+        // Si se especificó una categoría concreta
+        if (categoria && categoria !== 'all') {
+            applyCatalogFilters();
+        } else {
+            renderProductos(productos);
+        }
     } catch (err) {
         console.error('Error general al cargar productos:', err);
         if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:#dc3545"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:10px;display:block"></i><p>No se pudieron cargar los productos.</p></div>';
     }
+}
+
+function updateCategoryCounts(productos) {
+    const countAll = document.getElementById('countAll');
+    const countUtiles = document.getElementById('countUtiles');
+    const countPapeleria = document.getElementById('countPapeleria');
+    const countTecnologia = document.getElementById('countTecnologia');
+    const countAccesorios = document.getElementById('countAccesorios');
+
+    if (countAll) countAll.textContent = `(${productos.length})`;
+    if (countUtiles) countUtiles.textContent = `(${productos.filter(p => p.categoria_nombre === 'Útiles Escolares').length})`;
+    if (countPapeleria) countPapeleria.textContent = `(${productos.filter(p => p.categoria_nombre === 'Papelería').length})`;
+    if (countTecnologia) countTecnologia.textContent = `(${productos.filter(p => p.categoria_nombre === 'Tecnología').length})`;
+    if (countAccesorios) countAccesorios.textContent = `(${productos.filter(p => p.categoria_nombre === 'Accesorios').length})`;
 }
 
 function handleImgError(img, cat) {
@@ -1153,6 +1386,11 @@ function handleImgError(img, cat) {
 function renderProductos(productos) {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
+
+    if (!productos || !productos.length) {
+        grid.innerHTML = '<div style="text-align:center;grid-column:1/-1;padding:50px;color:var(--text-tertiary)"><i class="fas fa-search" style="font-size:2.5rem;margin-bottom:12px;opacity:0.4;display:block"></i><p style="font-size:1.05rem;font-weight:600;">No se encontraron productos con los filtros seleccionados.</p><button class="btn btn-sm btn-outline mt-4" onclick="clearCatalogSearch()" style="margin-top:12px;"><i class="fas fa-undo"></i> Restablecer búsqueda</button></div>';
+        return;
+    }
     
     const user = getUser();
     const canEdit = user && (user.rol === 'super_usuario' || user.rol === 'operador');
@@ -1201,7 +1439,7 @@ function renderProductos(productos) {
                 <h3>${p.nombre}</h3>
                 <p>${p.descripcion || ''}</p>
                 <div class="product-footer">
-                    <span class="product-price">$${parseFloat(p.precio_venta).toFixed(2)}</span>
+                    ${BcvManager.renderDualHtml(p.precio_venta)}
                     <span class="product-stock ${stockClass}"><i class="fas ${p.stock_actual <= 0 ? 'fa-times-circle' : (p.stock_actual <= p.stock_minimo ? 'fa-exclamation-triangle' : 'fa-check')}"></i> ${p.stock_actual} u</span>
                 </div>
                 ${actions}
@@ -1218,17 +1456,165 @@ function renderProductos(productos) {
             btn.className = 'btn btn-accent';
             btn.style.cssText = 'margin-top:15px';
             btn.innerHTML = '<i class="fas fa-plus"></i> Agregar Producto';
-            btn.onclick = function(e) { e.preventDefault(); showToast('Formulario de agregar producto - Próximamente'); };
+            btn.onclick = function(e) { e.preventDefault(); showToast('Formulario de agregar producto'); };
             header.appendChild(btn);
         }
     }
 }
 
 function filterProducts(cat, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#categoryFilterBar .filter-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
-    loadProductos(cat);
+    applyCatalogFilters();
 }
+
+// Búsqueda Predictiva en Tiempo Real en el Catálogo
+function handleCatalogSearchInput(query) {
+    const q = (query || '').toLowerCase().trim();
+    const dropdown = document.getElementById('catalogPredictiveDropdown');
+    const clearBtn = document.getElementById('catalogSearchClear');
+    if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+
+    if (!q || !window._allCatalogProducts || window._allCatalogProducts.length === 0) {
+        if (dropdown) { dropdown.innerHTML = ''; dropdown.classList.remove('show'); }
+        applyCatalogFilters();
+        return;
+    }
+
+    const matches = window._allCatalogProducts.filter(p => {
+        return (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+               (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+               (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(q)) ||
+               (p.codigo && p.codigo.toLowerCase().includes(q));
+    });
+
+    if (dropdown) {
+        if (matches.length === 0) {
+            dropdown.innerHTML = `<div style="padding:16px;text-align:center;color:#64748b;font-size:0.85rem;"><i class="fas fa-search" style="margin-right:6px;"></i> No se encontraron coincidencias para "<strong>${escapeHtml(q)}</strong>"</div>`;
+        } else {
+            dropdown.innerHTML = matches.slice(0, 6).map(p => {
+                const img = getProductImageUrl(p);
+                const priceUsd = parseFloat(p.precio_venta || 0).toFixed(2);
+                const priceBs = BcvManager.formatBs(BcvManager.toBs(p.precio_venta));
+                const stockBadge = p.stock_actual <= 0 ? '<span style="color:#ef4444;font-weight:700;">Agotado</span>' : `<span style="color:#10b981;font-weight:600;">${p.stock_actual} disp.</span>`;
+                return `
+                    <div class="predictive-item" onclick="selectCatalogPredictiveItem('${p.id}')">
+                        <img src="${img}" class="predictive-item-img" alt="${p.nombre}" onerror="this.src='../img/logo-duri.png'">
+                        <div class="predictive-item-info">
+                            <div class="predictive-item-title">${p.nombre}</div>
+                            <div class="predictive-item-meta">
+                                <span>${p.categoria_nombre}</span> • ${stockBadge}
+                            </div>
+                        </div>
+                        <div class="predictive-item-price">
+                            <div class="predictive-item-price-usd">$${priceUsd}</div>
+                            <div class="predictive-item-price-bs">≈ ${priceBs}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        dropdown.classList.add('show');
+    }
+
+    applyCatalogFilters();
+}
+
+function clearCatalogSearch() {
+    const input = document.getElementById('catalogSearchInput');
+    if (input) input.value = '';
+    const clearBtn = document.getElementById('catalogSearchClear');
+    if (clearBtn) clearBtn.style.display = 'none';
+    const dropdown = document.getElementById('catalogPredictiveDropdown');
+    if (dropdown) { dropdown.innerHTML = ''; dropdown.classList.remove('show'); }
+    applyCatalogFilters();
+}
+
+function selectCatalogPredictiveItem(id) {
+    const dropdown = document.getElementById('catalogPredictiveDropdown');
+    if (dropdown) dropdown.classList.remove('show');
+    
+    // Buscar la tarjeta y hacer scroll con animación
+    const cards = document.querySelectorAll('.product-card');
+    let found = false;
+    cards.forEach(card => {
+        if (card.innerHTML.includes(`buyNow('${id}'`) || card.innerHTML.includes(`editProduct('${id}'`)) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.transition = 'all 0.3s ease';
+            card.style.boxShadow = '0 0 0 4px var(--accent), 0 12px 32px rgba(232,93,38,0.25)';
+            card.style.transform = 'translateY(-4px)';
+            found = true;
+            setTimeout(() => {
+                card.style.boxShadow = '';
+                card.style.transform = '';
+            }, 2500);
+        }
+    });
+
+    if (!found) {
+        // En caso de estar en otra categoría filtrada, restablecer filtro para mostrarlo
+        const activeBtn = document.querySelector('#categoryFilterBar .filter-btn:first-child');
+        if (activeBtn) filterProducts('all', activeBtn);
+        setTimeout(() => selectCatalogPredictiveItem(id), 100);
+    }
+}
+
+function applyCatalogFilters() {
+    if (!window._allCatalogProducts || !window._allCatalogProducts.length) return;
+    
+    const searchVal = (document.getElementById('catalogSearchInput') ? document.getElementById('catalogSearchInput').value : '').toLowerCase().trim();
+    const activeBtn = document.querySelector('#categoryFilterBar .filter-btn.active');
+    let selectedCat = 'all';
+    if (activeBtn) {
+        const fullTxt = activeBtn.textContent.replace(/\(\d+\)/g, '').trim();
+        if (fullTxt !== 'Todos') selectedCat = fullTxt;
+    }
+
+    const onlyInStock = document.getElementById('filterInStockOnly') ? document.getElementById('filterInStockOnly').checked : false;
+    const sortVal = document.getElementById('catalogSortSelect') ? document.getElementById('catalogSortSelect').value : 'featured';
+
+    let result = [...window._allCatalogProducts];
+
+    // 1. Filtro de búsqueda
+    if (searchVal) {
+        result = result.filter(p => 
+            (p.nombre && p.nombre.toLowerCase().includes(searchVal)) ||
+            (p.descripcion && p.descripcion.toLowerCase().includes(searchVal)) ||
+            (p.categoria_nombre && p.categoria_nombre.toLowerCase().includes(searchVal)) ||
+            (p.codigo && p.codigo.toLowerCase().includes(searchVal))
+        );
+    }
+
+    // 2. Filtro de categoría
+    if (selectedCat !== 'all') {
+        result = result.filter(p => p.categoria_nombre === selectedCat);
+    }
+
+    // 3. Filtro de disponibilidad
+    if (onlyInStock) {
+        result = result.filter(p => Number(p.stock_actual) > 0);
+    }
+
+    // 4. Ordenamiento
+    if (sortVal === 'price_asc') {
+        result.sort((a, b) => parseFloat(a.precio_venta || 0) - parseFloat(b.precio_venta || 0));
+    } else if (sortVal === 'price_desc') {
+        result.sort((a, b) => parseFloat(b.precio_venta || 0) - parseFloat(a.precio_venta || 0));
+    } else if (sortVal === 'name_asc') {
+        result.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+    }
+
+    renderProductos(result);
+}
+
+// Cerrar dropdown predictivo al hacer clic fuera
+document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('catalogSearchWrap');
+    const dropdown = document.getElementById('catalogPredictiveDropdown');
+    if (wrap && dropdown && !wrap.contains(e.target)) {
+        dropdown.classList.remove('show');
+    }
+});
 
 function buyNow(id, name, price, stock) {
     addToCartById(id, name, price, stock);
@@ -1297,12 +1683,50 @@ async function loadInventario() {
 function renderInventarioStats(stats) {
     const el = document.getElementById('invStats');
     if (!el) return;
+
+    const valorUsd = parseFloat(stats.valor_inventario || 0);
+    const valorBs = BcvManager.toBs(valorUsd);
+
     el.innerHTML = `
         <div class="stat-card"><div class="stat-card-icon orange"><i class="fas fa-box"></i></div><div><div class="stat-card-value">${stats.total_productos}</div><div class="stat-card-label">Total Productos</div></div></div>
         <div class="stat-card green"><div class="stat-card-icon green"><i class="fas fa-check-circle"></i></div><div><div class="stat-card-value">${stats.en_stock}</div><div class="stat-card-label">En Stock</div></div></div>
         <div class="stat-card yellow"><div class="stat-card-icon yellow"><i class="fas fa-exclamation-triangle"></i></div><div><div class="stat-card-value">${stats.stock_bajo}</div><div class="stat-card-label">Stock Bajo</div></div></div>
         <div class="stat-card red"><div class="stat-card-icon red"><i class="fas fa-times-circle"></i></div><div><div class="stat-card-value">${stats.agotados}</div><div class="stat-card-label">Agotados</div></div></div>
+        <div class="stat-card" style="border-left:4px solid var(--accent);"><div class="stat-card-icon orange"><i class="fas fa-coins"></i></div><div><div class="stat-card-value" style="font-size:1.15rem;">$${valorUsd.toFixed(2)}</div><div class="stat-card-label" style="font-size:0.75rem;">Valor Total (≈ ${BcvManager.formatBs(valorBs)})</div></div></div>
     `;
+
+    // Actualizar números de los filtros rápidos (chips)
+    const chipLow = document.getElementById('chipLowCount');
+    const chipOut = document.getElementById('chipOutCount');
+    const chipInStock = document.getElementById('chipInStockCount');
+    if (chipLow) chipLow.textContent = stats.stock_bajo;
+    if (chipOut) chipOut.textContent = stats.agotados;
+    if (chipInStock) chipInStock.textContent = stats.en_stock;
+
+    // Alerta de stock crítico superior
+    const alertEl = document.getElementById('invCriticalAlert');
+    if (alertEl) {
+        const totalCrit = Number(stats.stock_bajo || 0) + Number(stats.agotados || 0);
+        if (totalCrit > 0) {
+            alertEl.style.display = 'block';
+            alertEl.innerHTML = `
+                <div class="inv-critical-alert">
+                    <div class="inv-critical-alert-content">
+                        <div class="inv-critical-alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="inv-critical-alert-text">
+                            <strong>Alerta de Inventario: ${totalCrit} producto(s) en stock crítico o agotados</strong>
+                            <span>Te sugerimos revisar estos artículos prioritarios para coordinar su reposición.</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm" onclick="setInventoryStatusFilter('low', document.querySelectorAll('.inv-quick-chip')[1])" style="background:#ef4444;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;">
+                        <i class="fas fa-filter"></i> Ver Artículos Críticos
+                    </button>
+                </div>
+            `;
+        } else {
+            alertEl.style.display = 'none';
+        }
+    }
 }
 
 function renderInventarioTable(productos) {
@@ -1334,6 +1758,9 @@ function renderInventarioTable(productos) {
             ? `<img src="${thumbSrc}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1;flex-shrink:0;" onerror="this.style.display='none'">` 
             : `<div style="width:34px;height:34px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;"><i class="fas fa-box" style="font-size:0.9rem;"></i></div>`;
 
+        const priceUsd = parseFloat(p.precio_venta || 0).toFixed(2);
+        const priceBs = BcvManager.formatBs(BcvManager.toBs(p.precio_venta));
+
         return `<tr>
             <td><strong>${p.codigo}</strong></td>
             <td>
@@ -1343,7 +1770,11 @@ function renderInventarioTable(productos) {
                 </div>
             </td>
             <td>${p.categoria_nombre}</td>
-            <td>$${parseFloat(p.precio_venta).toFixed(2)}</td><td class="${stockClass}">${p.stock_actual}</td><td>${p.stock_minimo}</td>
+            <td>
+                <strong>$${priceUsd}</strong>
+                <span style="display:block;font-size:0.72rem;color:#64748b;">${priceBs}</span>
+            </td>
+            <td class="${stockClass}">${p.stock_actual}</td><td>${p.stock_minimo}</td>
             <td><span class="status ${statusClass}">${statusText}</span></td>
             <td>${actionBtn}</td>
         </tr>`;
@@ -1351,10 +1782,82 @@ function renderInventarioTable(productos) {
 }
 
 function filterInventory(val) {
-    val = val.toLowerCase();
+    val = (val || '').toLowerCase().trim();
     document.querySelectorAll('#invBody tr').forEach(row => {
         row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
     });
+}
+
+function setInventoryStatusFilter(status, btn) {
+    document.querySelectorAll('.inv-quick-chip').forEach(c => c.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    
+    if (!_cachedInventory || !_cachedInventory.length) return;
+    let filtered = _cachedInventory;
+    if (status === 'low') {
+        filtered = _cachedInventory.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo) && Number(p.stock_actual) > 0);
+    } else if (status === 'out') {
+        filtered = _cachedInventory.filter(p => Number(p.stock_actual) <= 0);
+    } else if (status === 'available') {
+        filtered = _cachedInventory.filter(p => Number(p.stock_actual) > Number(p.stock_minimo));
+    }
+    renderInventarioTable(filtered);
+}
+
+function exportInventoryToExcel() {
+    const data = _cachedInventory || [];
+    if (!data.length) {
+        showToast('No hay datos en el inventario para exportar', 'error');
+        return;
+    }
+
+    const headers = [
+        'Código',
+        'Producto',
+        'Categoría',
+        'Precio (USD)',
+        'Precio (Bs - BCV)',
+        'Stock Actual',
+        'Stock Mínimo',
+        'Estado',
+        'Valor Total USD'
+    ];
+
+    const rows = data.map(p => {
+        const precioUsd = parseFloat(p.precio_venta || 0);
+        const precioBs = BcvManager.toBs(precioUsd);
+        const stock = parseInt(p.stock_actual || 0);
+        const min = parseInt(p.stock_minimo || 0);
+        const valorUsd = (precioUsd * stock).toFixed(2);
+        let estado = 'En Stock';
+        if (stock <= 0) estado = 'Agotado';
+        else if (stock <= min) estado = 'Stock Bajo';
+
+        return [
+            `"${p.codigo || ''}"`,
+            `"${(p.nombre || '').replace(/"/g, '""')}"`,
+            `"${(p.categoria_nombre || '').replace(/"/g, '""')}"`,
+            precioUsd.toFixed(2),
+            precioBs.toFixed(2),
+            stock,
+            min,
+            `"${estado}"`,
+            valorUsd
+        ].join(';');
+    });
+
+    const csvContent = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Inventario_Inversiones_Duri_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('¡Inventario exportado con éxito en Excel (CSV)!');
 }
 
 // ============================================
@@ -2576,15 +3079,26 @@ function updateCart() {
     let html = '', sum = 0;
     cart.forEach((it, i) => {
         const t = it.price * it.qty; sum += t;
+        const bsUnit = BcvManager.formatBs(BcvManager.toBs(it.price));
+        const bsTotal = BcvManager.formatBs(BcvManager.toBs(t));
         html += `<div class="cart-item">
-            <div class="cart-item-info"><div class="cart-item-name">${it.name}</div><div class="item-price">$${it.price.toFixed(2)} c/u</div></div>
+            <div class="cart-item-info">
+                <div class="cart-item-name">${it.name}</div>
+                <div class="item-price">$${it.price.toFixed(2)} (${bsUnit}) c/u</div>
+            </div>
             <div class="cart-item-qty"><button onclick="updateQty(${i},-1)">-</button><span>${it.qty}</span><button onclick="updateQty(${i},1)">+</button></div>
-            <div class="cart-item-total">$${t.toFixed(2)}</div>
+            <div class="cart-item-total">
+                <div>$${t.toFixed(2)}</div>
+                <div style="font-size:0.72rem;color:#64748b;font-weight:normal;">${bsTotal}</div>
+            </div>
             <button class="cart-item-remove" onclick="removeFromCart(${i})"><i class="fas fa-trash"></i></button>
         </div>`;
     });
     items.innerHTML = html;
-    if (total) total.textContent = '$' + sum.toFixed(2);
+    if (total) {
+        const bsSum = BcvManager.formatBs(BcvManager.toBs(sum));
+        total.innerHTML = `<span>$${sum.toFixed(2)}</span> <small style="font-size:0.85rem;color:#64748b;font-weight:600;display:block;">(≈ ${bsSum})</small>`;
+    }
     if (btn) btn.disabled = false;
     if (btnForm) btnForm.disabled = false;
 }
@@ -2630,15 +3144,18 @@ async function submitOrder() {
     cart.forEach(it => { subtotal += it.price * it.qty; });
     const iva = subtotal * 0.16;
     const total = subtotal + iva;
+    const totalBs = BcvManager.formatBs(BcvManager.toBs(total));
+    const rateBsStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
     
-    // Construir lista de productos
+    // Construir lista de productos con precio dual
     let prodLines = '';
     cart.forEach(it => {
-        prodLines += `📦 ${it.name} x${it.qty} — $${(it.price * it.qty).toFixed(2)}\n`;
+        const itemBs = BcvManager.formatBs(BcvManager.toBs(it.price * it.qty));
+        prodLines += `📦 ${it.name} x${it.qty} — $${(it.price * it.qty).toFixed(2)} (${itemBs})\n`;
     });
     
-    // Mensaje predeterminado con Cédula y Link de Google Maps
-    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)}\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
+    // Mensaje predeterminado con Cédula, tasa BCV y Link de Google Maps
+    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
     
     // Guardar datos temporalmente para el modal
     window._pendingOrder = {
@@ -2665,53 +3182,113 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
     // Remover modal anterior si existe
     const old = document.getElementById('confirmModal');
     if (old) old.remove();
+
+    const subtotalBs = BcvManager.formatBs(BcvManager.toBs(subtotal));
+    const ivaBs = BcvManager.formatBs(BcvManager.toBs(iva));
+    const totalBs = BcvManager.formatBs(BcvManager.toBs(total));
+    const totalBsRaw = (BcvManager.toBs(total)).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const rateStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
+
+    // Tarjeta de Pago Móvil con botones para copiar
+    const isPagoMovil = paymentLabel.toLowerCase().includes('pago m') || paymentLabel.toLowerCase().includes('pago_movil');
+    let pagoMovilCardHtml = '';
+    if (isPagoMovil) {
+        pagoMovilCardHtml = `
+            <div class="pago-movil-card">
+                <div class="pago-movil-header">
+                    <span class="pago-movil-title"><i class="fas fa-mobile-alt"></i> Datos para Pago Móvil</span>
+                    <span class="pago-movil-badge">Tasa BCV: ${rateStr} Bs/$</span>
+                </div>
+                <div class="pago-movil-row">
+                    <span class="pago-movil-label">Banco:</span>
+                    <span class="pago-movil-val">Banco de Venezuela (0102)</span>
+                </div>
+                <div class="pago-movil-row">
+                    <span class="pago-movil-label">Teléfono:</span>
+                    <div class="pago-movil-val-wrap">
+                        <span class="pago-movil-val">0412-1234567</span>
+                        <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('04121234567', this)">
+                            <i class="fas fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+                <div class="pago-movil-row">
+                    <span class="pago-movil-label">RIF:</span>
+                    <div class="pago-movil-val-wrap">
+                        <span class="pago-movil-val">J-50123456-7</span>
+                        <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('J501234567', this)">
+                            <i class="fas fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+                <div class="pago-movil-row" style="background:#ffedd5;padding:8px 10px;border-radius:8px;margin-top:6px;">
+                    <span class="pago-movil-label" style="font-weight:700;">Monto en Bs:</span>
+                    <div class="pago-movil-val-wrap">
+                        <span class="pago-movil-val" style="color:#c2410c;font-size:1.05rem;">Bs. ${totalBsRaw}</span>
+                        <button type="button" class="btn-copy-mini" style="background:#c2410c;color:#fff;" onclick="copyTextToClipboard('${totalBsRaw}', this)">
+                            <i class="fas fa-copy"></i> Copiar Monto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
     
     const modal = document.createElement('div');
     modal.id = 'confirmModal';
     modal.className = 'modal show';
     modal.innerHTML = `
-        <div style="width:480px;max-width:95%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
-            <div style="background:linear-gradient(135deg,var(--dark,#111),#2a1a4a);color:#fff;padding:24px 28px">
+        <div style="width:500px;max-width:95%;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
+            <div style="background:linear-gradient(135deg,var(--dark,#111),#2a1a4a);color:#fff;padding:22px 26px">
                 <h3 style="margin:0 0 4px;font-size:1.2rem"><i class="fas fa-clipboard-check" style="color:var(--accent,#FF6600)"></i> Confirmar Pedido</h3>
-                <p style="margin:0;font-size:0.85rem;opacity:0.7">Revisa tus datos y tu pedido antes de enviarlo</p>
+                <p style="margin:0;font-size:0.82rem;opacity:0.8">Revisa el resumen y la tasa oficial antes de enviar</p>
             </div>
-            <div style="padding:24px 28px;max-height:50vh;overflow-y:auto">
-                <div style="margin-bottom:16px">
-                    <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Datos del Cliente</div>
-                    <div style="font-weight:600;font-size:1.05rem;">${clientName}</div>
-                    <div style="font-size:0.85rem;color:#555;margin-top:2px;">
+            <div style="padding:22px 26px;max-height:56vh;overflow-y:auto">
+                <div style="margin-bottom:14px">
+                    <div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Datos del Cliente</div>
+                    <div style="font-weight:700;font-size:1.05rem;color:#1e293b;">${clientName}</div>
+                    <div style="font-size:0.84rem;color:#555;margin-top:2px;">
                         <span><i class="fas fa-id-card"></i> <strong>C.I / RIF:</strong> ${clientCi}</span>
                         <span style="margin-left:10px;"><i class="fas fa-phone"></i> ${clientPhone}</span>
                     </div>
                 </div>
-                <div style="margin-bottom:16px">
-                    <div style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Productos</div>
-                    <div style="background:#f8f8f8;border-radius:8px;padding:14px;font-size:0.9rem;line-height:1.8;white-space:pre-line">${prodLines}</div>
+                
+                <div style="margin-bottom:14px">
+                    <div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Artículos Solicitados</div>
+                    <div style="background:#f8fafc;border-radius:10px;padding:12px;font-size:0.85rem;line-height:1.7;white-space:pre-line;border:1px solid #e2e8f0;">${prodLines}</div>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;border-bottom:1px solid #eee">
-                    <span>Subtotal</span><span>$${subtotal.toFixed(2)}</span>
+
+                <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:0.88rem;border-bottom:1px solid #eee">
+                    <span>Subtotal</span><span>$${subtotal.toFixed(2)} <small style="color:#64748b;">(${subtotalBs})</small></span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.9rem;border-bottom:1px solid #eee">
-                    <span>IVA (16%)</span><span>$${iva.toFixed(2)}</span>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:0.88rem;border-bottom:1px solid #eee">
+                    <span>IVA (16%)</span><span>$${iva.toFixed(2)} <small style="color:#64748b;">(${ivaBs})</small></span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:1.2rem;font-weight:700;color:var(--accent,#FF6600)">
-                    <span>TOTAL</span><span>$${total.toFixed(2)}</span>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:1.2rem;font-weight:700;color:var(--accent,#FF6600)">
+                    <span>TOTAL</span>
+                    <div style="text-align:right;">
+                        <div>$${total.toFixed(2)} USD</div>
+                        <div style="font-size:0.85rem;color:#64748b;font-weight:600;">≈ ${totalBs}</div>
+                    </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:0.85rem;color:#555;background:#f9f9f9;padding:12px;border-radius:8px;">
-                    <div><i class="fas fa-credit-card"></i> <strong>Pago:</strong> ${paymentLabel}</div>
+
+                ${pagoMovilCardHtml}
+
+                <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:0.84rem;color:#555;background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0;">
+                    <div><i class="fas fa-credit-card"></i> <strong>Forma de Pago:</strong> ${paymentLabel}</div>
                     <div><i class="fas fa-map-marker-alt"></i> <strong>Entrega:</strong> ${addr || 'Por confirmar'}</div>
-                    ${mapsLink ? `<div><i class="fas fa-map-marked-alt" style="color:#28a745;"></i> <a href="${mapsLink}" target="_blank" style="color:#28a745;font-weight:600;text-decoration:underline;">Ver punto GPS fijado en Google Maps</a></div>` : ''}
+                    ${mapsLink ? `<div><i class="fas fa-map-marked-alt" style="color:#28a745;"></i> <a href="${mapsLink}" target="_blank" style="color:#28a745;font-weight:600;text-decoration:underline;">Ver punto GPS en Google Maps</a></div>` : ''}
                 </div>
-                <div style="margin-top:16px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:14px;font-size:0.82rem;line-height:1.6;color:#2e7d32">
+                <div style="margin-top:14px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:10px;padding:12px;font-size:0.82rem;line-height:1.6;color:#2e7d32">
                     <strong><i class="fab fa-whatsapp"></i> Mensaje que se enviará:</strong>
-                    <div style="margin-top:8px;white-space:pre-line;font-family:monospace;font-size:0.78rem">${msg.replace(/</g, '&lt;')}</div>
+                    <div style="margin-top:6px;white-space:pre-line;font-family:monospace;font-size:0.75rem">${msg.replace(/</g, '&lt;')}</div>
                 </div>
             </div>
-            <div style="padding:16px 28px 24px;display:flex;gap:10px;border-top:1px solid #eee">
-                <button onclick="closeConfirmModal()" style="flex:1;padding:14px;border:2px solid #ddd;background:#fff;border-radius:10px;font-size:0.95rem;font-weight:600;cursor:pointer;color:#666">
+            <div style="padding:16px 26px 22px;display:flex;gap:10px;border-top:1px solid #eee">
+                <button onclick="closeConfirmModal()" style="flex:1;padding:12px;border:1.5px solid #ddd;background:#fff;border-radius:10px;font-size:0.92rem;font-weight:600;cursor:pointer;color:#555">
                     <i class="fas fa-arrow-left"></i> Volver
                 </button>
-                <button onclick="confirmAndSend()" id="confirmSendBtn" style="flex:2;padding:14px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:600;cursor:pointer">
+                <button onclick="confirmAndSend()" id="confirmSendBtn" style="flex:2;padding:12px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:10px;font-size:0.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
                     <i class="fab fa-whatsapp"></i> Confirmar y Enviar
                 </button>
             </div>
