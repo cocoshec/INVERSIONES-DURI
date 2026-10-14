@@ -24,7 +24,10 @@ $database = new Database();
 $db = $database->getConnection();
 
 try {
-    $db->exec("ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS cliente_email VARCHAR(150) AFTER cliente_ci");
+    $cols = $db->query("SHOW COLUMNS FROM pedidos LIKE 'cliente_email'")->fetchAll();
+    if (empty($cols)) {
+        $db->exec("ALTER TABLE pedidos ADD COLUMN cliente_email VARCHAR(150) NULL AFTER cliente_ci");
+    }
 } catch(Exception $e) {}
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -33,17 +36,22 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'enviar_factura') {
     $data = json_decode(file_get_contents("php://input"), true);
     $pedidoId = $data['pedido_id'] ?? null;
+    $codigoParam = $data['codigo'] ?? '';
     $email = trim($data['email'] ?? '');
 
-    if (!$pedidoId || !$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if ((!$pedidoId && !$codigoParam) || !$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
         echo json_encode(["status" => "error", "message" => "Pedido y correo electrónico válido son requeridos"]);
         exit();
     }
 
-    $stmt = $db->prepare("SELECT p.*, COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
-    $stmt->execute([$pedidoId]);
+    $stmt = $db->prepare("SELECT p.*, COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ? OR p.codigo = ?");
+    $stmt->execute([$pedidoId, $codigoParam ?: $pedidoId]);
     $pedido = $stmt->fetch();
+
+    if (!$pedido && !empty($data['pedido'])) {
+        $pedido = $data['pedido'];
+    }
 
     if (!$pedido) {
         http_response_code(404);
@@ -51,17 +59,23 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'enviar_
         exit();
     }
 
-    $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre FROM detalle_pedido dp LEFT JOIN productos pr ON dp.producto_id = pr.id WHERE dp.pedido_id = ?");
-    $stmtDet->execute([$pedidoId]);
-    $detalles = $stmtDet->fetchAll();
+    $detalles = [];
+    if (!empty($pedido['id'])) {
+        $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre FROM detalle_pedido dp LEFT JOIN productos pr ON dp.producto_id = pr.id WHERE dp.pedido_id = ?");
+        $stmtDet->execute([$pedido['id']]);
+        $detalles = $stmtDet->fetchAll();
+    }
+    if (empty($detalles) && !empty($data['productos'])) {
+        $detalles = $data['productos'];
+    }
 
     $tasaBcv = isset($data['tasa_bcv']) ? (float)$data['tasa_bcv'] : 0;
     if (function_exists('enviarFacturaClienteEmail')) {
         $res = enviarFacturaClienteEmail($email, $pedido, $detalles, $tasaBcv);
-        if (!empty($res['success'])) {
+        if (!empty($res['success']) && !empty($pedido['id'])) {
             try {
                 $stmtUpEmail = $db->prepare("UPDATE pedidos SET cliente_email = ? WHERE id = ?");
-                $stmtUpEmail->execute([$email, $pedidoId]);
+                $stmtUpEmail->execute([$email, $pedido['id']]);
             } catch(Exception $e) {}
         }
         echo json_encode(["status" => $res['success'] ? "success" : "error", "message" => $res['message']]);
@@ -253,10 +267,33 @@ switch ($method) {
         try {
             $db->beginTransaction();
 
-            // Obtener estado actual y código del pedido
-            $stmt = $db->prepare("SELECT estado, codigo FROM pedidos WHERE id = ?");
-            $stmt->execute([$id]);
+            $codigoParam = $data['codigo'] ?? '';
+
+            // Obtener estado actual y datos del pedido por ID o por Código
+            $stmt = $db->prepare("SELECT p.*, COALESCE(NULLIF(p.cliente_email, ''), c.email) as final_email, COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as final_nombre, COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as final_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ? OR (p.codigo = ? AND ? != '')");
+            $stmt->execute([$id, $codigoParam, $codigoParam]);
             $pedidoActual = $stmt->fetch();
+
+            if (!$pedidoActual && !empty($data['pedido'])) {
+                $pData = $data['pedido'];
+                $cod = !empty($pData['codigo']) ? $pData['codigo'] : ($codigoParam ?: 'PED-' . time());
+                $cNom = $pData['cliente_nombre'] ?? 'Cliente';
+                $cTel = $pData['cliente_telefono'] ?? '';
+                $cCi = $pData['cliente_ci'] ?? '';
+                $cMail = !empty($data['cliente_email']) ? $data['cliente_email'] : ($pData['cliente_email'] ?? '');
+                $cSub = (float)($pData['subtotal'] ?? 0);
+                $cImp = (float)($pData['impuesto'] ?? 0);
+                $cTot = (float)($pData['total'] ?? ($cSub + $cImp));
+                $cForma = $pData['forma_pago'] ?? 'pago_movil';
+                
+                $stmtIns = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, cliente_nombre, cliente_telefono, cliente_ci, cliente_email, subtotal, impuesto, total, estado, forma_pago, direccion_entrega, notas) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmtIns->execute([$cod, $cNom, $cTel, $cCi, $cMail, $cSub, $cImp, $cTot, $nuevoEstado, $cForma, $pData['direccion_entrega'] ?? '', $pData['notas'] ?? '']);
+                $id = $db->lastInsertId();
+                
+                $stmt = $db->prepare("SELECT p.*, p.cliente_email as final_email, p.cliente_nombre as final_nombre, p.cliente_ci as final_ci FROM pedidos p WHERE p.id = ?");
+                $stmt->execute([$id]);
+                $pedidoActual = $stmt->fetch();
+            }
 
             if (!$pedidoActual) {
                 $db->rollBack();
@@ -265,11 +302,12 @@ switch ($method) {
                 exit();
             }
 
+            $realId = $pedidoActual['id'];
             $estadoAnterior = $pedidoActual['estado'];
 
             // Obtener productos del pedido
             $stmt = $db->prepare("SELECT producto_id, cantidad FROM detalle_pedido WHERE pedido_id = ?");
-            $stmt->execute([$id]);
+            $stmt->execute([$realId]);
             $detalles = $stmt->fetchAll();
 
             // Si pasa de 'pendiente' a confirmado ('procesando' o 'completado'), descontamos stock
@@ -305,32 +343,36 @@ switch ($method) {
 
             // Actualizar estado del pedido
             $stmt = $db->prepare("UPDATE pedidos SET estado = ? WHERE id = ?");
-            $stmt->execute([$nuevoEstado, $id]);
+            $stmt->execute([$nuevoEstado, $realId]);
+
+            // Actualizar correo si fue provisto
+            if (!empty($data['cliente_email'])) {
+                try {
+                    $stmtUpMail = $db->prepare("UPDATE pedidos SET cliente_email = ? WHERE id = ?");
+                    $stmtUpMail->execute([$data['cliente_email'], $realId]);
+                    $pedidoActual['cliente_email'] = $data['cliente_email'];
+                } catch(Exception $e) {}
+            }
 
             $db->commit();
 
             // Envío automático de factura al correo del cliente si está validando el pago
             $emailEnviado = false;
-            $emailDestino = !empty($data['cliente_email']) ? trim($data['cliente_email']) : '';
+            $emailDestino = !empty($data['cliente_email']) ? trim($data['cliente_email']) : ($pedidoActual['final_email'] ?? $pedidoActual['cliente_email'] ?? '');
+            $emailMensaje = '';
+
             if (in_array($nuevoEstado, ['procesando', 'completado'])) {
-                if (!$emailDestino) {
-                    $stmtMail = $db->prepare("SELECT p.*, COALESCE(NULLIF(p.cliente_email, ''), c.email) as final_email, COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as final_nombre, COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as final_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
-                    $stmtMail->execute([$id]);
-                    $ordFull = $stmtMail->fetch();
-                    if ($ordFull) {
-                        $emailDestino = $ordFull['final_email'] ?? '';
-                        $pedidoActual = array_merge($pedidoActual, $ordFull);
-                        $pedidoActual['cliente_nombre'] = $ordFull['final_nombre'];
-                        $pedidoActual['cliente_ci'] = $ordFull['final_ci'];
-                    }
-                }
                 if ($emailDestino && filter_var($emailDestino, FILTER_VALIDATE_EMAIL) && function_exists('enviarFacturaClienteEmail')) {
                     $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre FROM detalle_pedido dp LEFT JOIN productos pr ON dp.producto_id = pr.id WHERE dp.pedido_id = ?");
-                    $stmtDet->execute([$id]);
+                    $stmtDet->execute([$realId]);
                     $itemsFact = $stmtDet->fetchAll();
+                    if (empty($itemsFact) && !empty($data['productos'])) {
+                        $itemsFact = $data['productos'];
+                    }
                     $tasa = isset($data['tasa_bcv']) ? (float)$data['tasa_bcv'] : 0;
                     $resMail = enviarFacturaClienteEmail($emailDestino, $pedidoActual, $itemsFact, $tasa);
                     $emailEnviado = !empty($resMail['success']);
+                    $emailMensaje = $resMail['message'] ?? '';
                 }
             }
 
@@ -338,7 +380,8 @@ switch ($method) {
                 "status" => "success", 
                 "message" => "Estado de pedido actualizado a " . $nuevoEstado,
                 "email_enviado" => $emailEnviado,
-                "email_destino" => $emailDestino
+                "email_destino" => $emailDestino,
+                "email_mensaje" => $emailMensaje
             ]);
 
         } catch (Exception $e) {

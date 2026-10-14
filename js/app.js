@@ -2886,6 +2886,12 @@ function abrirModalFactura(pedidoOrCode) {
         return;
     }
 
+    // Seguridad: la factura oficial no se muestra al cliente si el pago no ha sido validado
+    if (!isSuperUsuario() && (p.estado === 'pendiente' || !p.estado)) {
+        showToast('El pedido aún está en espera de validación de pago. La Factura Oficial se emitirá al ser aprobado.', 'warning');
+        return;
+    }
+
     // Datos corporativos y correlativo
     const codigo = p.codigo || `PED-${p.id || '001'}`;
     const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '101');
@@ -3183,54 +3189,55 @@ function compartirFacturaWhatsApp(codigo) {
 }
 window.compartirFacturaWhatsApp = compartirFacturaWhatsApp;
 
-// Modal de éxito post-compra con descarga de factura para el cliente
+// Modal de éxito post-compra (sin factura hasta que el pago sea aprobado por el Super Admin)
 function mostrarModalExitoConFactura(order, waUrl) {
     cerrarModalExito();
     const modal = document.createElement('div');
     modal.id = 'modalOrderSuccess';
     modal.className = 'order-success-modal';
 
-    const cleanNum = (order.codigo || '').replace(/[^0-9]/g, '') || '001';
-    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const codigo = order.codigo || `PED-${order.id || '001'}`;
     const totalBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(order.total)));
 
     modal.innerHTML = `
-        <div class="order-success-card">
-            <div class="order-success-header">
-                <div class="order-success-icon">
-                    <i class="fas fa-check"></i>
+        <div class="order-success-card" style="max-width:480px;">
+            <div class="order-success-header" style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                <div class="order-success-icon" style="background:#eab308; border:2px solid rgba(255,255,255,0.4);">
+                    <i class="fas fa-clock" style="color:#ffffff;"></i>
                 </div>
-                <h3 style="margin:0 0 6px 0; font-size:1.4rem; font-weight:800;">¡Pedido Recibido con Éxito!</h3>
-                <p style="margin:0; font-size:0.88rem; opacity:0.92;">Hemos registrado tu compra en Inversiones Duri C.A.</p>
+                <h3 style="margin:0 0 6px 0; font-size:1.35rem; font-weight:800;">¡Pedido Recibido con Éxito!</h3>
+                <p style="margin:0; font-size:0.86rem; opacity:0.9;">Tu solicitud ha sido registrada en Inversiones Duri C.A.</p>
             </div>
             <div class="order-success-body">
-                <div class="order-success-code-box">
+                <div class="order-success-code-box" style="background:#f8fafc; border-color:#e2e8f0; margin-bottom:14px;">
                     <div style="text-align:left;">
-                        <span style="font-size:0.72rem; color:#64748b; text-transform:uppercase; font-weight:700;">N° de Control / Factura</span>
-                        <div style="font-size:1.15rem; font-weight:800; color:#0f172a; font-family:monospace;">${facturaNum}</div>
+                        <span style="font-size:0.72rem; color:#64748b; text-transform:uppercase; font-weight:700;">N° de Pedido</span>
+                        <div style="font-size:1.25rem; font-weight:800; color:#0f172a; font-family:monospace;">${codigo}</div>
                     </div>
                     <div style="text-align:right;">
-                        <span style="font-size:0.72rem; color:#64748b; text-transform:uppercase; font-weight:700;">Total a Pagar</span>
-                        <div style="font-size:1.15rem; font-weight:800; color:#10b981;">$${parseFloat(order.total).toFixed(2)}</div>
+                        <span style="font-size:0.72rem; color:#64748b; text-transform:uppercase; font-weight:700;">Monto a Validar</span>
+                        <div style="font-size:1.2rem; font-weight:800; color:#e11d48;">$${parseFloat(order.total).toFixed(2)}</div>
                         <div style="font-size:0.75rem; color:#64748b;">≈ ${totalBs}</div>
                     </div>
                 </div>
 
-                <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin-bottom:20px;">
-                    Tu factura y nota de entrega ha sido generada automáticamente y guardada en el sistema. Puedes verla, descargarla en PDF o imprimirla ahora mismo:
-                </p>
+                <div style="background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:12px; padding:14px; margin-bottom:18px; text-align:left; font-size:0.83rem; color:#1e40af; line-height:1.55;">
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.9rem; margin-bottom:6px; color:#1d4ed8;">
+                        <i class="fas fa-info-circle" style="font-size:1.05rem;"></i> Pedido Pendiente de Validación
+                    </div>
+                    <p style="margin:0;">
+                        Tu pedido ha sido recibido y está <b>en proceso de verificación de pago</b>. En cuanto el administrador valide tu compra, se generará la <b>Factura Oficial sellada</b> y te llegará automáticamente a tu correo electrónico${order.cliente_email ? ` (<b>${order.cliente_email}</b>)` : ''}.
+                    </p>
+                </div>
 
                 <div class="order-success-buttons">
-                    <button type="button" class="btn btn-primary btn-block btn-lg" onclick="cerrarModalExito(); abrirModalFactura('${order.codigo}');" style="background:linear-gradient(135deg, #4f46e5, #3730a3); font-weight:700; box-shadow:0 4px 14px rgba(79, 70, 229, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <i class="fas fa-file-invoice-dollar" style="font-size:1.1rem;"></i> Ver y Descargar Factura (PDF)
-                    </button>
                     ${waUrl ? `
-                        <button type="button" class="btn btn-block" onclick="window.open('${waUrl}', '_blank');" style="background:#25d366; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
-                            <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Enviar Confirmación por WhatsApp
+                        <button type="button" class="btn btn-block" onclick="window.open('${waUrl}', '_blank');" style="background:#25d366; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px; border:none; border-radius:10px; cursor:pointer; font-size:0.95rem; box-shadow:0 4px 12px rgba(37,211,102,0.35);">
+                            <i class="fab fa-whatsapp" style="font-size:1.2rem;"></i> Enviar Comprobante por WhatsApp
                         </button>
                     ` : ''}
-                    <button type="button" class="btn btn-block" onclick="cerrarModalExito();" style="background:#f1f5f9; color:#475569; font-weight:600; padding:10px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; margin-top:4px;">
-                        Finalizar y Volver a la Tienda
+                    <button type="button" class="btn btn-block" onclick="cerrarModalExito();" style="background:#f1f5f9; color:#475569; font-weight:600; padding:11px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; margin-top:4px;">
+                        Entendido, Volver a la Tienda
                     </button>
                 </div>
             </div>
@@ -3717,9 +3724,11 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     estado: nuevoEstado,
+                    codigo: codigo || (orderData ? orderData.codigo : ''),
                     usuario_id: currentUser ? currentUser.id : null,
                     cliente_email: clienteEmail,
-                    tasa_bcv: tasaBcv
+                    tasa_bcv: tasaBcv,
+                    pedido: orderData
                 })
             });
             if (res.ok) {
@@ -3755,7 +3764,11 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     if (typeof loadInventario === 'function') loadInventario();
 
     if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
-        showToast(`Factura oficial enviada al correo ${backendResult.email_destino}`, 'success');
+        showToast(`¡Factura enviada automáticamente al correo ${backendResult.email_destino}!`, 'success');
+    } else if (backendResult && backendResult.email_mensaje) {
+        showToast(`Aviso de correo: ${backendResult.email_mensaje}`, 'warning');
+    } else if (nuevoEstado === 'procesando' && !clienteEmail) {
+        showToast('Pago validado (sin correo de cliente registrado).', 'info');
     }
     return backendResult;
 }
@@ -4299,8 +4312,11 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 pedido_id: p.id,
+                codigo: p.codigo || '',
                 email: email,
-                tasa_bcv: (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null
+                tasa_bcv: (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null,
+                pedido: p,
+                productos: p.productos || []
             })
         });
 
