@@ -78,8 +78,10 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'enviar_
     }
 
     $tasaBcv = isset($data['tasa_bcv']) ? (float)$data['tasa_bcv'] : 0;
+    $pdfBase64 = $data['pdf_base64'] ?? null;
+    $filename = $data['filename'] ?? '';
     if (function_exists('enviarFacturaClienteEmail')) {
-        $res = enviarFacturaClienteEmail($email, $pedido, $detalles, $tasaBcv);
+        $res = enviarFacturaClienteEmail($email, $pedido, $detalles, $tasaBcv, $pdfBase64, $filename);
         if (!empty($res['success']) && !empty($pedido['id'])) {
             try {
                 $stmtUpEmail = $db->prepare("UPDATE pedidos SET cliente_email = ? WHERE id = ?");
@@ -378,7 +380,9 @@ switch ($method) {
                         $itemsFact = $data['productos'];
                     }
                     $tasa = isset($data['tasa_bcv']) ? (float)$data['tasa_bcv'] : 0;
-                    $resMail = enviarFacturaClienteEmail($emailDestino, $pedidoActual, $itemsFact, $tasa);
+                    $pdfBase64 = $data['pdf_base64'] ?? null;
+                    $filename = $data['filename'] ?? '';
+                    $resMail = enviarFacturaClienteEmail($emailDestino, $pedidoActual, $itemsFact, $tasa, $pdfBase64, $filename);
                     $emailEnviado = !empty($resMail['success']);
                     $emailMensaje = $resMail['message'] ?? '';
                 }

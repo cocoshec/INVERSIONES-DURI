@@ -5263,7 +5263,7 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
         return;
     }
 
-    showToast('Enviando factura oficial por correo...', 'info');
+    showToast('Generando documento PDF y preparando envío por correo...', 'info');
 
     // Actualizar correo localmente de inmediato
     p.cliente_email = email;
@@ -5274,10 +5274,75 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
         saveLocalOrders(localOrders);
     }
 
+    const cleanCod = (p.codigo || `PED-${p.id || '001'}`).replace(/[^a-zA-Z0-9_-]/g, '');
+    const filename = `Factura_${cleanCod}.pdf`;
+    let pdfBase64 = null;
+
+    try {
+        await loadPdfLibraries();
+        const originalArea = document.getElementById('facturaPrintArea');
+        const JsPdfConstructor = (window.jspdf && window.jspdf.jsPDF) 
+            ? window.jspdf.jsPDF 
+            : (window.jsPDF || window.jspdf);
+
+        if (originalArea && window.html2canvas && JsPdfConstructor) {
+            const scrollWrap = originalArea.closest('.factura-scroll-wrap');
+            const prevScroll = scrollWrap ? scrollWrap.scrollTop : 0;
+            if (scrollWrap) scrollWrap.scrollTop = 0;
+
+            const canvas = await window.html2canvas(originalArea, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                backgroundColor: '#ffffff',
+                logging: false,
+                scrollX: 0,
+                scrollY: 0
+            });
+
+            if (scrollWrap) scrollWrap.scrollTop = prevScroll;
+
+            if (canvas && canvas.width > 0) {
+                const imgData = canvas.toDataURL('image/jpeg', 0.96);
+                const pdf = new JsPdfConstructor({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const margin = 8;
+                const printWidth = pageWidth - (margin * 2);
+                const printHeight = (canvas.height * printWidth) / canvas.width;
+                const maxContentHeight = pageHeight - (margin * 2);
+
+                if (printHeight <= maxContentHeight) {
+                    pdf.addImage(imgData, 'JPEG', margin, margin, printWidth, printHeight);
+                } else {
+                    let heightLeft = printHeight;
+                    let position = margin;
+                    pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight);
+                    heightLeft -= maxContentHeight;
+                    while (heightLeft > 0) {
+                        position = margin - (printHeight - heightLeft);
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight);
+                        heightLeft -= maxContentHeight;
+                    }
+                }
+                const dataUri = pdf.output('datauristring');
+                pdfBase64 = dataUri.split(',')[1];
+            }
+        }
+    } catch(errPdf) {
+        console.warn('No se pudo capturar PDF en cliente; se enviará por correo con la plantilla HTML oficial idéntica:', errPdf);
+    }
+
     try {
         const isGH = window.location.hostname.includes('github.io');
         if (isGH) {
-            showToast(`Simulación demo: Factura enviada con éxito a ${email}`, 'success');
+            showToast(`Simulación demo: Factura idéntica oficial enviada a ${email}`, 'success');
             return;
         }
 
@@ -5290,13 +5355,15 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
                 email: email,
                 tasa_bcv: (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null,
                 pedido: p,
-                productos: p.productos || []
+                productos: p.productos || [],
+                pdf_base64: pdfBase64,
+                filename: filename
             })
         });
 
         const data = await res.json();
         if (res.ok && data.status === 'success') {
-            showToast(`¡Factura enviada exitosamente a ${email}!`, 'success');
+            showToast(`¡Factura oficial idéntica enviada con éxito a ${email}!`, 'success');
         } else {
             showToast(data.message || 'No se pudo enviar el correo', 'error');
         }
