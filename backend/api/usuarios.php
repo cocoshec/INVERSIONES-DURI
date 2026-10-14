@@ -220,6 +220,13 @@ function enviarCodigoRecuperacionDirecto($to, $nombre, $codigo) {
     $from = $user ?: 'inversionesdurica@gmail.com';
     $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Inversiones Duri C.A';
 
+    // Protección: no enviar correos a dominios ficticios o de prueba
+    $partes = explode('@', $to);
+    $dominio = strtolower(end($partes));
+    if (in_array($dominio, ['inversionesduri.com', 'example.com', 'test.com', 'localhost']) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return ["success" => false, "message" => "El correo {$to} pertenece a un dominio demo no enrutable."];
+    }
+
     if (empty($user) || empty($pass)) {
         return ["success" => false, "message" => "Credenciales de correo no configuradas."];
     }
@@ -341,6 +348,17 @@ if ($action === 'recuperar_solicitar' && $method === 'POST') {
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
         echo json_encode(["status" => "error", "message" => "Por favor ingresa un correo electrónico válido"]);
+        exit();
+    }
+
+    $emailParts = explode('@', $email);
+    $dominioEmail = strtolower(end($emailParts));
+    if (in_array($dominioEmail, ['inversionesduri.com', 'example.com', 'test.com', 'localhost'])) {
+        http_response_code(400);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Este correo ($email) es una cuenta demo ficticia. Por favor utiliza un correo real o contacta al administrador."
+        ]);
         exit();
     }
     

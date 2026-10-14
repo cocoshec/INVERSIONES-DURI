@@ -172,7 +172,7 @@ INSERT INTO clientes (nombre, email, telefono, direccion) VALUES
 
 -- Usuario admin por defecto (contraseña: admin123)
 INSERT INTO usuarios (nombre, email, password, rol) VALUES
-('Administrador', 'admin@inversionesduri.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrwOfMQkLSjqWP3m/xbymwMxE5bP1K5yH6', 'admin');
+('Administrador', 'inversionesduri@gmail.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrwOfMQkLSjqWP3m/xbymwMxE5bP1K5yH6', 'super_usuario');
 
 -- Pedidos de ejemplo
 INSERT INTO pedidos (codigo, cliente_id, subtotal, total, estado, direccion_entrega) VALUES

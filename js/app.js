@@ -2509,6 +2509,7 @@ function initSuperAdminNotifications() {
 }
 
 let currentAdminOrderFilter = 'todos';
+window._adminOrderSearchQuery = '';
 
 function filterAdminPedidos(filter) {
     currentAdminOrderFilter = filter;
@@ -2517,6 +2518,14 @@ function filterAdminPedidos(filter) {
     }
 }
 window.filterAdminPedidos = filterAdminPedidos;
+
+function filterAdminOrdersSearch(val) {
+    window._adminOrderSearchQuery = (val || '').toLowerCase().trim();
+    if (window._allAdminPedidos) {
+        renderPedidosRecientes(window._allAdminPedidos, currentAdminOrderFilter);
+    }
+}
+window.filterAdminOrdersSearch = filterAdminOrdersSearch;
 
 async function loadPedidosRecientes() {
     const adminCard = document.getElementById('adminOrdersCard');
@@ -2607,7 +2616,19 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 
     let filtered = pedidos;
     if (filter !== 'todos') {
-        filtered = pedidos.filter(p => p.estado === filter);
+        filtered = filtered.filter(p => p.estado === filter);
+    }
+
+    // Filtrar por término de búsqueda en el registro histórico
+    if (window._adminOrderSearchQuery) {
+        const q = window._adminOrderSearchQuery;
+        filtered = filtered.filter(p => {
+            const cod = (p.codigo || '').toLowerCase();
+            const cli = (p.cliente_nombre || '').toLowerCase();
+            const ci = (p.cliente_ci || '').toLowerCase();
+            const tel = (p.cliente_telefono || '').toLowerCase();
+            return cod.includes(q) || cli.includes(q) || ci.includes(q) || tel.includes(q);
+        });
     }
 
     const estadoClass = {'pendiente':'pending','procesando':'processing','completado':'completed','cancelado':'out'};
@@ -2617,7 +2638,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     // 1. Alerta de resumen superior
     const adminNotice = `
         <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; margin-bottom:12px; font-size:0.78rem; color:#475569; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Este módulo de verificación de pagos solo es visible para tu cuenta. Los clientes que compran en la tienda no tienen acceso a él.</span>
+            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Este módulo de verificación de pagos y archivo de facturas solo es visible para tu cuenta.</span>
             <button type="button" onclick="logout()" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:4px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" title="Cerrar sesión de administrador para probar la tienda como cliente normal"><i class="fas fa-sign-out-alt"></i> Salir de Admin</button>
         </div>
     `;
@@ -2630,7 +2651,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                     ⚠️ ¡Atención! Tienes <strong>${pendingCount}</strong> pedido(s) con <strong>pago pendiente de verificar</strong>
                 </div>
                 <div style="font-size:0.82rem; color:#665103; margin-top:2px;">
-                    Revisa si el dinero ingresó a tu cuenta / pago móvil y haz clic en <b>"Aprobar Pago"</b> para confirmar la compra.
+                    Revisa si el dinero ingresó a tu cuenta / pago móvil y haz clic en <b>"Aprobar Pago"</b> para confirmar la compra y actualizar su factura oficial.
                 </div>
             </div>
             <button type="button" class="btn btn-sm" onclick="filterAdminPedidos('pendiente')" style="background:#ff9f1c;color:#1a0f2e;font-weight:700;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap;">
@@ -2646,7 +2667,20 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         </div>
     `);
 
-    // 2. Pestañas de filtrado
+    // 2. Barra de búsqueda y registro histórico de facturas
+    const searchBarHtml = `
+        <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; padding:8px 14px; margin-bottom:12px; display:flex; align-items:center; gap:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+            <i class="fas fa-search" style="color:#64748b; font-size:0.95rem;"></i>
+            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), nombre de cliente, Cédula/RIF o teléfono..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
+            ${window._adminOrderSearchQuery ? `
+                <button type="button" onclick="filterAdminOrdersSearch('')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.9rem;" title="Limpiar búsqueda">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            ` : ''}
+        </div>
+    `;
+
+    // 3. Pestañas de filtrado
     const tabsHtml = `
         <div class="admin-orders-tabs">
             <button type="button" class="admin-order-tab ${filter === 'todos' ? 'active' : ''}" onclick="filterAdminPedidos('todos')">Todos (${pedidos.length})</button>
@@ -2657,9 +2691,9 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         </div>
     `;
 
-    // 3. Renderizar cada pedido
+    // 4. Renderizar cada pedido con su botón de Factura Oficial
     const listHtml = filtered.length === 0 ? `
-        <p style="color:var(--gray);text-align:center;padding:25px;background:#f9f9f9;border-radius:8px;">No hay pedidos en la categoría seleccionada.</p>
+        <p style="color:var(--gray);text-align:center;padding:25px;background:#f9f9f9;border-radius:8px;">No hay pedidos que coincidan con el filtro o la búsqueda.</p>
     ` : filtered.map(p => {
         const safeName = (p.cliente_nombre || 'Cliente').replace(/'/g, "\\'");
         const safeCode = (p.codigo || '').replace(/'/g, "\\'");
@@ -2693,8 +2727,17 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 
             actionButtons = `
                 ${statusBtn}
+                <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:700;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(79,70,229,0.35);" onclick="abrirModalFacturaAdmin('${safeCode}')" title="Ver, imprimir y descargar factura oficial">
+                    <i class="fas fa-file-invoice-dollar"></i> Factura
+                </button>
                 <button class="btn btn-sm" style="background:#dc3545;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" title="Eliminar del historial permanentemente" onclick="eliminarPedidoHistorial(${p.id}, '${p.codigo}')">
                     <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+        } else {
+            actionButtons = `
+                <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:600;padding:6px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="abrirModalFacturaAdmin('${safeCode}')">
+                    <i class="fas fa-file-invoice-dollar"></i> Ver Factura
                 </button>
             `;
         }
@@ -2707,7 +2750,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         };
         const formaPagoDisplay = formaPagoLabels[p.forma_pago] || p.forma_pago || 'Pago Móvil';
         
-        // Formatear WhatsApp al NÚMERO DEL CLIENTE (no de la empresa)
+        // Formatear WhatsApp al NÚMERO DEL CLIENTE
         let phoneWaUrl = '';
         if (p.cliente_telefono) {
             let clean = p.cliente_telefono.replace(/[^0-9]/g, '');
@@ -2766,8 +2809,437 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         `;
     }).join('');
 
-    container.innerHTML = summaryBanner + tabsHtml + listHtml;
+    container.innerHTML = summaryBanner + searchBarHtml + tabsHtml + listHtml;
+
+    // Restaurar foco si el usuario estaba escribiendo en el buscador
+    const searchInput = document.getElementById('adminOrderSearchInput');
+    if (searchInput && window._adminOrderSearchQuery) {
+        searchInput.focus();
+        const len = searchInput.value.length;
+        searchInput.setSelectionRange(len, len);
+    }
 }
+
+// ============================================
+// MÓDULO DE FACTURACIÓN Y CONTROL CONTABLE
+// Inversiones Duri C.A.
+// ============================================
+
+function ensureHtml2Pdf(callback) {
+    if (window.html2pdf) {
+        if (callback) callback();
+        return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => { if (callback) callback(); };
+    script.onerror = () => {
+        console.warn('html2pdf no se pudo cargar desde CDN. Se usará el diálogo nativo de impresión.');
+        if (callback) callback();
+    };
+    document.head.appendChild(script);
+}
+
+function findOrderData(codigoOrId) {
+    if (!codigoOrId) return null;
+    const all = window._allAdminPedidos || [];
+    const local = (typeof getLocalOrders === 'function') ? getLocalOrders() : [];
+    const combined = [...all, ...local];
+    const target = String(codigoOrId).toLowerCase().trim();
+    return combined.find(o => 
+        String(o.codigo || '').toLowerCase() === target || 
+        String(o.id || '') === target
+    ) || null;
+}
+
+function abrirModalFacturaAdmin(codigo) {
+    abrirModalFactura(codigo);
+}
+window.abrirModalFacturaAdmin = abrirModalFacturaAdmin;
+
+function cerrarModalFactura() {
+    const modal = document.getElementById('modalFacturaDuri');
+    if (modal) modal.remove();
+}
+window.cerrarModalFactura = cerrarModalFactura;
+
+function abrirModalFactura(pedidoOrCode) {
+    cerrarModalFactura();
+
+    let p = null;
+    if (typeof pedidoOrCode === 'object' && pedidoOrCode !== null) {
+        p = pedidoOrCode;
+    } else {
+        p = findOrderData(pedidoOrCode);
+    }
+
+    if (!p) {
+        showToast('No se encontró el registro del pedido para generar la factura', 'error');
+        return;
+    }
+
+    // Datos corporativos y correlativo
+    const codigo = p.codigo || `PED-${p.id || '001'}`;
+    const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '101');
+    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const logoSrc = window.location.pathname.includes('/pages/') ? '../img/logo-duri.png' : 'img/logo-duri.png';
+
+    // Fecha formateada
+    let fechaStr = '';
+    try {
+        const d = p.created_at ? new Date(p.created_at.replace(/-/g, '/')) : new Date();
+        fechaStr = d.toLocaleDateString('es-VE', { 
+            year: 'numeric', month: 'long', day: 'numeric', 
+            hour: '2-digit', minute: '2-digit', hour12: true 
+        });
+    } catch(e) {
+        fechaStr = new Date().toLocaleString('es-VE');
+    }
+
+    // Estado del pago
+    const estado = p.estado || 'pendiente';
+    let estadoLabel = '⏳ PENDIENTE DE VALIDACIÓN';
+    let estadoTagClass = 'pendiente';
+    if (estado === 'procesando') {
+        estadoLabel = '✅ PAGO APROBADO / EN PROCESO';
+        estadoTagClass = 'procesando';
+    } else if (estado === 'completado') {
+        estadoLabel = '📦 PEDIDO ENTREGADO / COMPLETADO';
+        estadoTagClass = 'completado';
+    } else if (estado === 'cancelado') {
+        estadoLabel = '❌ ANULADO / CANCELADO';
+        estadoTagClass = 'cancelado';
+    }
+
+    // Forma de pago legible
+    const formaPagoMap = {
+        'pago_movil': 'Pago Móvil Interbancario',
+        'transferencia': 'Transferencia Bancaria',
+        'efectivo': 'Efectivo',
+        'tarjeta': 'Tarjeta'
+    };
+    const formaPagoTxt = formaPagoMap[p.forma_pago] || p.forma_pago || 'Pago Móvil';
+
+    // Cálculo y desglose monetario dual
+    const totalVal = parseFloat(p.total || 0);
+    let subtotalVal = p.subtotal ? parseFloat(p.subtotal) : (totalVal / 1.16);
+    let ivaVal = p.impuesto ? parseFloat(p.impuesto) : (totalVal - subtotalVal);
+
+    if (isNaN(subtotalVal) || subtotalVal <= 0) subtotalVal = totalVal / 1.16;
+    if (isNaN(ivaVal)) ivaVal = totalVal - subtotalVal;
+
+    const rateBs = BcvManager.rate || 45.00;
+    const rateBsStr = BcvManager.formatBs(rateBs).replace('Bs. ', '');
+    const totalBsStr = BcvManager.formatBs(BcvManager.toBs(totalVal));
+    const subtotalBsStr = BcvManager.formatBs(BcvManager.toBs(subtotalVal));
+    const ivaBsStr = BcvManager.formatBs(BcvManager.toBs(ivaVal));
+
+    // Tabla de productos
+    const prods = (p.productos && p.productos.length) ? p.productos : (p.detalles || []);
+    let rowsHtml = '';
+    if (prods && prods.length) {
+        rowsHtml = prods.map((it, idx) => {
+            const name = it.nombre || it.producto_nombre || 'Producto';
+            const qty = parseInt(it.cantidad || 1);
+            const price = parseFloat(it.precio_unitario || 0);
+            const itemSub = price * qty;
+            const itemBs = BcvManager.formatBs(BcvManager.toBs(itemSub));
+            return `
+                <tr>
+                    <td class="td-center">${idx + 1}</td>
+                    <td><strong>${name}</strong></td>
+                    <td class="td-center">${qty}</td>
+                    <td class="td-right">$${price.toFixed(2)}</td>
+                    <td class="td-right">$${itemSub.toFixed(2)}</td>
+                    <td class="td-right" style="color:#64748b; font-size:0.78rem;">${itemBs}</td>
+                </tr>
+            `;
+        }).join('');
+    } else {
+        rowsHtml = `
+            <tr>
+                <td class="td-center">1</td>
+                <td><strong>Productos solicitados en pedido ${codigo}</strong></td>
+                <td class="td-center">1</td>
+                <td class="td-right">$${subtotalVal.toFixed(2)}</td>
+                <td class="td-right">$${subtotalVal.toFixed(2)}</td>
+                <td class="td-right" style="color:#64748b; font-size:0.78rem;">${subtotalBsStr}</td>
+            </tr>
+        `;
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'modalFacturaDuri';
+    modal.className = 'modal-factura-overlay';
+    modal.innerHTML = `
+        <div class="factura-modal-container">
+            <!-- Barra Superior de Acciones (No se imprime) -->
+            <div class="factura-actions-bar no-print">
+                <div class="factura-actions-left">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <strong>Factura / Comprobante Oficial &mdash; ${codigo}</strong>
+                </div>
+                <div class="factura-actions-right">
+                    <button type="button" class="btn-factura-act btn-pdf" onclick="descargarFacturaPDF('${codigo}')" title="Descargar documento en formato PDF">
+                        <i class="fas fa-download"></i> Descargar PDF
+                    </button>
+                    <button type="button" class="btn-factura-act btn-print" onclick="imprimirFacturaDuri()" title="Imprimir en impresora o guardar con el navegador">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                    <button type="button" class="btn-factura-act btn-wa" onclick="compartirFacturaWhatsApp('${codigo}')" title="Enviar copia o notificación al WhatsApp del cliente">
+                        <i class="fab fa-whatsapp"></i> Enviar WhatsApp
+                    </button>
+                    <button type="button" class="btn-factura-close" onclick="cerrarModalFactura()" title="Cerrar modal">&times;</button>
+                </div>
+            </div>
+
+            <!-- Hoja Imprimible Oficial -->
+            <div class="factura-scroll-wrap">
+                <div id="facturaPrintArea" class="factura-paper">
+                    <!-- Encabezado Membrete Oficial -->
+                    <div class="factura-header-grid">
+                        <div class="factura-brand">
+                            <img src="${logoSrc}" alt="Logo Inversiones Duri" class="factura-logo-img" onerror="this.style.display='none'">
+                            <div class="factura-company-info">
+                                <h2>Inversiones Duri C.A.</h2>
+                                <p><strong>RIF:</strong> J-50123456-7</p>
+                                <p><i class="fas fa-map-marker-alt" style="color:#ea4335;"></i> Sede Comercial: Av. Bolívar Oeste, Maracay, Edo. Aragua</p>
+                                <p><i class="fas fa-phone" style="color:#28a745;"></i> +58 412-1234567 | <i class="fas fa-envelope" style="color:#1a73e8;"></i> inversionesduri@gmail.com</p>
+                                <p><i class="fab fa-instagram" style="color:#e1306c;"></i> @inversionesdurica | <i class="fab fa-facebook-f" style="color:#1877f2;"></i> Inversiones Duri</p>
+                            </div>
+                        </div>
+                        <div class="factura-doc-box">
+                            <div class="factura-doc-title">NOTA DE ENTREGA / FACTURA</div>
+                            <div class="factura-doc-num">${facturaNum}</div>
+                            <div class="factura-doc-date"><strong>Pedido:</strong> ${codigo}</div>
+                            <div class="factura-doc-date">${fechaStr}</div>
+                            <div>
+                                <span class="factura-status-tag ${estadoTagClass}">
+                                    ${estadoLabel}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos del Cliente y Despacho -->
+                    <div class="factura-info-grid">
+                        <div class="factura-info-col">
+                            <h4><i class="fas fa-user-check"></i> Facturado a (Cliente)</h4>
+                            <p><strong>Nombre / Razón Social:</strong> ${p.cliente_nombre || 'Cliente General'}</p>
+                            <p><strong>Cédula / RIF:</strong> ${p.cliente_ci || 'No registrada'}</p>
+                            <p><strong>Teléfono de Contacto:</strong> ${p.cliente_telefono || 'No registrado'}</p>
+                        </div>
+                        <div class="factura-info-col">
+                            <h4><i class="fas fa-shipping-fast"></i> Despacho y Pago</h4>
+                            <p><strong>Forma de Pago:</strong> ${formaPagoTxt}</p>
+                            <p><strong>Tasa Oficial BCV:</strong> ${rateBsStr} Bs / USD</p>
+                            <p><strong>Dirección de Entrega:</strong> ${p.direccion_entrega || 'Retiro en Sede Oficial'}</p>
+                            ${p.notas ? `<p><strong>Notas:</strong> ${p.notas}</p>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Productos -->
+                    <table class="factura-table">
+                        <thead>
+                            <tr>
+                                <th class="th-center" style="width: 40px;">#</th>
+                                <th>Descripción del Producto</th>
+                                <th class="th-center" style="width: 65px;">Cant.</th>
+                                <th class="th-right" style="width: 100px;">P. Unit ($)</th>
+                                <th class="th-right" style="width: 105px;">Subtotal ($)</th>
+                                <th class="th-right" style="width: 115px;">Equiv. (Bs.)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <!-- Caja de Totales y Moneda Dual -->
+                    <div class="factura-totals-wrap">
+                        <div class="factura-totals-box">
+                            <div class="factura-total-row">
+                                <span>Subtotal Base:</span>
+                                <strong>$${subtotalVal.toFixed(2)} <small style="color:#64748b;">(${subtotalBsStr})</small></strong>
+                            </div>
+                            <div class="factura-total-row">
+                                <span>IVA (16%):</span>
+                                <strong>$${ivaVal.toFixed(2)} <small style="color:#64748b;">(${ivaBsStr})</small></strong>
+                            </div>
+                            <div class="factura-total-row grand-total">
+                                <span>TOTAL A PAGAR:</span>
+                                <span>$${totalVal.toFixed(2)} USD</span>
+                            </div>
+                            <div class="factura-total-bs-row">
+                                <span>Total en Bolívares (BCV):</span>
+                                <span>${totalBsStr}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pie de Página y Sello de Verificación -->
+                    <div class="factura-footer-notice">
+                        <div style="flex:1; min-width:240px;">
+                            <p style="margin:0 0 4px 0; font-weight:600; color:#334155;">
+                                <i class="fas fa-shield-alt" style="color:#059669;"></i> Comprobante Electrónico y Registro de Compra Oficial
+                            </p>
+                            <p style="margin:0; font-size:0.71rem; line-height:1.4;">
+                                Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como soporte fiscal y nota de entrega.
+                            </p>
+                        </div>
+                        <div class="factura-seal-box">
+                            <i class="fas fa-stamp"></i>
+                            <div class="factura-seal-text">
+                                <strong>Inversiones Duri C.A.</strong>
+                                <span>${estado === 'procesando' || estado === 'completado' ? 'VALIDADO POR ADMINISTRACIÓN' : 'REGISTRO DE VENTA OFICIAL'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) cerrarModalFactura();
+    });
+}
+window.abrirModalFactura = abrirModalFactura;
+
+function descargarFacturaPDF(codigo) {
+    const area = document.getElementById('facturaPrintArea');
+    if (!area) {
+        showToast('No se encontró el documento de la factura', 'error');
+        return;
+    }
+    const cleanCod = (codigo || 'Duri').replace(/[^a-zA-Z0-9_-]/g, '');
+    const filename = `Factura_${cleanCod}.pdf`;
+    showToast('Generando archivo PDF oficial...', 'info');
+
+    ensureHtml2Pdf(() => {
+        if (window.html2pdf) {
+            const opt = {
+                margin: [8, 8, 8, 8],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            window.html2pdf().set(opt).from(area).save()
+                .then(() => {
+                    showToast('¡Factura PDF descargada con éxito!');
+                })
+                .catch(err => {
+                    console.error('Error html2pdf, usando fallback nativo de impresión:', err);
+                    window.print();
+                });
+        } else {
+            window.print();
+        }
+    });
+}
+window.descargarFacturaPDF = descargarFacturaPDF;
+
+function imprimirFacturaDuri() {
+    window.print();
+}
+window.imprimirFacturaDuri = imprimirFacturaDuri;
+
+function compartirFacturaWhatsApp(codigo) {
+    const p = findOrderData(codigo);
+    if (!p) {
+        showToast('No se encontró el pedido para enviar por WhatsApp', 'error');
+        return;
+    }
+    const tel = p.cliente_telefono ? p.cliente_telefono.replace(/[^0-9]/g, '') : '';
+    let waPhone = tel;
+    if (waPhone.startsWith('0')) waPhone = '58' + waPhone.slice(1);
+    if (!waPhone.startsWith('58') && waPhone.length === 10) waPhone = '58' + waPhone;
+
+    const rateBsStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
+    const totalBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total)));
+    const cleanNum = (p.codigo || String(p.id)).replace(/[^0-9]/g, '') || String(p.id || '101');
+    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+
+    const msg = `📄 *INVERSIONES DURI C.A. — COMPROBANTE OFICIAL*\n\nEstimado(a) *${p.cliente_nombre || 'Cliente'}*:\nLe compartimos la información oficial de su factura *${facturaNum}* (Pedido *${p.codigo}*).\n\n• Cédula/RIF: ${p.cliente_ci || 'N/A'}\n• Estado del Pago: ${p.estado === 'procesando' || p.estado === 'completado' ? '✅ Pago Aprobado' : '⏳ Pendiente de Verificación'}\n• Total: $${parseFloat(p.total).toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n• Forma de Pago: ${p.forma_pago || 'Pago Móvil'}\n\nGracias por su compra en Inversiones Duri C.A.`;
+
+    const url = waPhone.length >= 10
+        ? `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`
+        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+}
+window.compartirFacturaWhatsApp = compartirFacturaWhatsApp;
+
+// Modal de éxito post-compra con descarga de factura para el cliente
+function mostrarModalExitoConFactura(order, waUrl) {
+    cerrarModalExito();
+    const modal = document.createElement('div');
+    modal.id = 'modalOrderSuccess';
+    modal.className = 'order-success-modal';
+
+    const cleanNum = (order.codigo || '').replace(/[^0-9]/g, '') || '001';
+    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const totalBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(order.total)));
+
+    modal.innerHTML = `
+        <div class="order-success-card">
+            <div class="order-success-header">
+                <div class="order-success-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h3 style="margin:0 0 6px 0; font-size:1.4rem; font-weight:800;">¡Pedido Recibido con Éxito!</h3>
+                <p style="margin:0; font-size:0.88rem; opacity:0.92;">Hemos registrado tu compra en Inversiones Duri C.A.</p>
+            </div>
+            <div class="order-success-body">
+                <div class="order-success-code-box">
+                    <div style="text-align:left;">
+                        <span style="font-size:0.72rem; color:#64748b; text-transform:uppercase; font-weight:700;">N° de Control / Factura</span>
+                        <div style="font-size:1.15rem; font-weight:800; color:#0f172a; font-family:monospace;">${facturaNum}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:0.72rem; color:#64748b; text-transform:uppercase; font-weight:700;">Total a Pagar</span>
+                        <div style="font-size:1.15rem; font-weight:800; color:#10b981;">$${parseFloat(order.total).toFixed(2)}</div>
+                        <div style="font-size:0.75rem; color:#64748b;">≈ ${totalBs}</div>
+                    </div>
+                </div>
+
+                <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin-bottom:20px;">
+                    Tu factura y nota de entrega ha sido generada automáticamente y guardada en el sistema. Puedes verla, descargarla en PDF o imprimirla ahora mismo:
+                </p>
+
+                <div class="order-success-buttons">
+                    <button type="button" class="btn btn-primary btn-block btn-lg" onclick="cerrarModalExito(); abrirModalFactura('${order.codigo}');" style="background:linear-gradient(135deg, #4f46e5, #3730a3); font-weight:700; box-shadow:0 4px 14px rgba(79, 70, 229, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fas fa-file-invoice-dollar" style="font-size:1.1rem;"></i> Ver y Descargar Factura (PDF)
+                    </button>
+                    ${waUrl ? `
+                        <button type="button" class="btn btn-block" onclick="window.open('${waUrl}', '_blank');" style="background:#25d366; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
+                            <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Enviar Confirmación por WhatsApp
+                        </button>
+                    ` : ''}
+                    <button type="button" class="btn btn-block" onclick="cerrarModalExito();" style="background:#f1f5f9; color:#475569; font-weight:600; padding:10px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; margin-top:4px;">
+                        Finalizar y Volver a la Tienda
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) cerrarModalExito();
+    });
+}
+window.mostrarModalExitoConFactura = mostrarModalExitoConFactura;
+
+function cerrarModalExito() {
+    const modal = document.getElementById('modalOrderSuccess');
+    if (modal) modal.remove();
+}
+window.cerrarModalExito = cerrarModalExito;
+
+
 
 // ============================================
 // MODAL DE VALIDACIÓN Y CONFIRMACIÓN DE PAGO
@@ -3455,6 +3927,9 @@ async function confirmAndSend() {
     try { document.getElementById('orderForm').reset(); } catch(e){}
     closeConfirmModal();
     window._pendingOrder = null;
+
+    // Mostrar modal con opción de descarga de factura directa al cliente
+    mostrarModalExitoConFactura(localOrder, waUrl);
 
     if (typeof loadPedidosRecientes === 'function' && isSuperUsuario()) {
         loadPedidosRecientes();

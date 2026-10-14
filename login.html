@@ -305,7 +305,8 @@
     // USUARIOS DEMO (GitHub Pages / Fallback)
     // ============================================
     const demoUsers = {
-        'admin@inversionesduri.com': { id: 1, nombre: 'Administrador Duri', email: 'admin@inversionesduri.com', rol: 'super_usuario', pass: 'admin123' },
+        'inversionesduri@gmail.com': { id: 1, nombre: 'Administrador Duri', email: 'inversionesduri@gmail.com', rol: 'super_usuario', pass: 'admin123' },
+        'admin@inversionesduri.com': { id: 1, nombre: 'Administrador Duri', email: 'inversionesduri@gmail.com', rol: 'super_usuario', pass: 'admin123' },
         'operador@inversionesduri.com': { id: 2, nombre: 'Operador Duri', email: 'operador@inversionesduri.com', rol: 'operador', pass: 'admin123' },
         'usuario@inversionesduri.com': { id: 3, nombre: 'Usuario Cliente', email: 'usuario@inversionesduri.com', rol: 'usuario', pass: 'admin123' },
         'gomezjrafael11@gmail.com': { id: 4, nombre: 'Rafael Gomez', email: 'gomezjrafael11@gmail.com', rol: 'super_usuario', pass: '123456' }
@@ -394,6 +395,12 @@
         
         const email = document.getElementById('recEmail').value.trim().toLowerCase();
         currentRecoveryEmail = email;
+
+        if (email.endsWith('@inversionesduri.com') || email.endsWith('@example.com') || email.endsWith('@test.com')) {
+            errDiv.textContent = 'Este correo es ficticio (@inversionesduri.com). Para recuperar tu acceso utiliza tu correo real registrado (como tu cuenta de Gmail).';
+            errDiv.style.display = 'block';
+            return;
+        }
 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando código a tu correo...';
         btn.disabled = true;

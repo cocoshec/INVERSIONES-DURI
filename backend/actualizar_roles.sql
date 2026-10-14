@@ -79,8 +79,8 @@ SELECT 'usuario', id FROM permisos WHERE nombre IN (
     'ver_productos', 'ver_inventario', 'ver_pedidos', 'crear_pedido', 'ver_clientes'
 );
 
--- Actualizar usuario admin existente
-UPDATE usuarios SET rol = 'super_usuario' WHERE email = 'admin@inversionesduri.com';
+-- Actualizar usuario admin existente a correo real
+UPDATE usuarios SET rol = 'super_usuario', email = 'inversionesduri@gmail.com' WHERE email = 'admin@inversionesduri.com' OR email = 'inversionesduri@gmail.com';
 
 -- Usuarios de ejemplo
 INSERT INTO usuarios (nombre, email, password, rol, telefono) VALUES
