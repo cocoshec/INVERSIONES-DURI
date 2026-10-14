@@ -2997,6 +2997,9 @@ function abrirModalFactura(pedidoOrCode) {
                     <button type="button" class="btn-factura-act btn-wa" onclick="compartirFacturaWhatsApp('${codigo}')" title="Enviar copia o notificación al WhatsApp del cliente">
                         <i class="fab fa-whatsapp"></i> Enviar WhatsApp
                     </button>
+                    <button type="button" class="btn-factura-act btn-email" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" title="Enviar factura directamente al correo del cliente">
+                        <i class="fas fa-envelope"></i> Enviar Correo
+                    </button>
                     <button type="button" class="btn-factura-close" onclick="cerrarModalFactura()" title="Cerrar modal">&times;</button>
                 </div>
             </div>
@@ -3459,7 +3462,20 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
                     <div><i class="fas fa-user-check" style="color:#059669;"></i> <b>Cliente:</b> ${p.cliente_nombre || 'Cliente'}</div>
                     ${p.cliente_ci ? `<div><i class="fas fa-id-card" style="color:#059669;"></i> <b>C.I / RIF:</b> ${p.cliente_ci}</div>` : ''}
                     <div><i class="fas fa-stamp" style="color:#059669;"></i> <b>Estado:</b> <span style="background:#dcfce7; color:#166534; font-weight:700; padding:1px 8px; border-radius:10px; font-size:0.75rem;">✅ Pago Confirmado</span></div>
-                    <div style="margin-top:4px; font-size:0.75rem; color:#64748b;">
+                    ${p.cliente_email ? `
+                        <div style="margin-top:8px; display:flex; align-items:center; gap:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 10px; font-size:0.78rem; color:#1e40af;">
+                            <i class="fas fa-envelope-circle-check" style="color:#2563eb; font-size:1.1rem; flex-shrink:0;"></i>
+                            <span>Factura enviada automáticamente al correo: <b>${p.cliente_email}</b></span>
+                        </div>
+                    ` : `
+                        <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:6px; background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:8px 10px; font-size:0.78rem; color:#92400e;">
+                            <span><i class="fas fa-info-circle"></i> Sin correo registrado para envío automático.</span>
+                            <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" style="background:#f59e0b; color:#fff; border:none; border-radius:6px; padding:4px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                                <i class="fas fa-envelope"></i> Enviar a un correo
+                            </button>
+                        </div>
+                    `}
+                    <div style="margin-top:6px; font-size:0.75rem; color:#64748b;">
                         * La factura queda guardada permanentemente en el registro contable del panel.
                     </div>
                 </div>
@@ -3467,6 +3483,9 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
                 <div class="order-success-buttons">
                     <button type="button" class="btn btn-primary btn-block btn-lg" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="background:linear-gradient(135deg, #4f46e5, #3730a3); font-weight:700; box-shadow:0 4px 14px rgba(79, 70, 229, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
                         <i class="fas fa-file-invoice-dollar" style="font-size:1.1rem;"></i> Ver y Descargar Factura Aprobada (PDF)
+                    </button>
+                    <button type="button" class="btn btn-block" onclick="enviarFacturaPorCorreoPrompt('${codigo}');" style="background:#0284c7; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
+                        <i class="fas fa-envelope" style="font-size:1rem;"></i> ${p.cliente_email ? 'Reenviar Factura al Correo del Cliente' : 'Enviar Factura por Correo Electrónico'}
                     </button>
                     <button type="button" class="btn btn-block" onclick="compartirFacturaWhatsApp('${codigo}');" style="background:#25d366; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
                         <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Enviar Factura al WhatsApp del Cliente
@@ -3682,25 +3701,36 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
         return;
     }
 
-    // 1. Enviar al Backend si está activo
+    // 1. Obtener datos locales previos para enviar el correo si existe
+    const orderData = findOrderData(codigo || id);
+    const clienteEmail = orderData ? (orderData.cliente_email || '') : '';
+    const tasaBcv = (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null;
+
+    let backendResult = null;
+    // 2. Enviar al Backend si está activo
     try {
         const isGH = window.location.hostname.includes('github.io');
         if (!isGH) {
             const currentUser = getUser();
-            await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
+            const res = await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     estado: nuevoEstado,
-                    usuario_id: currentUser ? currentUser.id : null
+                    usuario_id: currentUser ? currentUser.id : null,
+                    cliente_email: clienteEmail,
+                    tasa_bcv: tasaBcv
                 })
             });
+            if (res.ok) {
+                backendResult = await res.json();
+            }
         }
     } catch (err) {
         console.warn('API backend no disponible al actualizar pedido:', err);
     }
 
-    // 2. Actualizar en localStorage
+    // 3. Actualizar en localStorage
     const localOrders = getLocalOrders();
     const match = localOrders.find(o => String(o.id) === String(id) || (codigo && o.codigo === codigo));
     if (match) {
@@ -3723,6 +3753,11 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     updateSuperAdminNotifBadge(false);
     if (typeof loadProductos === 'function') loadProductos();
     if (typeof loadInventario === 'function') loadInventario();
+
+    if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
+        showToast(`Factura oficial enviada al correo ${backendResult.email_destino}`, 'success');
+    }
+    return backendResult;
 }
 window.actualizarEstadoPedidoDirecto = actualizarEstadoPedidoDirecto;
 
@@ -3860,6 +3895,7 @@ async function submitOrder() {
     const payment = document.getElementById('paymentMethod');
     const newName = document.getElementById('newClientName');
     const newCi = document.getElementById('newClientCi');
+    const newEmail = document.getElementById('newClientEmail');
     const newPhone = document.getElementById('newClientPhone');
     
     if (!clientSelect || !clientSelect.value) { showToast('Selecciona o escribe tu nombre', 'error'); return; }
@@ -3872,6 +3908,7 @@ async function submitOrder() {
     
     const clientName = newName.value.trim();
     const clientCi = newCi.value.trim().toUpperCase();
+    const clientEmail = (newEmail && newEmail.value) ? newEmail.value.trim().toLowerCase() : '';
     const clientPhone = newPhone.value.trim();
     
     const paymentLabels = { pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria' };
@@ -3905,7 +3942,7 @@ async function submitOrder() {
     });
     
     // Mensaje predeterminado con Cédula, tasa BCV y Link de Google Maps
-    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
+    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}${clientEmail ? `\n📧 Correo: ${clientEmail}` : ''}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
     
     // Guardar datos temporalmente para el modal
     window._pendingOrder = {
@@ -3917,6 +3954,7 @@ async function submitOrder() {
         clientName,
         clientCi,
         clientPhone,
+        clientEmail,
         mapsLink,
         msg,
         subtotal,
@@ -3925,10 +3963,10 @@ async function submitOrder() {
     };
     
     // Mostrar modal de confirmación
-    showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, paymentLabel, addr, mapsLink, msg);
+    showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, clientEmail, paymentLabel, addr, mapsLink, msg);
 }
 
-function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, paymentLabel, addr, mapsLink, msg) {
+function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, clientEmail, paymentLabel, addr, mapsLink, msg) {
     // Remover modal anterior si existe
     const old = document.getElementById('confirmModal');
     if (old) old.remove();
@@ -4001,6 +4039,11 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
                         <span><i class="fas fa-id-card"></i> <strong>C.I / RIF:</strong> ${clientCi}</span>
                         <span style="margin-left:10px;"><i class="fas fa-phone"></i> ${clientPhone}</span>
                     </div>
+                    ${clientEmail ? `
+                        <div style="font-size:0.82rem;color:#2563eb;margin-top:4px;">
+                            <i class="fas fa-envelope"></i> <strong>Factura al correo:</strong> ${clientEmail}
+                        </div>
+                    ` : ''}
                 </div>
                 
                 <div style="margin-bottom:14px">
@@ -4073,6 +4116,7 @@ async function confirmAndSend() {
                     body: JSON.stringify({ 
                         nombre: data.clientName, 
                         ci_rif: data.clientCi,
+                        email: data.clientEmail || '',
                         telefono: data.clientPhone,
                         direccion: data.direccion_entrega
                     })
@@ -4109,6 +4153,7 @@ async function confirmAndSend() {
                     cliente_nombre: data.clientName,
                     cliente_telefono: data.clientPhone,
                     cliente_ci: data.clientCi,
+                    cliente_email: data.clientEmail || '',
                     direccion_entrega: data.direccion_entrega,
                     notas: data.notas,
                     forma_pago: data.forma_pago,
@@ -4136,6 +4181,7 @@ async function confirmAndSend() {
         cliente_nombre: data.clientName,
         cliente_ci: data.clientCi,
         cliente_telefono: data.clientPhone,
+        cliente_email: data.clientEmail || '',
         direccion_entrega: data.direccion_entrega,
         notas: data.notas || '',
         forma_pago: data.forma_pago || 'pago_movil',
@@ -4208,3 +4254,66 @@ document.addEventListener('submit', function(e) {
         e.target.reset();
     }
 });
+
+// ============================================
+// ENVÍO DE FACTURA POR CORREO ELECTRÓNICO
+// ============================================
+async function enviarFacturaPorCorreoPrompt(codigoOrId) {
+    const p = findOrderData(codigoOrId);
+    if (!p) {
+        showToast('No se encontró el registro del pedido para enviar la factura', 'error');
+        return;
+    }
+
+    const defaultEmail = p.cliente_email || '';
+    const emailPrompt = prompt('Ingresa el correo electrónico del cliente para enviarle su Factura Oficial:', defaultEmail);
+    if (!emailPrompt) return; // Usuario canceló
+
+    const email = emailPrompt.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Por favor ingresa un correo electrónico válido (ej: cliente@gmail.com)', 'error');
+        return;
+    }
+
+    showToast('Enviando factura oficial por correo...', 'info');
+
+    // Actualizar correo localmente de inmediato
+    p.cliente_email = email;
+    const localOrders = getLocalOrders();
+    const idx = localOrders.findIndex(o => (p.id && String(o.id) === String(p.id)) || (p.codigo && o.codigo === p.codigo));
+    if (idx !== -1) {
+        localOrders[idx].cliente_email = email;
+        saveLocalOrders(localOrders);
+    }
+
+    try {
+        const isGH = window.location.hostname.includes('github.io');
+        if (isGH) {
+            showToast(`Simulación demo: Factura enviada con éxito a ${email}`, 'success');
+            return;
+        }
+
+        const res = await fetch(`${API_BASE}/pedidos.php?action=enviar_factura`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pedido_id: p.id,
+                email: email,
+                tasa_bcv: (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            showToast(`¡Factura enviada exitosamente a ${email}!`, 'success');
+        } else {
+            showToast(data.message || 'No se pudo enviar el correo', 'error');
+        }
+    } catch(err) {
+        console.error('Error enviando factura por correo:', err);
+        showToast('Error de conexión al enviar el correo', 'error');
+    }
+}
+window.enviarFacturaPorCorreoPrompt = enviarFacturaPorCorreoPrompt;
+

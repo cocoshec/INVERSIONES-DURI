@@ -2344,6 +2344,17 @@ img { max-width:100%; }
     transform: translateY(-1px);
 }
 
+.btn-factura-act.btn-email {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.btn-factura-act.btn-email:hover {
+    background: #075985;
+    transform: translateY(-1px);
+}
+
 .btn-factura-close {
     background: rgba(255, 255, 255, 0.1);
     color: #cbd5e1;

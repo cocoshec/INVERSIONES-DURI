@@ -12,10 +12,64 @@ if (!class_exists('Database')) {
     include $dbPath;
 }
 
+$mailPath = __DIR__ . '/../config/mail.php';
+if (!@file_exists($mailPath)) {
+    $mailPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php';
+}
+if (@file_exists($mailPath)) {
+    require_once $mailPath;
+}
+
 $database = new Database();
 $db = $database->getConnection();
 
+try {
+    $db->exec("ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS cliente_email VARCHAR(150) AFTER cliente_ci");
+} catch(Exception $e) {}
+
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// Endpoint específico para enviar la factura oficial por correo
+if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'enviar_factura') {
+    $data = json_decode(file_get_contents("php://input"), true);
+    $pedidoId = $data['pedido_id'] ?? null;
+    $email = trim($data['email'] ?? '');
+
+    if (!$pedidoId || !$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "Pedido y correo electrónico válido son requeridos"]);
+        exit();
+    }
+
+    $stmt = $db->prepare("SELECT p.*, COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
+    $stmt->execute([$pedidoId]);
+    $pedido = $stmt->fetch();
+
+    if (!$pedido) {
+        http_response_code(404);
+        echo json_encode(["status" => "error", "message" => "Pedido no encontrado"]);
+        exit();
+    }
+
+    $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre FROM detalle_pedido dp LEFT JOIN productos pr ON dp.producto_id = pr.id WHERE dp.pedido_id = ?");
+    $stmtDet->execute([$pedidoId]);
+    $detalles = $stmtDet->fetchAll();
+
+    $tasaBcv = isset($data['tasa_bcv']) ? (float)$data['tasa_bcv'] : 0;
+    if (function_exists('enviarFacturaClienteEmail')) {
+        $res = enviarFacturaClienteEmail($email, $pedido, $detalles, $tasaBcv);
+        if (!empty($res['success'])) {
+            try {
+                $stmtUpEmail = $db->prepare("UPDATE pedidos SET cliente_email = ? WHERE id = ?");
+                $stmtUpEmail->execute([$email, $pedidoId]);
+            } catch(Exception $e) {}
+        }
+        echo json_encode(["status" => $res['success'] ? "success" : "error", "message" => $res['message']]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Servicio de correo no configurado"]);
+    }
+    exit();
+}
 
 switch ($method) {
     case 'GET':
@@ -24,7 +78,8 @@ switch ($method) {
             $stmt = $db->prepare("SELECT p.*, 
                                          COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, 
                                          COALESCE(NULLIF(p.cliente_telefono, ''), c.telefono) as cliente_telefono, 
-                                         COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci 
+                                         COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci,
+                                         COALESCE(NULLIF(p.cliente_email, ''), c.email) as cliente_email
                                   FROM pedidos p 
                                   LEFT JOIN clientes c ON p.cliente_id = c.id 
                                   WHERE p.id = ?");
@@ -46,7 +101,8 @@ switch ($method) {
             $stmt = $db->query("SELECT p.*, 
                                        COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as cliente_nombre, 
                                        COALESCE(NULLIF(p.cliente_telefono, ''), c.telefono) as cliente_telefono, 
-                                       COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci 
+                                       COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as cliente_ci,
+                                       COALESCE(NULLIF(p.cliente_email, ''), c.email) as cliente_email
                                 FROM pedidos p 
                                 LEFT JOIN clientes c ON p.cliente_id = c.id 
                                 ORDER BY p.created_at DESC");
@@ -116,14 +172,16 @@ switch ($method) {
             $clienteNombre = $data['cliente_nombre'] ?? '';
             $clienteTelefono = $data['cliente_telefono'] ?? '';
             $clienteCi = $data['cliente_ci'] ?? '';
+            $clienteEmail = filter_var($data['cliente_email'] ?? '', FILTER_VALIDATE_EMAIL) ? trim($data['cliente_email']) : '';
 
-            $stmt = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, cliente_nombre, cliente_telefono, cliente_ci, subtotal, impuesto, total, estado, forma_pago, direccion_entrega, notas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)");
+            $stmt = $db->prepare("INSERT INTO pedidos (codigo, cliente_id, cliente_nombre, cliente_telefono, cliente_ci, cliente_email, subtotal, impuesto, total, estado, forma_pago, direccion_entrega, notas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)");
             $stmt->execute([
                 $codigo,
                 $data['cliente_id'],
                 $clienteNombre,
                 $clienteTelefono,
                 $clienteCi,
+                $clienteEmail,
                 $subtotal,
                 $impuesto,
                 $total,
@@ -133,6 +191,14 @@ switch ($method) {
             ]);
 
             $pedido_id = $db->lastInsertId();
+
+            // Actualizar correo del cliente en la tabla clientes si aplica
+            if ($clienteEmail && !empty($data['cliente_id'])) {
+                try {
+                    $stmtUpCli = $db->prepare("UPDATE clientes SET email = COALESCE(NULLIF(email, ''), ?) WHERE id = ?");
+                    $stmtUpCli->execute([$clienteEmail, $data['cliente_id']]);
+                } catch(Exception $e) {}
+            }
 
             // Insertar detalles del pedido (el stock NO se descuenta aquí porque el pedido queda 'pendiente' de pago)
             foreach ($data['productos'] as $prod) {
@@ -145,7 +211,7 @@ switch ($method) {
             $db->commit();
 
             http_response_code(201);
-            echo json_encode(["status" => "success", "message" => "Pedido creado", "id" => $pedido_id, "codigo" => $codigo, "total" => $total]);
+            echo json_encode(["status" => "success", "message" => "Pedido creado", "id" => $pedido_id, "codigo" => $codigo, "total" => $total, "cliente_email" => $clienteEmail]);
 
         } catch (Exception $e) {
             $db->rollBack();
@@ -243,7 +309,37 @@ switch ($method) {
 
             $db->commit();
 
-            echo json_encode(["status" => "success", "message" => "Estado de pedido actualizado a " . $nuevoEstado]);
+            // Envío automático de factura al correo del cliente si está validando el pago
+            $emailEnviado = false;
+            $emailDestino = !empty($data['cliente_email']) ? trim($data['cliente_email']) : '';
+            if (in_array($nuevoEstado, ['procesando', 'completado'])) {
+                if (!$emailDestino) {
+                    $stmtMail = $db->prepare("SELECT p.*, COALESCE(NULLIF(p.cliente_email, ''), c.email) as final_email, COALESCE(NULLIF(p.cliente_nombre, ''), c.nombre) as final_nombre, COALESCE(NULLIF(p.cliente_ci, ''), c.ci_rif) as final_ci FROM pedidos p LEFT JOIN clientes c ON p.cliente_id = c.id WHERE p.id = ?");
+                    $stmtMail->execute([$id]);
+                    $ordFull = $stmtMail->fetch();
+                    if ($ordFull) {
+                        $emailDestino = $ordFull['final_email'] ?? '';
+                        $pedidoActual = array_merge($pedidoActual, $ordFull);
+                        $pedidoActual['cliente_nombre'] = $ordFull['final_nombre'];
+                        $pedidoActual['cliente_ci'] = $ordFull['final_ci'];
+                    }
+                }
+                if ($emailDestino && filter_var($emailDestino, FILTER_VALIDATE_EMAIL) && function_exists('enviarFacturaClienteEmail')) {
+                    $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre FROM detalle_pedido dp LEFT JOIN productos pr ON dp.producto_id = pr.id WHERE dp.pedido_id = ?");
+                    $stmtDet->execute([$id]);
+                    $itemsFact = $stmtDet->fetchAll();
+                    $tasa = isset($data['tasa_bcv']) ? (float)$data['tasa_bcv'] : 0;
+                    $resMail = enviarFacturaClienteEmail($emailDestino, $pedidoActual, $itemsFact, $tasa);
+                    $emailEnviado = !empty($resMail['success']);
+                }
+            }
+
+            echo json_encode([
+                "status" => "success", 
+                "message" => "Estado de pedido actualizado a " . $nuevoEstado,
+                "email_enviado" => $emailEnviado,
+                "email_destino" => $emailDestino
+            ]);
 
         } catch (Exception $e) {
             $db->rollBack();
