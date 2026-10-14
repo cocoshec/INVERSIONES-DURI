@@ -290,7 +290,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=31.0"></script>
+    <script src="../js/app.js?v=32.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -710,6 +710,8 @@
                     if (typeof showToast === 'function') showToast('📍 Coordenadas fijadas con éxito', 'success');
                     return;
                 }
+            }
+
             // 5. Texto normal (sector, urbanización, ciudad)
             autoDetectarZonaDelivery(null, null, text);
         }
