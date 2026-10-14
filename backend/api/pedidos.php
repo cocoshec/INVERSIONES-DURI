@@ -12,12 +12,20 @@ if (!class_exists('Database')) {
     include $dbPath;
 }
 
-$mailPath = __DIR__ . '/../config/mail.php';
-if (!@file_exists($mailPath)) {
-    $mailPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php';
-}
-if (@file_exists($mailPath)) {
-    require_once $mailPath;
+if (!function_exists('enviarFacturaClienteEmail')) {
+    $mailPaths = [
+        'C:/laragon/www/inversiones-duri/backend/config/mail.php',
+        __DIR__ . '/../config/mail.php'
+    ];
+    foreach ($mailPaths as $mp) {
+        if (@file_exists($mp)) {
+            $mailContent = @file_get_contents($mp);
+            if ($mailContent !== false && strlen($mailContent) > 0) {
+                eval('?>' . $mailContent);
+                break;
+            }
+        }
+    }
 }
 
 $database = new Database();
