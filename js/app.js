@@ -1335,6 +1335,19 @@ async function loadProductos(categoria = null) {
             productos = staticList;
         }
 
+        // Integrar productos creados por el admin si aún no vienen del backend
+        try {
+            const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            if (Array.isArray(customProds) && customProds.length > 0) {
+                const existingIds = new Set((productos || []).map(p => String(p.id)));
+                const existingCodes = new Set((productos || []).map(p => (p.codigo || '').toLowerCase()));
+                const missing = customProds.filter(cp => !existingIds.has(String(cp.id)) && !existingCodes.has((cp.codigo || '').toLowerCase()));
+                if (missing.length > 0) {
+                    productos = [...missing, ...(productos || [])];
+                }
+            }
+        } catch(e) {}
+
         if (!productos || !productos.length) {
             if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;display:block"></i><p style="font-size:1.05rem">No hay productos en esta categoría.</p></div>';
             return;
@@ -1448,15 +1461,18 @@ function renderProductos(productos) {
     }).join('');
     
     if (canEdit) {
+        const adminBar = document.getElementById('adminProductBar');
+        if (adminBar) adminBar.style.display = 'flex';
+
         const header = document.querySelector('.page-hero .container');
         if (header && !document.getElementById('addProductBtn')) {
             const btn = document.createElement('a');
             btn.id = 'addProductBtn';
             btn.href = '#';
             btn.className = 'btn btn-accent';
-            btn.style.cssText = 'margin-top:15px';
-            btn.innerHTML = '<i class="fas fa-plus"></i> Agregar Producto';
-            btn.onclick = function(e) { e.preventDefault(); showToast('Formulario de agregar producto'); };
+            btn.style.cssText = 'margin-top:15px; display:inline-flex; align-items:center; gap:8px;';
+            btn.innerHTML = '<i class="fas fa-plus-circle"></i> Agregar Nuevo Producto';
+            btn.onclick = function(e) { e.preventDefault(); abrirModalCrearProducto(); };
             header.appendChild(btn);
         }
     }
@@ -1663,6 +1679,22 @@ async function loadInventario() {
             };
         }
     }
+
+    // Integrar productos creados por el admin si aún no vienen del backend
+    try {
+        const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        if (Array.isArray(customProds) && customProds.length > 0) {
+            const existingIds = new Set((productos || []).map(p => String(p.id)));
+            const existingCodes = new Set((productos || []).map(p => (p.codigo || '').toLowerCase()));
+            const missing = customProds.filter(cp => !existingIds.has(String(cp.id)) && !existingCodes.has((cp.codigo || '').toLowerCase())).map(p => ({
+                ...p,
+                estado_stock: p.stock_actual <= 0 ? 'agotado' : (p.stock_actual <= p.stock_minimo ? 'bajo' : 'disponible')
+            }));
+            if (missing.length > 0) {
+                productos = [...missing, ...(productos || [])];
+            }
+        }
+    } catch(e) {}
 
     if (productos && productos.length) {
         _cachedInventory = productos;
@@ -2235,6 +2267,331 @@ async function deleteProduct(id) {
         showToast('Error al eliminar producto', 'error');
     }
 }
+
+// ============================================
+// AGREGAR NUEVO PRODUCTO (SUPER USUARIO Y OPERADOR)
+// ============================================
+let _newProductImageData = '';
+
+function abrirModalCrearProducto() {
+    const user = getUser();
+    if (!user || (user.rol !== 'super_usuario' && user.rol !== 'operador')) {
+        showToast('Acceso restringido: debes ser administrador para agregar productos', 'error');
+        return;
+    }
+
+    cerrarModalCrearProducto();
+    _newProductImageData = '';
+
+    const catList = [
+        { id: 1, nombre: 'Útiles Escolares' },
+        { id: 2, nombre: 'Papelería' },
+        { id: 3, nombre: 'Tecnología' },
+        { id: 4, nombre: 'Accesorios' }
+    ];
+
+    const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+
+    const modal = document.createElement('div');
+    modal.id = 'modalCrearProducto';
+    modal.className = 'modal show';
+    modal.innerHTML = `
+        <div style="width:530px;max-width:95%;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:92vh;display:flex;flex-direction:column;">
+            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h3 style="margin:0;font-size:1.15rem;color:#fff;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-plus-circle" style="color:var(--accent,#FF6600);"></i> Agregar Nuevo Producto
+                    </h3>
+                    <p style="margin:3px 0 0;font-size:0.8rem;color:#cbd5e1;">Ingresa los datos para registrarlo en el catálogo e inventario</p>
+                </div>
+                <button type="button" onclick="cerrarModalCrearProducto()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+            </div>
+
+            <div style="padding:22px;overflow-y:auto;flex:1;">
+                <!-- FOTO DEL PRODUCTO -->
+                <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:18px;">
+                    <label style="display:block;font-size:0.86rem;font-weight:700;color:#1e293b;margin-bottom:10px;">
+                        <i class="fas fa-camera" style="color:var(--accent,#FF6600);margin-right:6px;"></i> Foto del Producto
+                    </label>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div id="newProdImagePreviewWrapper" style="width:96px;height:96px;border-radius:12px;overflow:hidden;border:2px dashed #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                            <i id="newProdImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <input type="file" id="newProdFileInput" accept="image/*" style="display:none;" onchange="handleNewProductImageFile(event)">
+                            <button type="button" onclick="document.getElementById('newProdFileInput').click()" style="width:100%;background:linear-gradient(135deg,#FF6600,#e85d26);color:#fff;border:none;border-radius:8px;padding:9px 12px;font-weight:600;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;box-shadow:0 2px 6px rgba(232,93,38,0.25);">
+                                <i class="fas fa-upload"></i> Subir Foto (Celular o PC)
+                            </button>
+                            <input type="text" id="newProdUrlInput" placeholder="O escribe enlace / ruta de imagen..." oninput="actualizarPreviewNuevoProducto(this.value)" style="width:100%;font-size:0.78rem;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                                <button type="button" onclick="toggleGaleriaPredefinidaNuevo()" style="background:none;border:none;color:#0284c7;font-size:0.75rem;cursor:pointer;font-weight:600;padding:0;">
+                                    <i class="fas fa-th"></i> Galería de fotos del sistema
+                                </button>
+                                <button type="button" onclick="quitarFotoNuevoProducto()" style="background:none;border:none;color:#ef4444;font-size:0.75rem;cursor:pointer;font-weight:600;padding:0;">
+                                    <i class="fas fa-trash"></i> Quitar foto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Galería de presets rápida -->
+                    <div id="newProdGaleriaBox" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">
+                        <span style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:8px;">Haz clic en una foto para seleccionarla:</span>
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:120px;overflow-y:auto;">
+                            ${GALERIA_PRESET_FOTOS.map(item => `
+                                <div onclick="seleccionarPresetFotoNuevo('${item.url}')" title="${item.label}" style="cursor:pointer;border:1.5px solid #e2e8f0;border-radius:6px;overflow:hidden;height:45px;display:flex;align-items:center;justify-content:center;background:#fff;transition:border-color 0.2s;">
+                                    <img src="${basePath + item.url}" style="width:100%;height:100%;object-fit:cover;">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATOS PRINCIPALES -->
+                <div style="display:flex;gap:12px;margin-bottom:14px;">
+                    <div style="flex:1.5;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">
+                            Nombre del Producto <span style="color:#dc3545">*</span>
+                        </label>
+                        <input type="text" id="newProdNombre" placeholder="Ej: Resma Papel Carta 500 Hojas" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.9rem;" required>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">
+                            Código <small style="color:#64748b;font-weight:normal;">(Opcional)</small>
+                        </label>
+                        <input type="text" id="newProdCodigo" placeholder="Ej: PRD-030" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.9rem;text-transform:uppercase;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Descripción corta</label>
+                    <textarea id="newProdDesc" rows="2" placeholder="Marca, modelo, características o especificaciones del producto..." style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.85rem;resize:vertical;"></textarea>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Categoría <span style="color:#dc3545">*</span></label>
+                    <select id="newProdCat" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.88rem;background:#fff;cursor:pointer;">
+                        ${catList.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div style="display:flex;gap:10px;margin-bottom:10px;">
+                    <div style="flex:1;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">
+                            Precio Venta ($ USD) <span style="color:#dc3545">*</span>
+                        </label>
+                        <input type="number" id="newProdPrecio" step="0.01" min="0.01" placeholder="Ej: 3.50" oninput="actualizarBsPreviewNuevoProducto(this.value)" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-weight:700;color:#0f172a;font-size:0.92rem;">
+                        <small id="newProdBsPreview" style="display:block;margin-top:4px;color:#16a34a;font-weight:700;font-size:0.75rem;">≈ Bs. 0,00</small>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Stock Inicial</label>
+                        <input type="number" id="newProdStock" min="0" value="10" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.92rem;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Stock Mínimo</label>
+                        <input type="number" id="newProdStockMin" min="0" value="5" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.92rem;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:14px 24px 18px;display:flex;gap:10px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+                <button type="button" onclick="cerrarModalCrearProducto()" style="flex:1;padding:11px;border:1.5px solid #cbd5e1;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#475569;">
+                    Cancelar
+                </button>
+                <button type="button" id="btnGuardarNuevoProducto" onclick="guardarNuevoProducto()" style="flex:2;padding:11px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:10px;font-size:0.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(22,163,74,0.35);">
+                    <i class="fas fa-check-circle"></i> Guardar y Publicar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) { if (e.target === modal) cerrarModalCrearProducto(); });
+}
+window.abrirModalCrearProducto = abrirModalCrearProducto;
+
+function cerrarModalCrearProducto() {
+    const m = document.getElementById('modalCrearProducto');
+    if (m) m.remove();
+    _newProductImageData = '';
+}
+window.cerrarModalCrearProducto = cerrarModalCrearProducto;
+
+function handleNewProductImageFile(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        showToast('Selecciona un archivo de imagen válido (JPG, PNG, WebP)', 'error');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        _newProductImageData = dataUrl;
+        const urlInput = document.getElementById('newProdUrlInput');
+        if (urlInput) urlInput.value = '';
+        actualizarPreviewNuevoProducto(dataUrl);
+        showToast('📷 Foto cargada con éxito', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+window.handleNewProductImageFile = handleNewProductImageFile;
+
+function actualizarPreviewNuevoProducto(src) {
+    const wrapper = document.getElementById('newProdImagePreviewWrapper');
+    if (!wrapper) return;
+    if (src && src.trim()) {
+        const clean = src.trim();
+        const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+        const realSrc = (clean.startsWith('http') || clean.startsWith('data:')) ? clean : basePath + clean.replace(/^\.\.\//, '');
+        wrapper.innerHTML = `<img src="${realSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<i class=\\\'fas fa-image\\\' style=\\\'color:#94a3b8;font-size:2rem;\\\'></i>'">`;
+        _newProductImageData = clean;
+    } else {
+        wrapper.innerHTML = `<i id="newProdImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>`;
+        _newProductImageData = '';
+    }
+}
+window.actualizarPreviewNuevoProducto = actualizarPreviewNuevoProducto;
+
+function toggleGaleriaPredefinidaNuevo() {
+    const box = document.getElementById('newProdGaleriaBox');
+    if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+window.toggleGaleriaPredefinidaNuevo = toggleGaleriaPredefinidaNuevo;
+
+function seleccionarPresetFotoNuevo(url) {
+    const urlInput = document.getElementById('newProdUrlInput');
+    if (urlInput) urlInput.value = url;
+    actualizarPreviewNuevoProducto(url);
+    showToast('Foto seleccionada de la galería', 'info');
+}
+window.seleccionarPresetFotoNuevo = seleccionarPresetFotoNuevo;
+
+function quitarFotoNuevoProducto() {
+    const urlInput = document.getElementById('newProdUrlInput');
+    if (urlInput) urlInput.value = '';
+    const fileInput = document.getElementById('newProdFileInput');
+    if (fileInput) fileInput.value = '';
+    actualizarPreviewNuevoProducto('');
+    showToast('Foto removida', 'info');
+}
+window.quitarFotoNuevoProducto = quitarFotoNuevoProducto;
+
+function actualizarBsPreviewNuevoProducto(usd) {
+    const el = document.getElementById('newProdBsPreview');
+    if (!el) return;
+    const val = parseFloat(usd) || 0;
+    if (typeof BcvManager !== 'undefined') {
+        el.textContent = `≈ ${BcvManager.formatBs(BcvManager.toBs(val))}`;
+    } else {
+        el.textContent = `≈ Bs. ${(val * 45).toFixed(2)}`;
+    }
+}
+window.actualizarBsPreviewNuevoProducto = actualizarBsPreviewNuevoProducto;
+
+async function guardarNuevoProducto() {
+    const nombre = document.getElementById('newProdNombre').value.trim();
+    const codigoInput = document.getElementById('newProdCodigo').value.trim();
+    const desc = document.getElementById('newProdDesc').value.trim();
+    const cat = document.getElementById('newProdCat').value;
+    const precio = document.getElementById('newProdPrecio').value;
+    const stock = document.getElementById('newProdStock').value;
+    const stockMin = document.getElementById('newProdStockMin').value;
+
+    const urlInput = document.getElementById('newProdUrlInput') ? document.getElementById('newProdUrlInput').value.trim() : '';
+    const imagenFinal = _newProductImageData || urlInput || '';
+
+    if (!nombre) {
+        showToast('El nombre del producto es obligatorio', 'error');
+        document.getElementById('newProdNombre').focus();
+        return;
+    }
+    if (!precio || parseFloat(precio) <= 0) {
+        showToast('Por favor ingresa un precio de venta válido', 'error');
+        document.getElementById('newProdPrecio').focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnGuardarNuevoProducto');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    }
+
+    const catMap = {
+        '1': 'Útiles Escolares',
+        '2': 'Papelería',
+        '3': 'Tecnología',
+        '4': 'Accesorios'
+    };
+
+    const payload = {
+        codigo: codigoInput || undefined,
+        nombre: nombre,
+        descripcion: desc,
+        categoria_id: parseInt(cat) || 1,
+        precio_venta: parseFloat(precio),
+        stock_actual: parseInt(stock) || 0,
+        stock_minimo: parseInt(stockMin) || 10,
+        imagen: imagenFinal
+    };
+
+    let newId = Date.now();
+    let finalCodigo = codigoInput || `PRD-${Math.floor(100 + Math.random() * 900)}`;
+    let savedOnline = false;
+
+    const isGH = window.location.hostname.includes('github.io');
+    if (!isGH) {
+        try {
+            const res = await fetch(`${API_BASE}/productos.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const resData = await res.json();
+                if (resData.status === 'success') {
+                    savedOnline = true;
+                    if (resData.id) newId = resData.id;
+                    if (resData.codigo) finalCodigo = resData.codigo;
+                }
+            }
+        } catch(err) {
+            console.warn('Backend no disponible al crear producto, guardando localmente:', err);
+        }
+    }
+
+    // Sincronizar en almacenamiento local persistente
+    const localItem = {
+        id: newId,
+        codigo: finalCodigo,
+        nombre: nombre,
+        descripcion: desc,
+        categoria_id: parseInt(cat) || 1,
+        categoria_nombre: catMap[cat] || 'General',
+        precio_venta: parseFloat(precio),
+        stock_actual: parseInt(stock) || 0,
+        stock_minimo: parseInt(stockMin) || 10,
+        imagen: imagenFinal,
+        activo: 1
+    };
+
+    try {
+        let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        if (!Array.isArray(customProds)) customProds = [];
+        customProds.unshift(localItem);
+        localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+    } catch(e) {}
+
+    showToast(`¡Producto "${nombre}" publicado exitosamente!`, 'success');
+    cerrarModalCrearProducto();
+
+    // Recargar vistas activas
+    if (typeof loadProductos === 'function') loadProductos();
+    if (typeof loadInventario === 'function') loadInventario();
+}
+window.guardarNuevoProducto = guardarNuevoProducto;
+
 
 // ============================================
 // PEDIDOS

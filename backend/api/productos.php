@@ -59,20 +59,23 @@ switch ($method) {
             exit();
         }
 
-        $stmt = $db->prepare("INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $codigo = !empty($data['codigo']) ? trim($data['codigo']) : ('PRD-' . str_pad(rand(100, 9999), 4, '0', STR_PAD_LEFT));
+
+        $stmt = $db->prepare("INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
-            $data['codigo'] ?? 'PRD-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT),
+            $codigo,
             $data['nombre'],
             $data['descripcion'] ?? '',
             $data['categoria_id'] ?? 1,
             $data['precio_venta'],
             $data['stock_actual'] ?? 0,
-            $data['stock_minimo'] ?? 10
+            $data['stock_minimo'] ?? 10,
+            $data['imagen'] ?? ''
         ]);
 
         $id = $db->lastInsertId();
         http_response_code(201);
-        echo json_encode(["status" => "success", "message" => "Producto creado", "id" => $id]);
+        echo json_encode(["status" => "success", "message" => "Producto creado", "id" => $id, "codigo" => $codigo]);
         break;
 
     case 'PUT':
