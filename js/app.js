@@ -4291,7 +4291,7 @@ async function ejecutarAprobacionPago(id, codigo) {
 }
 window.ejecutarAprobacionPago = ejecutarAprobacionPago;
 
-// Modal de confirmación al Super Administrador tras aprobar un pago
+// Modal de confirmación al Super Administrador tras aprobar un pago (COMPACTO Y MODERNO)
 function mostrarModalPagoAprobadoConFactura(codigoOrId) {
     cerrarModalPagoAprobado();
     const p = findOrderData(codigoOrId);
@@ -4306,62 +4306,80 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
     const modal = document.createElement('div');
     modal.id = 'modalPagoAprobadoSuccess';
     modal.className = 'order-success-modal';
+    modal.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:rgba(15,23,42,0.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
+
     modal.innerHTML = `
-        <div class="order-success-card" style="max-width:500px;">
-            <div class="order-success-header" style="background:linear-gradient(135deg, #059669 0%, #047857 100%);">
-                <div class="order-success-icon" style="border:2px solid rgba(255,255,255,0.4);">
+        <div style="background:#ffffff;border-radius:18px;width:100%;max-width:390px;max-height:min(90dvh,530px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);margin:auto;position:relative;animation:fadeInModal 0.2s ease-out;border:1px solid rgba(255,255,255,0.15);">
+            <!-- Header Compacto -->
+            <div style="background:linear-gradient(135deg, #059669 0%, #047857 100%);color:#fff;padding:14px 16px 12px;text-align:center;position:relative;">
+                <button type="button" onclick="cerrarModalPagoAprobado()" style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.18);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:background 0.2s;" title="Cerrar">&times;</button>
+                <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.22);border:1.5px solid rgba(255,255,255,0.4);display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem;margin-bottom:4px;">
                     <i class="fas fa-check-double"></i>
                 </div>
-                <h3 style="margin:0 0 6px 0; font-size:1.35rem; font-weight:800;">¡Pago Validado y Aprobado!</h3>
-                <p style="margin:0; font-size:0.86rem; opacity:0.92;">La compra ha sido confirmada y la factura fue sellada oficialmente.</p>
+                <h3 style="margin:0;font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-0.2px;">¡Pago Validado y Aprobado!</h3>
+                <p style="margin:2px 0 0;font-size:0.75rem;color:#dcfce7;opacity:0.95;">Compra confirmada y factura oficial sellada.</p>
             </div>
-            <div class="order-success-body">
-                <div class="order-success-code-box" style="background:#f0fdf4; border-color:#86efac;">
+
+            <!-- Cuerpo Compacto con scroll suave -->
+            <div style="padding:12px 16px 14px;overflow-y:auto;flex:1 1 auto;-webkit-overflow-scrolling:touch;">
+                <!-- Tarjeta Resumen Factura / Monto -->
+                <div style="background:#f0fdf4;border:1px dashed #86efac;border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
                     <div style="text-align:left;">
-                        <span style="font-size:0.72rem; color:#15803d; text-transform:uppercase; font-weight:700;">Factura Sellada</span>
-                        <div style="font-size:1.15rem; font-weight:800; color:#14532d; font-family:monospace;">${facturaNum}</div>
-                        <span style="font-size:0.74rem; color:#166534;">Pedido: <b>${codigo}</b></span>
+                        <span style="font-size:0.65rem;color:#15803d;text-transform:uppercase;font-weight:700;display:block;">Factura Sellada</span>
+                        <strong style="font-size:0.95rem;color:#14532d;font-family:monospace;display:block;line-height:1.2;">${facturaNum}</strong>
+                        <span style="font-size:0.7rem;color:#166534;">Pedido: <b>${codigo}</b></span>
                     </div>
                     <div style="text-align:right;">
-                        <span style="font-size:0.72rem; color:#15803d; text-transform:uppercase; font-weight:700;">Monto Validado</span>
-                        <div style="font-size:1.15rem; font-weight:800; color:#15803d;">$${totalVal}</div>
-                        <div style="font-size:0.75rem; color:#166534;">≈ ${totalBs}</div>
+                        <span style="font-size:0.65rem;color:#15803d;text-transform:uppercase;font-weight:700;display:block;">Monto Validado</span>
+                        <strong style="font-size:1.05rem;color:#15803d;display:block;line-height:1.2;">$${totalVal}</strong>
+                        <span style="font-size:0.7rem;color:#166534;">≈ ${totalBs}</span>
                     </div>
                 </div>
 
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:18px; text-align:left; font-size:0.82rem; color:#334155; line-height:1.5;">
-                    <div><i class="fas fa-user-check" style="color:#059669;"></i> <b>Cliente:</b> ${p.cliente_nombre || 'Cliente'}</div>
-                    ${p.cliente_ci ? `<div><i class="fas fa-id-card" style="color:#059669;"></i> <b>C.I / RIF:</b> ${p.cliente_ci}</div>` : ''}
-                    <div><i class="fas fa-stamp" style="color:#059669;"></i> <b>Estado:</b> <span style="background:#dcfce7; color:#166534; font-weight:700; padding:1px 8px; border-radius:10px; font-size:0.75rem;">✅ Pago Confirmado</span></div>
+                <!-- Tarjeta Info Cliente -->
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:0.76rem;color:#334155;line-height:1.4;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                        <span><i class="fas fa-user-check" style="color:#059669;margin-right:4px;"></i> <b>Cliente:</b> ${p.cliente_nombre || 'Cliente'}</span>
+                        ${p.cliente_ci ? `<span style="color:#64748b;font-weight:600;">${p.cliente_ci}</span>` : ''}
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                        <span><i class="fas fa-stamp" style="color:#059669;margin-right:4px;"></i> <b>Estado:</b></span>
+                        <span style="background:#dcfce7;color:#166534;font-weight:700;padding:1px 6px;border-radius:6px;font-size:0.68rem;">✅ Pago Confirmado</span>
+                    </div>
                     ${p.cliente_email ? `
-                        <div style="margin-top:8px; display:flex; align-items:center; gap:8px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 10px; font-size:0.78rem; color:#1e40af;">
-                            <i class="fas fa-envelope-circle-check" style="color:#2563eb; font-size:1.1rem; flex-shrink:0;"></i>
-                            <span>Factura enviada automáticamente al correo: <b>${p.cliente_email}</b></span>
+                        <div style="display:flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:4px 8px;font-size:0.72rem;color:#1e40af;">
+                            <i class="fas fa-envelope-circle-check" style="color:#2563eb;font-size:0.85rem;flex-shrink:0;"></i>
+                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Enviada a: <b>${p.cliente_email}</b></span>
                         </div>
                     ` : `
-                        <div style="margin-top:8px; display:flex; align-items:center; justify-content:space-between; gap:6px; background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:8px 10px; font-size:0.78rem; color:#92400e;">
-                            <span><i class="fas fa-info-circle"></i> Sin correo registrado para envío automático.</span>
-                            <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" style="background:#f59e0b; color:#fff; border:none; border-radius:6px; padding:4px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                                <i class="fas fa-envelope"></i> Enviar a un correo
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:4px 8px;font-size:0.72rem;color:#92400e;">
+                            <span><i class="fas fa-info-circle"></i> Sin correo registrado</span>
+                            <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" style="background:#f59e0b;color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:0.68rem;font-weight:700;cursor:pointer;">
+                                + Enviar
                             </button>
                         </div>
                     `}
-                    <div style="margin-top:6px; font-size:0.75rem; color:#64748b;">
-                        * La factura queda guardada permanentemente en el registro contable del panel.
-                    </div>
                 </div>
 
-                <div class="order-success-buttons">
-                    <button type="button" class="btn btn-primary btn-block btn-lg" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="background:linear-gradient(135deg, #4f46e5, #3730a3); font-weight:700; box-shadow:0 4px 14px rgba(79, 70, 229, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <i class="fas fa-file-invoice-dollar" style="font-size:1.1rem;"></i> Ver y Descargar Factura Aprobada (PDF)
+                <!-- Botones Organizados: Acción principal y Fila 2 Columnas -->
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <!-- Botón Principal: Ver/Descargar PDF -->
+                    <button type="button" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="width:100%;min-height:36px;padding:8px 12px;background:linear-gradient(135deg, #4f46e5, #3730a3);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 8px rgba(79,70,229,0.28);">
+                        <i class="fas fa-file-invoice-dollar" style="font-size:0.95rem;"></i> Ver y Descargar Factura (PDF)
                     </button>
-                    <button type="button" class="btn btn-block" onclick="enviarFacturaPorCorreoPrompt('${codigo}');" style="background:#0284c7; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
-                        <i class="fas fa-envelope" style="font-size:1rem;"></i> ${p.cliente_email ? 'Reenviar Factura al Correo del Cliente' : 'Enviar Factura por Correo Electrónico'}
-                    </button>
-                    <button type="button" class="btn btn-block" onclick="compartirFacturaWhatsApp('${codigo}');" style="background:#25d366; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
-                        <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Enviar Factura al WhatsApp del Cliente
-                    </button>
-                    <button type="button" class="btn btn-block" onclick="cerrarModalPagoAprobado();" style="background:#f1f5f9; color:#475569; font-weight:600; padding:10px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; margin-top:4px;">
+
+                    <!-- Fila 2 Columnas: WhatsApp y Correo -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" onclick="compartirFacturaWhatsApp('${codigo}');" style="min-height:34px;padding:6px 8px;background:#25d366;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(37,211,102,0.2);">
+                            <i class="fab fa-whatsapp" style="font-size:0.95rem;"></i> WhatsApp
+                        </button>
+                        <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}');" style="min-height:34px;padding:6px 8px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(2,132,199,0.2);">
+                            <i class="fas fa-envelope" style="font-size:0.85rem;"></i> ${p.cliente_email ? 'Reenviar' : 'Correo'}
+                        </button>
+                    </div>
+
+                    <!-- Botón Volver sutil -->
+                    <button type="button" onclick="cerrarModalPagoAprobado();" style="width:100%;min-height:30px;padding:5px;background:#f8fafc;color:#64748b;border:1px solid #cbd5e1;border-radius:8px;font-weight:600;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:2px;">
                         Continuar en el Panel de Pedidos
                     </button>
                 </div>
