@@ -4627,12 +4627,23 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     if (typeof loadProductos === 'function') loadProductos();
     if (typeof loadInventario === 'function') loadInventario();
 
-    if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
-        showToast(`¡Factura enviada automáticamente al correo ${backendResult.email_destino}!`, 'success');
-    } else if (backendResult && backendResult.email_mensaje) {
-        showToast(`Aviso de correo: ${backendResult.email_mensaje}`, 'warning');
-    } else if (nuevoEstado === 'procesando' && !clienteEmail) {
-        showToast('Pago validado (sin correo de cliente registrado).', 'info');
+    const isGH = window.location.hostname.includes('github.io');
+    if (isGH) {
+        if (nuevoEstado === 'procesando') {
+            if (clienteEmail) {
+                showToast(`¡Pago validado con éxito! (En GitHub Pages se simula el correo a ${clienteEmail}; en tu servidor local se envía por Gmail)`, 'success');
+            } else {
+                showToast('Pago validado con éxito (sin correo de cliente registrado).', 'info');
+            }
+        }
+    } else {
+        if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
+            showToast(`¡Factura enviada automáticamente al correo ${backendResult.email_destino}!`, 'success');
+        } else if (backendResult && backendResult.email_mensaje) {
+            showToast(`Aviso de correo: ${backendResult.email_mensaje}`, 'warning');
+        } else if (nuevoEstado === 'procesando' && !clienteEmail) {
+            showToast('Pago validado (sin correo de cliente registrado).', 'info');
+        }
     }
     return backendResult;
 }
