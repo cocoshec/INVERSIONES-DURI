@@ -135,12 +135,13 @@
                                     <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona de Entrega:
                                 </label>
                                 <select id="selectZonaDelivery" onchange="cambiarZonaDelivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
-                                    <option value="centro" data-costo="0" selected>📍 Centro de Maracay (Casco Central, Calicanto, La Floresta, San Isidro) — ¡GRATIS ($0.00)!</option>
-                                    <option value="cercanas" data-costo="2">📍 Zonas Urbanas Cercanas (Las Delicias, San Jacinto, Piñonal, San José, Caña de Azúcar) — +$2.00 USD</option>
-                                    <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre) — +$3.00 USD</option>
-                                    <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / Coropo / Samán de Güere — +$5.00 USD</option>
-                                    <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo — +$6.00 USD</option>
+                                    <option value="centro" data-costo="0" selected>📍 Centro de Maracay (Casco Central, Calicanto, La Floresta, San Isidro, Parque Aragua, Av. Bolívar/Miranda) — ¡GRATIS ($0.00)!</option>
+                                    <option value="cercanas" data-costo="2">📍 Zonas Urbanas de Maracay (Las Delicias, La Soledad, Base Aragua, El Bosque, San Jacinto, Piñonal, San José, La Barraca, Caña de Azúcar, Los Samanes, Campo Alegre, 23 de Enero, San Vicente, La Coromoto, Guasimal, El Castaño) — +$2.00 USD</option>
+                                    <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre, Arias Blanco, Valle Verde) — +$3.00 USD</option>
+                                    <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / La Morita / Coropo / Samán de Güere / Santa Cruz — +$5.00 USD</option>
+                                    <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo / Bella Vista / Corinsa — +$6.00 USD</option>
                                     <option value="lejana" data-costo="8">📍 La Victoria / Villa de Cura / San Sebastián / Otras Zonas Lejanas — +$8.00 USD</option>
+                                    <option value="otra" data-costo="3">📍 Otra Zona / Sector no listado (Tarifa estimada: $3.00 USD / Calculada con tu GPS)</option>
                                 </select>
                                 <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>
@@ -189,8 +190,9 @@
                             </div>
 
                             <textarea id="deliveryAddress" rows="2" placeholder="Describe tu dirección (Sector, calle, casa/apto y punto de referencia)..."></textarea>
+                            <div id="infoSectorDetectado" style="display:none; margin-top:6px; font-size:0.78rem; color:#1e40af; background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:8px; padding:7px 11px; align-items:center; gap:7px;"></div>
                             <div style="font-size:0.74rem; color:#6c757d; margin-top:4px; display:flex; align-items:center; gap:5px;">
-                                <i class="fas fa-info-circle" style="color:#17a2b8;"></i> <span>Puedes escribir tu dirección o marcar tu ubicación en Google Maps.</span>
+                                <i class="fas fa-info-circle" style="color:#17a2b8;"></i> <span>Escribe tu sector o dirección y calcularemos automáticamente la tarifa de entrega.</span>
                             </div>
                             <input type="hidden" id="geoCoords" value="">
                         </div>
@@ -290,7 +292,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=33.0"></script>
+    <script src="../js/app.js?v=34.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -420,6 +422,102 @@
         let selectedCoords = null;
         let selectedAddressText = '';
         const DEFAULT_COORD = [10.2502976, -67.5961389]; // Feria Escolar Inversiones Duri, Maracay
+        const SECTORES_MARACAY = {
+            'duri': { nombre: 'Sede Inversiones Duri', coords: [10.2502976, -67.5961389], zona: 'centro', tarifa: 0 },
+            'centro': { nombre: 'Maracay Centro (Casco Central)', coords: [10.2469, -67.5958], zona: 'centro', tarifa: 0 },
+            'calicanto': { nombre: 'Calicanto, Maracay', coords: [10.2492, -67.5912], zona: 'centro', tarifa: 0 },
+            'floresta': { nombre: 'La Floresta, Maracay', coords: [10.2554, -67.5901], zona: 'centro', tarifa: 0 },
+            'san isidro': { nombre: 'San Isidro, Maracay', coords: [10.2515, -67.5852], zona: 'centro', tarifa: 0 },
+            'parque aragua': { nombre: 'Parque Aragua, Maracay', coords: [10.2471, -67.5815], zona: 'centro', tarifa: 0 },
+            'bolivar oeste': { nombre: 'Av. Bolívar Oeste, Maracay', coords: [10.2485, -67.6080], zona: 'centro', tarifa: 0 },
+            'bolívar oeste': { nombre: 'Av. Bolívar Oeste, Maracay', coords: [10.2485, -67.6080], zona: 'centro', tarifa: 0 },
+            'miranda': { nombre: 'Av. Miranda / Centro', coords: [10.2475, -67.5975], zona: 'centro', tarifa: 0 },
+            'constitucion': { nombre: 'Av. Constitución / Centro', coords: [10.2440, -67.5980], zona: 'centro', tarifa: 0 },
+            'constitución': { nombre: 'Av. Constitución / Centro', coords: [10.2440, -67.5980], zona: 'centro', tarifa: 0 },
+            'santos michelena': { nombre: 'Santos Michelena, Maracay', coords: [10.2480, -67.5930], zona: 'centro', tarifa: 0 },
+
+            // Zonas Urbanas Cercanas ($2.00)
+            'delicias': { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zona: 'cercanas', tarifa: 2 },
+            'soledad': { nombre: 'La Soledad, Maracay', coords: [10.2612, -67.5968], zona: 'cercanas', tarifa: 2 },
+            'base aragua': { nombre: 'Base Aragua, Maracay', coords: [10.2575, -67.5895], zona: 'cercanas', tarifa: 2 },
+            'bosque': { nombre: 'El Bosque, Maracay', coords: [10.2625, -67.5902], zona: 'cercanas', tarifa: 2 },
+            'arboleda': { nombre: 'La Arboleda, Maracay', coords: [10.2589, -67.5950], zona: 'cercanas', tarifa: 2 },
+            'san jacinto': { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zona: 'cercanas', tarifa: 2 },
+            'montaña fresca': { nombre: 'Montaña Fresca, Maracay', coords: [10.2442, -67.5521], zona: 'cercanas', tarifa: 2 },
+            'piñonal': { nombre: 'Piñonal, Maracay', coords: [10.2351, -67.5862], zona: 'cercanas', tarifa: 2 },
+            'san jose': { nombre: 'San José, Maracay', coords: [10.2401, -67.6025], zona: 'cercanas', tarifa: 2 },
+            'san josé': { nombre: 'San José, Maracay', coords: [10.2401, -67.6025], zona: 'cercanas', tarifa: 2 },
+            'barraca': { nombre: 'La Barraca, Maracay', coords: [10.2465, -67.5882], zona: 'cercanas', tarifa: 2 },
+            'samanes': { nombre: 'Los Samanes, Maracay', coords: [10.2185, -67.5912], zona: 'cercanas', tarifa: 2 },
+            'campo alegre': { nombre: 'Campo Alegre, Maracay', coords: [10.2241, -67.6052], zona: 'cercanas', tarifa: 2 },
+            '23 de enero': { nombre: '23 de Enero, Maracay', coords: [10.2425, -67.6152], zona: 'cercanas', tarifa: 2 },
+            'san vicente': { nombre: 'San Vicente, Maracay', coords: [10.2312, -67.6415], zona: 'cercanas', tarifa: 2 },
+            'coromoto': { nombre: 'La Coromoto, Maracay', coords: [10.2520, -67.6180], zona: 'cercanas', tarifa: 2 },
+            'caña de azucar': { nombre: 'Caña de Azúcar, Maracay', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
+            'azucar': { nombre: 'Caña de Azúcar, Maracay', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
+            'azúcar': { nombre: 'Caña de Azúcar, Maracay', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
+            'guasimal': { nombre: 'Guasimal, Maracay', coords: [10.2315, -67.5452], zona: 'cercanas', tarifa: 2 },
+            'castaño': { nombre: 'El Castaño, Maracay', coords: [10.2985, -67.6012], zona: 'cercanas', tarifa: 2 },
+            'andres bello': { nombre: 'Andrés Bello, Maracay', coords: [10.2675, -67.5985], zona: 'cercanas', tarifa: 2 },
+            'andrés bello': { nombre: 'Andrés Bello, Maracay', coords: [10.2675, -67.5985], zona: 'cercanas', tarifa: 2 },
+            'acacias': { nombre: 'Las Acacias, Maracay', coords: [10.2370, -67.5960], zona: 'cercanas', tarifa: 2 },
+            'cooperativa': { nombre: 'La Cooperativa, Maracay', coords: [10.2690, -67.5880], zona: 'cercanas', tarifa: 2 },
+            'olivos': { nombre: 'Los Olivos, Maracay', coords: [10.2705, -67.5815], zona: 'cercanas', tarifa: 2 },
+            'san ignacio': { nombre: 'San Ignacio, Maracay', coords: [10.2335, -67.6010], zona: 'cercanas', tarifa: 2 },
+            'santa ana': { nombre: 'Santa Ana, Maracay', coords: [10.2420, -67.5875], zona: 'cercanas', tarifa: 2 },
+            'hipodromo': { nombre: 'El Hipódromo, Maracay', coords: [10.2360, -67.6080], zona: 'cercanas', tarifa: 2 },
+            'hipódromo': { nombre: 'El Hipódromo, Maracay', coords: [10.2360, -67.6080], zona: 'cercanas', tarifa: 2 },
+            'barrio sucre': { nombre: 'Barrio Sucre, Maracay', coords: [10.2530, -67.6085], zona: 'cercanas', tarifa: 2 },
+            'milagro': { nombre: 'El Milagro, Maracay', coords: [10.2505, -67.6250], zona: 'cercanas', tarifa: 2 },
+            'madre maria': { nombre: 'Madre María / San José', coords: [10.2415, -67.5990], zona: 'cercanas', tarifa: 2 },
+            'madre maría': { nombre: 'Madre María / San José', coords: [10.2415, -67.5990], zona: 'cercanas', tarifa: 2 },
+            'san agustin': { nombre: 'San Agustín, Maracay', coords: [10.2470, -67.5800], zona: 'cercanas', tarifa: 2 },
+            'san agustín': { nombre: 'San Agustín, Maracay', coords: [10.2470, -67.5800], zona: 'cercanas', tarifa: 2 },
+            'san carlos': { nombre: 'San Carlos, Maracay', coords: [10.2280, -67.6080], zona: 'cercanas', tarifa: 2 },
+            'romana': { nombre: 'La Romana, Maracay', coords: [10.2550, -67.6150], zona: 'cercanas', tarifa: 2 },
+            'santa rosa': { nombre: 'Santa Rosa, Maracay', coords: [10.2380, -67.6150], zona: 'cercanas', tarifa: 2 },
+            '12 de febrero': { nombre: '12 de Febrero, Maracay', coords: [10.2410, -67.6210], zona: 'cercanas', tarifa: 2 },
+
+            // El Limón / MBI ($3.00)
+            'limon': { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zona: 'limon', tarifa: 3 },
+            'limón': { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zona: 'limon', tarifa: 3 },
+            'arsenal': { nombre: 'Arsenal, Mario B. Iragorry', coords: [10.2715, -67.6425], zona: 'limon', tarifa: 3 },
+            'candelaria': { nombre: 'La Candelaria, MBI', coords: [10.2845, -67.6385], zona: 'limon', tarifa: 3 },
+            'base sucre': { nombre: 'Base Sucre, MBI', coords: [10.2685, -67.6512], zona: 'limon', tarifa: 3 },
+            'paseo': { nombre: 'El Paseo, El Limón', coords: [10.2820, -67.6300], zona: 'limon', tarifa: 3 },
+            'valle verde': { nombre: 'Valle Verde, El Limón', coords: [10.2890, -67.6350], zona: 'limon', tarifa: 3 },
+            'arias blanco': { nombre: 'Arias Blanco, El Limón', coords: [10.2760, -67.6360], zona: 'limon', tarifa: 3 },
+
+            // Turmero / Palo Negro ($5.00)
+            'turmero': { nombre: 'Turmero, Aragua', coords: [10.2285, -67.4746], zona: 'turmero', tarifa: 5 },
+            'palo negro': { nombre: 'Palo Negro, Aragua', coords: [10.1742, -67.5412], zona: 'turmero', tarifa: 5 },
+            'santa rita': { nombre: 'Santa Rita, FLA', coords: [10.2015, -67.5612], zona: 'turmero', tarifa: 5 },
+            'morita': { nombre: 'La Morita, Aragua', coords: [10.2152, -67.5385], zona: 'turmero', tarifa: 5 },
+            'coropo': { nombre: 'Coropo, Aragua', coords: [10.1885, -67.5512], zona: 'turmero', tarifa: 5 },
+            'saman de guere': { nombre: 'Samán de Güere, Turmero', coords: [10.2215, -67.5125], zona: 'turmero', tarifa: 5 },
+            'guere': { nombre: 'Samán de Güere, Turmero', coords: [10.2215, -67.5125], zona: 'turmero', tarifa: 5 },
+            'güere': { nombre: 'Samán de Güere, Turmero', coords: [10.2215, -67.5125], zona: 'turmero', tarifa: 5 },
+            'santa cruz': { nombre: 'Santa Cruz de Aragua', coords: [10.1812, -67.5185], zona: 'turmero', tarifa: 5 },
+
+            // Cagua / Encrucijada ($6.00)
+            'cagua': { nombre: 'Cagua, Aragua', coords: [10.1856, -67.4589], zona: 'cagua', tarifa: 6 },
+            'encrucijada': { nombre: 'La Encrucijada, Cagua', coords: [10.2052, -67.4615], zona: 'cagua', tarifa: 6 },
+            'san mateo': { nombre: 'San Mateo, Aragua', coords: [10.2152, -67.4215], zona: 'cagua', tarifa: 6 },
+            'corinsa': { nombre: 'Corinsa, Cagua', coords: [10.1785, -67.4652], zona: 'cagua', tarifa: 6 },
+            'bella vista': { nombre: 'Bella Vista, Cagua', coords: [10.1912, -67.4485], zona: 'cagua', tarifa: 6 },
+
+            // Lejanas ($8.00)
+            'victoria': { nombre: 'La Victoria, Aragua', coords: [10.2268, -67.3323], zona: 'lejana', tarifa: 8 },
+            'villa de cura': { nombre: 'Villa de Cura, Aragua', coords: [10.0385, -67.4885], zona: 'lejana', tarifa: 8 },
+            'san sebastian': { nombre: 'San Sebastián de los Reyes', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 8 },
+            'san sebastián': { nombre: 'San Sebastián de los Reyes', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 8 },
+            'magdaleno': { nombre: 'Magdaleno, Aragua', coords: [10.1020, -67.6250], zona: 'lejana', tarifa: 8 },
+            'zuata': { nombre: 'Zuata, Aragua', coords: [10.2100, -67.3600], zona: 'lejana', tarifa: 8 },
+            'tejerias': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
+            'tejerías': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
+            'valencia': { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zona: 'lejana', tarifa: 8 },
+            'caracas': { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zona: 'lejana', tarifa: 8 }
+        };
         const CIUDADES_VE = {
             duri: { nombre: 'Sede Inversiones Duri (Maracay Centro)', coords: [10.2502976, -67.5961389], zoom: 17, zona: 'centro', tarifa: 0 },
             maracay: { nombre: 'Maracay Centro (Casco Central / Calicanto)', coords: [10.2469, -67.5958], zoom: 15, zona: 'centro', tarifa: 0 },
@@ -537,31 +635,34 @@
 
             if (zonaForzada) {
                 zonaDetectada = zonaForzada;
+            } else if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
+                // 1. Si hay coordenadas GPS válidas, calcular distancia métrica satelital real
+                const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], parseFloat(lat), parseFloat(lon));
+                if (dKm <= 1.8) zonaDetectada = 'centro';        // Centro de Maracay: GRATIS ($0.00)
+                else if (dKm <= 5.5) zonaDetectada = 'cercanas'; // Zonas Cercanas Maracay: +$2.00
+                else if (dKm <= 9.5) zonaDetectada = 'limon';    // El Limón / MBI: +$3.00
+                else if (dKm <= 16.0) zonaDetectada = 'turmero'; // Turmero / Palo Negro / La Morita: +$5.00
+                else if (dKm <= 23.0) zonaDetectada = 'cagua';   // Cagua / Encrucijada: +$6.00
+                else zonaDetectada = 'lejana';                   // Zonas Lejanas: +$8.00
             } else {
+                // 2. Si es solo texto escrito en el formulario, consultar diccionario exhaustivo de sectores
                 const t = (texto || '').toLowerCase();
-
-                // 1. Detección por nombres de sectores y ciudades de Maracay
-                if (t.includes('victoria') || t.includes('villa de cura') || t.includes('san sebastian') || t.includes('valencia') || t.includes('caracas')) {
-                    zonaDetectada = 'lejana'; // $8.00
-                } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('san mateo')) {
-                    zonaDetectada = 'cagua'; // $6.00
-                } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || t.includes('coropo') || t.includes('guere') || t.includes('güere')) {
-                    zonaDetectada = 'turmero'; // $5.00
-                } else if (t.includes('limon') || t.includes('limón') || t.includes('iragorry') || t.includes('arsenal') || t.includes('candelaria') || t.includes('base sucre')) {
-                    zonaDetectada = 'limon'; // $3.00
-                } else if (t.includes('delicias') || t.includes('san jacinto') || t.includes('piñonal') || t.includes('caña de azucar') || t.includes('azúcar') || t.includes('san jose') || t.includes('josé') || t.includes('coromoto')) {
-                    zonaDetectada = 'cercanas'; // $2.00
-                } else if (t.includes('casco central') || t.includes('calicanto') || t.includes('la floresta') || t.includes('san isidro') || t.includes('parque aragua') || t.includes('bolivar oeste') || t.includes('bolívar oeste')) {
-                    zonaDetectada = 'centro'; // $0.00 Gratis
-                } else if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
-                    // 2. Detección por distancia métrica (coordenadas GPS) desde Sede Duri (Centro de Maracay)
-                    const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], lat, lon);
-                    if (dKm <= 1.8) zonaDetectada = 'centro';        // Centro de Maracay: GRATIS ($0.00)
-                    else if (dKm <= 5.5) zonaDetectada = 'cercanas'; // Zonas Cercanas Maracay: +$2.00
-                    else if (dKm <= 9.5) zonaDetectada = 'limon';    // El Limón / MBI: +$3.00
-                    else if (dKm <= 16.0) zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
-                    else if (dKm <= 23.0) zonaDetectada = 'cagua';   // Cagua / Encrucijada: +$6.00
-                    else zonaDetectada = 'lejana';                   // Zonas Lejanas: +$8.00
+                let matched = false;
+                if (typeof SECTORES_MARACAY !== 'undefined') {
+                    for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
+                        if (t.includes(key)) {
+                            zonaDetectada = sec.zona;
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (!matched) {
+                    if (t.length > 5) {
+                        zonaDetectada = 'otra'; // Tarifa provisional de sector no listado: $3.00
+                    } else {
+                        zonaDetectada = 'centro';
+                    }
                 }
             }
 
@@ -721,8 +822,41 @@
                 }
             }
 
-            // 5. Texto normal (sector, urbanización, ciudad)
-            autoDetectarZonaDelivery(null, null, text);
+            // 5. Texto normal: comprobar contra la base de datos de sectores de Maracay
+            const tLower = text.toLowerCase();
+            let sectorEncontrado = null;
+            if (typeof SECTORES_MARACAY !== 'undefined') {
+                for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
+                    if (tLower.includes(key)) {
+                        sectorEncontrado = sec;
+                        break;
+                    }
+                }
+            }
+
+            const infoSector = document.getElementById('infoSectorDetectado');
+            if (sectorEncontrado) {
+                autoDetectarZonaDelivery(null, null, text, sectorEncontrado.zona);
+                if (infoSector) {
+                    infoSector.style.display = 'flex';
+                    const tarifaStr = sectorEncontrado.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `+$${sectorEncontrado.tarifa.toFixed(2)} USD`;
+                    infoSector.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; font-size:1.05rem;"></i> <span>Sector detectado: <strong>${sectorEncontrado.nombre}</strong> — Tarifa: <strong style="color:#1d4ed8;">${tarifaStr}</strong></span>`;
+                }
+            } else {
+                autoDetectarZonaDelivery(null, null, text);
+                if (infoSector) {
+                    if (text.length > 5) {
+                        infoSector.style.display = 'flex';
+                        const selZona = document.getElementById('selectZonaDelivery');
+                        const opt = selZona ? selZona.options[selZona.selectedIndex] : null;
+                        const costo = opt ? parseFloat(opt.getAttribute('data-costo') || 0) : 3;
+                        const tarifaStr = costo === 0 ? '¡Delivery GRATIS ($0.00)!' : `+$${costo.toFixed(2)} USD`;
+                        infoSector.innerHTML = `<i class="fas fa-map-marker-alt" style="color:#2563eb; font-size:1.05rem;"></i> <span>Ubicación personalizada — Tarifa asignada: <strong style="color:#1d4ed8;">${tarifaStr}</strong> (Toca "Mi GPS Actual" para distancia exacta).</span>`;
+                    } else {
+                        infoSector.style.display = 'none';
+                    }
+                }
+            }
         }
 
         /**
@@ -936,10 +1070,27 @@
             const input = document.getElementById('mapSearchInput');
             if (!input || !input.value.trim()) return;
             const q = input.value.trim();
+            const qLower = q.toLowerCase();
 
-            if (typeof showToast === 'function') showToast('🔍 Buscando "' + q + '" en toda Venezuela...', 'info');
+            // 1. Comprobar al instante en el diccionario local de sectores de Maracay / Aragua (0ms de latencia)
+            if (typeof SECTORES_MARACAY !== 'undefined') {
+                for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
+                    if (qLower.includes(key) || key.includes(qLower)) {
+                        if (gmap) {
+                            gmap.flyTo(sec.coords, 16, { animate: true, duration: 1.0 });
+                            if (gmarker) gmarker.setLatLng(sec.coords);
+                        }
+                        actualizarPuntoSeleccionado(sec.coords[0], sec.coords[1], sec.nombre, sec.zona);
+                        const tarifaTxt = sec.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `Tarifa Delivery: +$${sec.tarifa.toFixed(2)} USD`;
+                        if (typeof showToast === 'function') showToast(`📍 ${sec.nombre} — ${tarifaTxt}`, 'success');
+                        return;
+                    }
+                }
+            }
 
-            // 1. Intentar primero con ", Aragua, Venezuela" para ubicar el sector en Maracay/Aragua
+            if (typeof showToast === 'function') showToast('🔍 Buscando "' + q + '" en Maracay / Aragua...', 'info');
+
+            // 2. Intentar primero con ", Aragua, Venezuela" para ubicar el sector en OSM
             fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ve&q=${encodeURIComponent(q + ', Aragua, Venezuela')}&limit=1`)
                 .then(r => r.json())
                 .then(data => {
@@ -950,12 +1101,12 @@
                             gmap.flyTo([lat, lon], 16, { animate: true, duration: 1.0 });
                             if (gmarker) gmarker.setLatLng([lat, lon]);
                         }
-                        actualizarPuntoSeleccionado(lat, lon);
                         const partes = data[0].display_name.split(',');
-                        const nombreCorto = partes.slice(0, 2).join(',');
+                        const nombreCorto = partes.slice(0, 3).join(',').trim();
+                        actualizarPuntoSeleccionado(lat, lon, nombreCorto);
                         if (typeof showToast === 'function') showToast('📍 Encontrado: ' + nombreCorto, 'success');
                     } else {
-                        // 2. Fallback en toda Venezuela
+                        // 3. Fallback en toda Venezuela
                         fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ve&q=${encodeURIComponent(q + ', Venezuela')}&limit=1`)
                             .then(r2 => r2.json())
                             .then(d2 => {
@@ -966,21 +1117,27 @@
                                         gmap.flyTo([lat2, lon2], 16, { animate: true, duration: 1.0 });
                                         if (gmarker) gmarker.setLatLng([lat2, lon2]);
                                     }
-                                    actualizarPuntoSeleccionado(lat2, lon2);
                                     const partes2 = d2[0].display_name.split(',');
-                                    const nombreCorto2 = partes2.slice(0, 2).join(',');
+                                    const nombreCorto2 = partes2.slice(0, 3).join(',').trim();
+                                    actualizarPuntoSeleccionado(lat2, lon2, nombreCorto2);
                                     if (typeof showToast === 'function') showToast('📍 Encontrado: ' + nombreCorto2, 'success');
                                 } else {
-                                    if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa o usa los botones de sector 📍', 'info');
+                                    // 4. Si no se encontró en OSM, asignar como sector personalizado con tarifa fija para que siempre cobre
+                                    actualizarPuntoSeleccionado(DEFAULT_COORD[0], DEFAULT_COORD[1], q, 'otra');
+                                    if (typeof showToast === 'function') {
+                                        showToast('📍 "' + q + '": Tarifa $3.00 USD asignada. Toca en el mapa donde está tu casa para afinarla.', 'info');
+                                    }
                                 }
                             })
                             .catch(() => {
-                                if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa 📍', 'info');
+                                actualizarPuntoSeleccionado(DEFAULT_COORD[0], DEFAULT_COORD[1], q, 'otra');
+                                if (typeof showToast === 'function') showToast('📍 Tarifa $3.00 USD asignada. Toca en el mapa donde está tu casa.', 'info');
                             });
                     }
                 })
                 .catch(() => {
-                    if (typeof showToast === 'function') showToast('Toca directamente tu casa en el mapa 📍', 'info');
+                    actualizarPuntoSeleccionado(DEFAULT_COORD[0], DEFAULT_COORD[1], q, 'otra');
+                    if (typeof showToast === 'function') showToast('📍 Tarifa $3.00 USD asignada. Toca en el mapa donde está tu casa.', 'info');
                 });
         }
 

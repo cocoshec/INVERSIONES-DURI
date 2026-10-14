@@ -4920,9 +4920,12 @@ function cambiarZonaDelivery() {
                 ? BcvManager.formatBs(BcvManager.toBs(costo)) 
                 : `Bs. ${(costo * 45).toFixed(2)}`;
             badge.style.color = '#2563eb';
-            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa de Delivery a esta zona: <strong>$${costo.toFixed(2)} USD</strong> (${bsCosto})</span>`;
+            const optVal = sel.value;
+            const extraDesc = optVal === 'otra' ? ' (Sector fuera de lista / Estimada por GPS)' : '';
+            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa de Delivery a esta zona: <strong>$${costo.toFixed(2)} USD</strong> (${bsCosto})${extraDesc}</span>`;
         }
     }
+    sincronizarMontosUbicacion();
     updateCart();
 }
 window.cambiarZonaDelivery = cambiarZonaDelivery;
@@ -4941,7 +4944,10 @@ function sincronizarMontosUbicacion() {
     const deliveryCost = obtenerCostoDelivery();
     const selectZona = document.getElementById('selectZonaDelivery');
     const optZona = selectZona ? selectZona.options[selectZona.selectedIndex] : null;
-    const zonaNombre = optZona ? optZona.text.split('—')[0].replace('📍', '').trim() : 'Centro de Maracay';
+    let zonaNombre = 'Centro de Maracay';
+    if (optZona) {
+        zonaNombre = optZona.text.split('—')[0].split('(')[0].replace('📍', '').trim();
+    }
     
     let sum = 0;
     if (typeof cart !== 'undefined' && Array.isArray(cart)) {
