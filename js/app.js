@@ -2637,9 +2637,14 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 
     // 1. Alerta de resumen superior
     const adminNotice = `
-        <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:7px 12px; margin-bottom:12px; font-size:0.78rem; color:#475569; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Este módulo de verificación de pagos y archivo de facturas solo es visible para tu cuenta.</span>
-            <button type="button" onclick="logout()" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:4px; padding:3px 8px; font-size:0.72rem; cursor:pointer;" title="Cerrar sesión de administrador para probar la tienda como cliente normal"><i class="fas fa-sign-out-alt"></i> Salir de Admin</button>
+        <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:8px 14px; margin-bottom:12px; font-size:0.78rem; color:#475569; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Facturación y verificación de compras en tiempo real.</span>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button type="button" onclick="abrirArchivoGeneralFacturas()" style="background:#1e1b4b; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(30,27,75,0.25);" title="Ver libro de todas las facturas y ventas pasadas">
+                    <i class="fas fa-archive" style="color:#f59e0b;"></i> Libro de Facturas
+                </button>
+                <button type="button" onclick="logout()" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:4px; padding:4px 8px; font-size:0.72rem; cursor:pointer;" title="Cerrar sesión de administrador"><i class="fas fa-sign-out-alt"></i> Salir de Admin</button>
+            </div>
         </div>
     `;
 
@@ -2671,7 +2676,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     const searchBarHtml = `
         <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; padding:8px 14px; margin-bottom:12px; display:flex; align-items:center; gap:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
             <i class="fas fa-search" style="color:#64748b; font-size:0.95rem;"></i>
-            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), nombre de cliente, Cédula/RIF o teléfono..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
+            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), factura (ej: FACT-0001), cliente, Cédula o teléfono..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
             ${window._adminOrderSearchQuery ? `
                 <button type="button" onclick="filterAdminOrdersSearch('')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.9rem;" title="Limpiar búsqueda">
                     <i class="fas fa-times-circle"></i>
@@ -2701,6 +2706,8 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         const safeTotal = parseFloat(p.total || 0).toFixed(2);
         const safePhone = (p.cliente_telefono || '').replace(/'/g, "\\'");
         const safeCi = (p.cliente_ci || '').replace(/'/g, "\\'");
+        const cleanNum = (p.codigo || String(p.id)).replace(/[^0-9]/g, '') || String(p.id);
+        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
 
         let actionButtons = '';
         if (canManage) {
@@ -2727,7 +2734,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 
             actionButtons = `
                 ${statusBtn}
-                <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:700;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(79,70,229,0.35);" onclick="abrirModalFacturaAdmin('${safeCode}')" title="Ver, imprimir y descargar factura oficial">
+                <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:700;padding:7px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(79,70,229,0.35);" onclick="abrirModalFacturaAdmin('${safeCode}')" title="Ver, imprimir y descargar factura oficial">
                     <i class="fas fa-file-invoice-dollar"></i> Factura
                 </button>
                 <button class="btn btn-sm" style="background:#dc3545;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" title="Eliminar del historial permanentemente" onclick="eliminarPedidoHistorial(${p.id}, '${p.codigo}')">
@@ -2786,7 +2793,8 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
             <div class="order-row ${isPendiente ? 'order-pending-highlight' : ''}" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:14px; margin-bottom:10px; border:1px solid ${isPendiente ? '#ffc107' : '#eee'}; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.03);">
                 <div class="order-row-info" style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:240px;">
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <strong style="color:var(--dark-brown,#333); font-size:1rem;">${p.codigo} &mdash; ${p.cliente_nombre || 'Cliente'}</strong>
+                        <strong style="color:var(--dark-brown,#333); font-size:1.02rem;">${p.codigo} &mdash; ${p.cliente_nombre || 'Cliente'}</strong>
+                        <span style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-size:0.73rem; font-weight:800; padding:2px 8px; border-radius:6px; font-family:monospace;" title="N° de Factura Oficial">${factNum}</span>
                         ${isPendiente ? '<span style="background:#fffae6; color:#b07800; border:1px solid #ffe58f; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:10px;"><i class="fas fa-hourglass-half"></i> Requiere Verificación</span>' : ''}
                     </div>
                     <span style="font-size:0.83rem; color:var(--dark,#444);">
@@ -3398,6 +3406,9 @@ async function ejecutarAprobacionPago(id, codigo) {
         await actualizarEstadoPedidoDirecto(id, 'procesando', codigo);
         cerrarModalValidacionPago();
         showToast(`¡Pago del pedido ${codigo || ''} aprobado y validado con éxito!`, 'success');
+        
+        // Abrir inmediatamente la ventana con la factura oficial sellada y lista para descargar/imprimir
+        mostrarModalPagoAprobadoConFactura(codigo || id);
     } catch(err) {
         console.error('Error al aprobar pago:', err);
         cerrarModalValidacionPago();
@@ -3405,6 +3416,232 @@ async function ejecutarAprobacionPago(id, codigo) {
     }
 }
 window.ejecutarAprobacionPago = ejecutarAprobacionPago;
+
+// Modal de confirmación al Super Administrador tras aprobar un pago
+function mostrarModalPagoAprobadoConFactura(codigoOrId) {
+    cerrarModalPagoAprobado();
+    const p = findOrderData(codigoOrId);
+    if (!p) return;
+
+    const codigo = p.codigo || String(codigoOrId);
+    const cleanNum = (codigo).replace(/[^0-9]/g, '') || String(p.id || '101');
+    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const totalVal = parseFloat(p.total || 0).toFixed(2);
+    const totalBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(totalVal)));
+
+    const modal = document.createElement('div');
+    modal.id = 'modalPagoAprobadoSuccess';
+    modal.className = 'order-success-modal';
+    modal.innerHTML = `
+        <div class="order-success-card" style="max-width:500px;">
+            <div class="order-success-header" style="background:linear-gradient(135deg, #059669 0%, #047857 100%);">
+                <div class="order-success-icon" style="border:2px solid rgba(255,255,255,0.4);">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <h3 style="margin:0 0 6px 0; font-size:1.35rem; font-weight:800;">¡Pago Validado y Aprobado!</h3>
+                <p style="margin:0; font-size:0.86rem; opacity:0.92;">La compra ha sido confirmada y la factura fue sellada oficialmente.</p>
+            </div>
+            <div class="order-success-body">
+                <div class="order-success-code-box" style="background:#f0fdf4; border-color:#86efac;">
+                    <div style="text-align:left;">
+                        <span style="font-size:0.72rem; color:#15803d; text-transform:uppercase; font-weight:700;">Factura Sellada</span>
+                        <div style="font-size:1.15rem; font-weight:800; color:#14532d; font-family:monospace;">${facturaNum}</div>
+                        <span style="font-size:0.74rem; color:#166534;">Pedido: <b>${codigo}</b></span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:0.72rem; color:#15803d; text-transform:uppercase; font-weight:700;">Monto Validado</span>
+                        <div style="font-size:1.15rem; font-weight:800; color:#15803d;">$${totalVal}</div>
+                        <div style="font-size:0.75rem; color:#166534;">≈ ${totalBs}</div>
+                    </div>
+                </div>
+
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-bottom:18px; text-align:left; font-size:0.82rem; color:#334155; line-height:1.5;">
+                    <div><i class="fas fa-user-check" style="color:#059669;"></i> <b>Cliente:</b> ${p.cliente_nombre || 'Cliente'}</div>
+                    ${p.cliente_ci ? `<div><i class="fas fa-id-card" style="color:#059669;"></i> <b>C.I / RIF:</b> ${p.cliente_ci}</div>` : ''}
+                    <div><i class="fas fa-stamp" style="color:#059669;"></i> <b>Estado:</b> <span style="background:#dcfce7; color:#166534; font-weight:700; padding:1px 8px; border-radius:10px; font-size:0.75rem;">✅ Pago Confirmado</span></div>
+                    <div style="margin-top:4px; font-size:0.75rem; color:#64748b;">
+                        * La factura queda guardada permanentemente en el registro contable del panel.
+                    </div>
+                </div>
+
+                <div class="order-success-buttons">
+                    <button type="button" class="btn btn-primary btn-block btn-lg" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="background:linear-gradient(135deg, #4f46e5, #3730a3); font-weight:700; box-shadow:0 4px 14px rgba(79, 70, 229, 0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fas fa-file-invoice-dollar" style="font-size:1.1rem;"></i> Ver y Descargar Factura Aprobada (PDF)
+                    </button>
+                    <button type="button" class="btn btn-block" onclick="compartirFacturaWhatsApp('${codigo}');" style="background:#25d366; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border:none; border-radius:10px; cursor:pointer;">
+                        <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Enviar Factura al WhatsApp del Cliente
+                    </button>
+                    <button type="button" class="btn btn-block" onclick="cerrarModalPagoAprobado();" style="background:#f1f5f9; color:#475569; font-weight:600; padding:10px; border:1px solid #cbd5e1; border-radius:10px; cursor:pointer; margin-top:4px;">
+                        Continuar en el Panel de Pedidos
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) cerrarModalPagoAprobado();
+    });
+}
+window.mostrarModalPagoAprobadoConFactura = mostrarModalPagoAprobadoConFactura;
+
+function cerrarModalPagoAprobado() {
+    const modal = document.getElementById('modalPagoAprobadoSuccess');
+    if (modal) modal.remove();
+}
+window.cerrarModalPagoAprobado = cerrarModalPagoAprobado;
+
+// Archivo general y libro contable de facturas
+function abrirArchivoGeneralFacturas() {
+    cerrarArchivoGeneralFacturas();
+
+    const pedidos = window._allAdminPedidos || (typeof getLocalOrders === 'function' ? getLocalOrders() : []) || [];
+    const totalFacturas = pedidos.length;
+    let totalUsd = 0;
+    let totalAprobadas = 0;
+    let totalPendientes = 0;
+
+    pedidos.forEach(p => {
+        totalUsd += parseFloat(p.total || 0);
+        if (p.estado === 'procesando' || p.estado === 'completado') totalAprobadas++;
+        else if (p.estado === 'pendiente') totalPendientes++;
+    });
+
+    const totalBs = BcvManager.formatBs(BcvManager.toBs(totalUsd));
+    const rateBsStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
+
+    const rowsHtml = pedidos.length === 0 ? `
+        <tr><td colspan="7" style="text-align:center; padding:25px; color:#64748b;">No hay facturas registradas aún.</td></tr>
+    ` : pedidos.map(p => {
+        const codigo = p.codigo || `PED-${p.id}`;
+        const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
+        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+        const total = parseFloat(p.total || 0).toFixed(2);
+        const montoBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total || 0)));
+        const estado = p.estado || 'pendiente';
+        let badgeColor = '#92400e; background:#fef3c7; border:1px solid #fde68a;';
+        let badgeText = 'Pendiente';
+        if (estado === 'procesando') {
+            badgeColor = '#166534; background:#dcfce7; border:1px solid #bbf7d0;';
+            badgeText = 'Aprobada';
+        } else if (estado === 'completado') {
+            badgeColor = '#075985; background:#e0f2fe; border:1px solid #bae6fd;';
+            badgeText = 'Entregada';
+        } else if (estado === 'cancelado') {
+            badgeColor = '#991b1b; background:#fee2e2; border:1px solid #fecaca;';
+            badgeText = 'Cancelada';
+        }
+
+        let fechaCorta = '';
+        try {
+            const d = p.created_at ? new Date(p.created_at.replace(/-/g, '/')) : new Date();
+            fechaCorta = d.toLocaleDateString('es-VE');
+        } catch(e) {
+            fechaCorta = 'Reciente';
+        }
+
+        return `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:10px; font-weight:800; font-family:monospace; color:#1e1b4b;">${factNum}</td>
+                <td style="padding:10px; color:#475569; font-weight:600;">${codigo}</td>
+                <td style="padding:10px; color:#64748b; font-size:0.78rem;">${fechaCorta}</td>
+                <td style="padding:10px;">
+                    <strong style="color:#0f172a; display:block;">${p.cliente_nombre || 'Cliente'}</strong>
+                    <span style="font-size:0.75rem; color:#64748b;">${p.cliente_ci || 'C.I no reg.'}</span>
+                </td>
+                <td style="padding:10px; text-align:right;">
+                    <strong style="color:#16a34a; font-size:0.95rem;">$${total}</strong>
+                    <span style="display:block; font-size:0.72rem; color:#64748b;">${montoBs}</span>
+                </td>
+                <td style="padding:10px; text-align:center;">
+                    <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:12px; ${badgeColor}">
+                        ${badgeText}
+                    </span>
+                </td>
+                <td style="padding:10px; text-align:center;">
+                    <button type="button" onclick="cerrarArchivoGeneralFacturas(); abrirModalFactura('${codigo}')" style="background:#4f46e5; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(79,70,229,0.3);">
+                        <i class="fas fa-file-invoice"></i> Ver
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'modalArchivoGeneralFacturas';
+    modal.className = 'modal-factura-overlay';
+    modal.innerHTML = `
+        <div class="factura-modal-container" style="max-width:920px;">
+            <div class="factura-actions-bar no-print">
+                <div class="factura-actions-left">
+                    <i class="fas fa-archive" style="color:#f59e0b;"></i>
+                    <strong>Libro de Facturas y Registro Contable &mdash; Inversiones Duri C.A.</strong>
+                </div>
+                <button type="button" class="btn-factura-close" onclick="cerrarArchivoGeneralFacturas()" title="Cerrar">&times;</button>
+            </div>
+            <div style="padding:20px; background:#f8fafc; overflow-y:auto; flex:1;">
+                <!-- Tarjetas de Resumen Contable -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
+                        <span style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase;">Facturas Emitidas</span>
+                        <div style="font-size:1.4rem; font-weight:800; color:#0f172a; margin-top:2px;">${totalFacturas}</div>
+                        <span style="font-size:0.72rem; color:#10b981;">${totalAprobadas} aprobadas · ${totalPendientes} pendientes</span>
+                    </div>
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
+                        <span style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (USD)</span>
+                        <div style="font-size:1.4rem; font-weight:800; color:#2563eb; margin-top:2px;">$${totalUsd.toFixed(2)}</div>
+                        <span style="font-size:0.72rem; color:#64748b;">Monto bruto registrado</span>
+                    </div>
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
+                        <span style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (Bs.)</span>
+                        <div style="font-size:1.15rem; font-weight:800; color:#ea580c; margin-top:4px;">${totalBs}</div>
+                        <span style="font-size:0.72rem; color:#64748b;">Tasa BCV: ${rateBsStr} Bs/$</span>
+                    </div>
+                </div>
+
+                <!-- Tabla del Libro de Facturas -->
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+                    <div style="padding:12px 16px; border-bottom:1px solid #e2e8f0; background:#ffffff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span style="font-weight:700; font-size:0.9rem; color:#0f172a;"><i class="fas fa-list-alt" style="color:#4f46e5;"></i> Historial Completo de Facturas</span>
+                        <span style="font-size:0.78rem; color:#64748b;">Todas las compras y ventas quedan archivadas aquí</span>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.83rem;">
+                            <thead>
+                                <tr style="background:#0f172a; color:#fff; text-align:left;">
+                                    <th style="padding:10px;">N° Factura</th>
+                                    <th style="padding:10px;">Pedido</th>
+                                    <th style="padding:10px;">Fecha</th>
+                                    <th style="padding:10px;">Cliente</th>
+                                    <th style="padding:10px; text-align:right;">Monto</th>
+                                    <th style="padding:10px; text-align:center;">Estado</th>
+                                    <th style="padding:10px; text-align:center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) cerrarArchivoGeneralFacturas();
+    });
+}
+window.abrirArchivoGeneralFacturas = abrirArchivoGeneralFacturas;
+
+function cerrarArchivoGeneralFacturas() {
+    const modal = document.getElementById('modalArchivoGeneralFacturas');
+    if (modal) modal.remove();
+}
+window.cerrarArchivoGeneralFacturas = cerrarArchivoGeneralFacturas;
+
 
 function confirmarCancelarPedido(id, codigo) {
     cerrarModalValidacionPago();
