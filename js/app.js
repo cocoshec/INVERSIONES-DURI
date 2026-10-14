@@ -3990,8 +3990,8 @@ function abrirModalFactura(pedidoOrCode) {
 window.abrirModalFactura = abrirModalFactura;
 
 function descargarFacturaPDF(codigo) {
-    const area = document.getElementById('facturaPrintArea');
-    if (!area) {
+    const originalArea = document.getElementById('facturaPrintArea');
+    if (!originalArea) {
         showToast('No se encontró el documento de la factura', 'error');
         return;
     }
@@ -3999,25 +3999,55 @@ function descargarFacturaPDF(codigo) {
     const filename = `Factura_${cleanCod}.pdf`;
     showToast('Generando archivo PDF oficial...', 'info');
 
-    ensureHtml2Pdf(() => {
-        if (window.html2pdf) {
-            const opt = {
-                margin: [8, 8, 8, 8],
-                filename: filename,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            window.html2pdf().set(opt).from(area).save()
-                .then(() => {
-                    showToast('¡Factura PDF descargada con éxito!');
-                })
-                .catch(err => {
-                    console.error('Error html2pdf, usando fallback nativo de impresión:', err);
-                    window.print();
-                });
-        } else {
+    ensureHtml2Pdf(async () => {
+        if (!window.html2pdf) {
             window.print();
+            return;
+        }
+
+        // Crear clon aislado en el DOM para evitar problemas de scroll o backdrop-filter
+        const tempWrapper = document.createElement('div');
+        tempWrapper.id = 'tempPdfExportWrapper';
+        tempWrapper.style.cssText = 'position:fixed;top:0;left:0;width:760px;background:#ffffff;z-index:99999999;margin:0;padding:24px 28px;box-sizing:border-box;pointer-events:none;';
+
+        const clone = originalArea.cloneNode(true);
+        clone.id = 'facturaPrintClone';
+        clone.style.cssText = 'width:100%;max-width:100%;margin:0;padding:0;border:none;box-shadow:none;background:#ffffff;color:#1e293b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:block;visibility:visible;';
+
+        tempWrapper.appendChild(clone);
+        document.body.appendChild(tempWrapper);
+
+        // Esperar un instante para que el navegador procese los estilos
+        await new Promise(r => setTimeout(r, 150));
+
+        const opt = {
+            margin: [8, 8, 8, 8],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 800,
+                backgroundColor: '#ffffff',
+                logging: false
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        try {
+            await window.html2pdf().set(opt).from(clone).save();
+            showToast('¡Factura PDF descargada con éxito!', 'success');
+        } catch (err) {
+            console.error('Error html2pdf, usando fallback nativo de impresión:', err);
+            window.print();
+        } finally {
+            if (tempWrapper && tempWrapper.parentNode) {
+                tempWrapper.parentNode.removeChild(tempWrapper);
+            }
         }
     });
 }

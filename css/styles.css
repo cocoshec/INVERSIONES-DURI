@@ -2786,7 +2786,6 @@ img { max-width:100%; }
     .factura-actions-bar,
     .btn-factura-act,
     .btn-factura-close,
-    .modal-factura-overlay,
     .navbar,
     .top-bar,
     .footer,
@@ -2794,6 +2793,33 @@ img { max-width:100%; }
     #duribotFloatingBtn,
     .toast {
         display: none !important;
+    }
+
+    .modal-factura-overlay {
+        position: static !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        display: block !important;
+        inset: auto !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    .factura-modal-container {
+        position: static !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: #ffffff !important;
+        display: block !important;
+    }
+
+    .factura-scroll-wrap {
+        overflow: visible !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        display: block !important;
     }
 
     .factura-paper {
