@@ -3697,19 +3697,44 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 // Inversiones Duri C.A.
 // ============================================
 
+function loadPdfLibraries() {
+    return new Promise((resolve) => {
+        const hasCanvas = typeof window.html2canvas === 'function';
+        const hasJsPdf = !!((window.jspdf && window.jspdf.jsPDF) || window.jsPDF);
+        if (hasCanvas && hasJsPdf) return resolve(true);
+
+        let needed = 0;
+        let loaded = 0;
+        const check = () => {
+            loaded++;
+            if (loaded >= needed) {
+                setTimeout(() => resolve(true), 60);
+            }
+        };
+
+        if (!hasCanvas) {
+            needed++;
+            const s1 = document.createElement('script');
+            s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            s1.onload = check;
+            s1.onerror = () => { console.error('Error cargando html2canvas CDN'); check(); };
+            document.head.appendChild(s1);
+        }
+
+        if (!hasJsPdf) {
+            needed++;
+            const s2 = document.createElement('script');
+            s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            s2.onload = check;
+            s2.onerror = () => { console.error('Error cargando jsPDF CDN'); check(); };
+            document.head.appendChild(s2);
+        }
+
+        if (needed === 0) resolve(true);
+    });
+}
 function ensureHtml2Pdf(callback) {
-    if (window.html2pdf) {
-        if (callback) callback();
-        return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    script.onload = () => { if (callback) callback(); };
-    script.onerror = () => {
-        console.warn('html2pdf no se pudo cargar desde CDN. Se usará el diálogo nativo de impresión.');
-        if (callback) callback();
-    };
-    document.head.appendChild(script);
+    loadPdfLibraries().then(() => { if (callback) callback(); });
 }
 
 function findOrderData(codigoOrId) {
@@ -3989,7 +4014,7 @@ function abrirModalFactura(pedidoOrCode) {
 }
 window.abrirModalFactura = abrirModalFactura;
 
-function descargarFacturaPDF(codigo) {
+async function descargarFacturaPDF(codigo) {
     const originalArea = document.getElementById('facturaPrintArea');
     if (!originalArea) {
         showToast('No se encontró el documento de la factura', 'error');
@@ -3999,57 +4024,83 @@ function descargarFacturaPDF(codigo) {
     const filename = `Factura_${cleanCod}.pdf`;
     showToast('Generando archivo PDF oficial...', 'info');
 
-    ensureHtml2Pdf(async () => {
-        if (!window.html2pdf) {
-            window.print();
-            return;
+    await loadPdfLibraries();
+
+    const JsPdfConstructor = (window.jspdf && window.jspdf.jsPDF) 
+        ? window.jspdf.jsPDF 
+        : (window.jsPDF || window.jspdf);
+
+    if (!window.html2canvas || !JsPdfConstructor) {
+        console.warn('Librerías PDF no disponibles, recurriendo a diálogo de impresión');
+        window.print();
+        return;
+    }
+
+    try {
+        // Aseguramos que el contenedor de la factura esté en la parte superior antes de capturar
+        const scrollWrap = originalArea.closest('.factura-scroll-wrap');
+        const prevScroll = scrollWrap ? scrollWrap.scrollTop : 0;
+        if (scrollWrap) scrollWrap.scrollTop = 0;
+
+        // Esperar un instante para que cualquier repintado o renderizado concluya
+        await new Promise(r => setTimeout(r, 80));
+
+        const canvas = await window.html2canvas(originalArea, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff',
+            logging: false,
+            scrollX: 0,
+            scrollY: 0
+        });
+
+        if (scrollWrap) scrollWrap.scrollTop = prevScroll;
+
+        if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            throw new Error('Canvas vacío');
         }
 
-        // Crear clon aislado en el DOM para evitar problemas de scroll o backdrop-filter
-        const tempWrapper = document.createElement('div');
-        tempWrapper.id = 'tempPdfExportWrapper';
-        tempWrapper.style.cssText = 'position:fixed;top:0;left:0;width:760px;background:#ffffff;z-index:99999999;margin:0;padding:24px 28px;box-sizing:border-box;pointer-events:none;';
+        const imgData = canvas.toDataURL('image/jpeg', 0.96);
+        const pdf = new JsPdfConstructor({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
 
-        const clone = originalArea.cloneNode(true);
-        clone.id = 'facturaPrintClone';
-        clone.style.cssText = 'width:100%;max-width:100%;margin:0;padding:0;border:none;box-shadow:none;background:#ffffff;color:#1e293b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:block;visibility:visible;';
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 8;
+        const printWidth = pageWidth - (margin * 2);
+        const printHeight = (canvas.height * printWidth) / canvas.width;
+        const maxContentHeight = pageHeight - (margin * 2);
 
-        tempWrapper.appendChild(clone);
-        document.body.appendChild(tempWrapper);
+        if (printHeight <= maxContentHeight) {
+            pdf.addImage(imgData, 'JPEG', margin, margin, printWidth, printHeight);
+        } else {
+            // Manejo automático de páginas si el contenido excede 1 página A4
+            let heightLeft = printHeight;
+            let position = margin;
 
-        // Esperar un instante para que el navegador procese los estilos
-        await new Promise(r => setTimeout(r, 150));
+            pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight);
+            heightLeft -= maxContentHeight;
 
-        const opt = {
-            margin: [8, 8, 8, 8],
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: 800,
-                backgroundColor: '#ffffff',
-                logging: false
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
-
-        try {
-            await window.html2pdf().set(opt).from(clone).save();
-            showToast('¡Factura PDF descargada con éxito!', 'success');
-        } catch (err) {
-            console.error('Error html2pdf, usando fallback nativo de impresión:', err);
-            window.print();
-        } finally {
-            if (tempWrapper && tempWrapper.parentNode) {
-                tempWrapper.parentNode.removeChild(tempWrapper);
+            while (heightLeft > 0) {
+                position = margin - (printHeight - heightLeft);
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight);
+                heightLeft -= maxContentHeight;
             }
         }
-    });
+
+        pdf.save(filename);
+        showToast('¡Factura PDF descargada con éxito!', 'success');
+
+    } catch (err) {
+        console.error('Error generando PDF con html2canvas:', err);
+        showToast('Abriendo ventana de impresión para guardar PDF...', 'info');
+        window.print();
+    }
 }
 window.descargarFacturaPDF = descargarFacturaPDF;
 
