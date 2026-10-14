@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=28.0">
+    <link rel="stylesheet" href="../css/styles.css?v=30.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -98,8 +98,59 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label><i class="fas fa-map-marker-alt"></i> Dirección de Entrega <span style="color:#dc3545">*</span></label>
+                        <!-- Selector de Modalidad de Entrega (Retiro en Tienda o Delivery) -->
+                        <div class="form-group" style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:16px;">
+                            <label style="font-size:0.92rem; font-weight:700; color:#0f172a; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-truck-moving" style="color:#ff6600;"></i> Modalidad de Entrega <span style="color:#dc3545">*</span>
+                            </label>
+                            
+                            <!-- Opciones tipo Card interactiva -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+                                <div id="btnModalidadRetiro" onclick="seleccionarModalidadEntrega('retiro')" style="border:2px solid #ff6600; background:#fff7ed; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
+                                    <i class="fas fa-store" style="font-size:1.4rem; color:#ff6600;"></i>
+                                    <strong style="font-size:0.86rem; color:#0f172a;">Retiro en Local</strong>
+                                    <span style="font-size:0.75rem; color:#059669; font-weight:700; background:#ecfdf5; padding:2px 8px; border-radius:10px;">¡GRATIS ($0.00)!</span>
+                                </div>
+                                
+                                <div id="btnModalidadDelivery" onclick="seleccionarModalidadEntrega('delivery')" style="border:2px solid #cbd5e1; background:#ffffff; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
+                                    <i class="fas fa-motorcycle" style="font-size:1.4rem; color:#64748b;"></i>
+                                    <strong style="font-size:0.86rem; color:#0f172a;">Delivery a Domicilio</strong>
+                                    <span style="font-size:0.75rem; color:#64748b; font-weight:600;">Centro Gratis / Foráneo</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="modalidadEntrega" value="retiro">
+                            <input type="hidden" id="costoDeliveryActual" value="0">
+
+                            <!-- Tarjeta informativa de Retiro en Sede -->
+                            <div id="infoRetiroLocal" style="background:#ffffff; border:1px solid #fed7aa; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#9a3412; display:flex; align-items:flex-start; gap:8px;">
+                                <i class="fas fa-map-marker-alt" style="color:#ea580c; font-size:1.1rem; margin-top:2px; flex-shrink:0;"></i>
+                                <div style="line-height:1.4;">
+                                    <strong>Retiro en Tienda:</strong> Sede Comercial Inversiones Duri (Av. Bolívar Oeste, Maracay). Sin costo adicional. Te notificaremos al estar listo para retirar.
+                                </div>
+                            </div>
+
+                            <!-- Selector de Zonas de Delivery -->
+                            <div id="seccionDeliveryOpciones" style="display:none; margin-top:10px;">
+                                <label style="font-size:0.84rem; font-weight:700; color:#334155; margin-bottom:6px; display:block;">
+                                    <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona de Entrega:
+                                </label>
+                                <select id="selectZonaDelivery" onchange="cambiarZonaDelivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
+                                    <option value="centro" data-costo="0" selected>📍 Centro de Maracay (Casco Central, Calicanto, La Floresta, San Isidro) — ¡GRATIS ($0.00)!</option>
+                                    <option value="cercanas" data-costo="2">📍 Zonas Urbanas Cercanas (Las Delicias, San Jacinto, Piñonal, San José, Caña de Azúcar) — +$2.00 USD</option>
+                                    <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre) — +$3.00 USD</option>
+                                    <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / Coropo / Samán de Güere — +$5.00 USD</option>
+                                    <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo — +$6.00 USD</option>
+                                    <option value="lejana" data-costo="8">📍 La Victoria / Villa de Cura / San Sebastián / Otras Zonas Lejanas — +$8.00 USD</option>
+                                </select>
+                                <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contenedor de Dirección de Entrega (Se activa al elegir Delivery) -->
+                        <div id="contenedorDireccionDespacho" style="display:none;" class="form-group">
+                            <label><i class="fas fa-map-marker-alt"></i> Dirección Exacta de Despacho <span style="color:#dc3545">*</span></label>
                             
                             <!-- Botones adaptados para móvil -->
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
@@ -136,7 +187,7 @@
                                 </div>
                             </div>
 
-                            <textarea id="deliveryAddress" rows="2" placeholder="Describe tu dirección (Sector, calle, casa/apto y punto de referencia)..." required></textarea>
+                            <textarea id="deliveryAddress" rows="2" placeholder="Describe tu dirección (Sector, calle, casa/apto y punto de referencia)..."></textarea>
                             <div style="font-size:0.74rem; color:#6c757d; margin-top:4px; display:flex; align-items:center; gap:5px;">
                                 <i class="fas fa-info-circle" style="color:#17a2b8;"></i> <span>Puedes escribir tu dirección o pegar aquí un enlace de Google Maps / coordenadas.</span>
                             </div>
@@ -163,8 +214,25 @@
                             <span>Selecciona un producto para agregar</span>
                         </div>
                     </div>
+                    
+                    <!-- Desglose Completo de Totales -->
+                    <div id="cartBreakdownWrap" style="border-top:1.5px solid #e2e8f0; padding-top:12px; margin-top:12px; font-size:0.85rem; color:#475569;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>Subtotal Productos:</span>
+                            <strong id="cartSubtotal">$0.00</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>IVA (16%):</span>
+                            <strong id="cartIva">$0.00</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#0284c7; font-weight:700;">
+                            <span id="labelDeliveryResumen"><i class="fas fa-store"></i> Retiro en Local:</span>
+                            <strong id="costoDeliveryResumen" style="color:#059669;">¡GRATIS ($0.00)!</strong>
+                        </div>
+                    </div>
+
                     <div class="order-total-row">
-                        <span>Total (IVA incluido):</span>
+                        <span>TOTAL A PAGAR:</span>
                         <strong id="orderTotal">$0.00</strong>
                     </div>
                     <button class="btn btn-primary btn-block btn-lg" onclick="submitOrder()" id="submitBtn" disabled>
@@ -193,7 +261,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=29.0"></script>
+    <script src="../js/app.js?v=30.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {

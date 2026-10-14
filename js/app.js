@@ -3825,17 +3825,25 @@ function abrirModalFactura(pedidoOrCode) {
 
     // Cálculo y desglose monetario dual
     const totalVal = parseFloat(p.total || 0);
-    let subtotalVal = p.subtotal ? parseFloat(p.subtotal) : (totalVal / 1.16);
-    let ivaVal = p.impuesto ? parseFloat(p.impuesto) : (totalVal - subtotalVal);
+    let deliveryVal = p.delivery_cost ? parseFloat(p.delivery_cost) : (p.costo_delivery ? parseFloat(p.costo_delivery) : 0);
+    if (deliveryVal === 0 && p.direccion_entrega && p.direccion_entrega.includes('Tarifa: $')) {
+        const m = p.direccion_entrega.match(/Tarifa:\s*\$([0-9\.]+)/);
+        if (m) deliveryVal = parseFloat(m[1]);
+    }
+    const hasDelivery = deliveryVal > 0 || (p.direccion_entrega && p.direccion_entrega.includes('[DELIVERY'));
 
-    if (isNaN(subtotalVal) || subtotalVal <= 0) subtotalVal = totalVal / 1.16;
-    if (isNaN(ivaVal)) ivaVal = totalVal - subtotalVal;
+    let subtotalVal = p.subtotal ? parseFloat(p.subtotal) : ((totalVal - deliveryVal) / 1.16);
+    let ivaVal = p.impuesto ? parseFloat(p.impuesto) : ((totalVal - deliveryVal) - subtotalVal);
+
+    if (isNaN(subtotalVal) || subtotalVal <= 0) subtotalVal = (totalVal - deliveryVal) / 1.16;
+    if (isNaN(ivaVal) || ivaVal < 0) ivaVal = (totalVal - deliveryVal) - subtotalVal;
 
     const rateBs = BcvManager.rate || 45.00;
     const rateBsStr = BcvManager.formatBs(rateBs).replace('Bs. ', '');
     const totalBsStr = BcvManager.formatBs(BcvManager.toBs(totalVal));
     const subtotalBsStr = BcvManager.formatBs(BcvManager.toBs(subtotalVal));
     const ivaBsStr = BcvManager.formatBs(BcvManager.toBs(ivaVal));
+    const deliveryBsStr = BcvManager.formatBs(BcvManager.toBs(deliveryVal));
 
     // Tabla de productos
     const prods = (p.productos && p.productos.length) ? p.productos : (p.detalles || []);
@@ -3963,7 +3971,6 @@ function abrirModalFactura(pedidoOrCode) {
 
                     <!-- Caja de Totales y Moneda Dual -->
                     <div class="factura-totals-wrap">
-                        <div class="factura-totals-box">
                             <div class="factura-total-row">
                                 <span>Subtotal Base:</span>
                                 <strong>$${subtotalVal.toFixed(2)} <small style="color:#64748b;">(${subtotalBsStr})</small></strong>
@@ -3971,6 +3978,10 @@ function abrirModalFactura(pedidoOrCode) {
                             <div class="factura-total-row">
                                 <span>IVA (16%):</span>
                                 <strong>$${ivaVal.toFixed(2)} <small style="color:#64748b;">(${ivaBsStr})</small></strong>
+                            </div>
+                            <div class="factura-total-row" style="color:${hasDelivery && deliveryVal > 0 ? '#0284c7' : '#059669'};">
+                                <span>${hasDelivery ? 'Servicio de Delivery:' : 'Modalidad de Entrega:'}</span>
+                                <strong>${hasDelivery ? (deliveryVal > 0 ? `+$${deliveryVal.toFixed(2)}` : '¡GRATIS ($0.00)!') : 'Retiro en Local'} <small style="color:#64748b;">(${hasDelivery ? (deliveryVal > 0 ? deliveryBsStr : 'Bs. 0,00') : 'Gratis'})</small></strong>
                             </div>
                             <div class="factura-total-row grand-total">
                                 <span>TOTAL A PAGAR:</span>
@@ -4831,11 +4842,109 @@ function updateQty(i, d) {
     else { saveCart(); updateCart(); }
 }
 
+// ============================================
+// GESTIÓN DE MODALIDAD DE ENTREGA Y DELIVERY
+// ============================================
+
+function seleccionarModalidadEntrega(tipo) {
+    const inputMod = document.getElementById('modalidadEntrega');
+    const btnRetiro = document.getElementById('btnModalidadRetiro');
+    const btnDelivery = document.getElementById('btnModalidadDelivery');
+    const infoRetiro = document.getElementById('infoRetiroLocal');
+    const seccionDelivery = document.getElementById('seccionDeliveryOpciones');
+    const contDireccion = document.getElementById('contenedorDireccionDespacho');
+    const inputAddr = document.getElementById('deliveryAddress');
+
+    if (inputMod) inputMod.value = tipo;
+
+    if (tipo === 'retiro') {
+        if (btnRetiro) {
+            btnRetiro.style.borderColor = '#ff6600';
+            btnRetiro.style.background = '#fff7ed';
+            const icon = btnRetiro.querySelector('i');
+            if (icon) icon.style.color = '#ff6600';
+        }
+        if (btnDelivery) {
+            btnDelivery.style.borderColor = '#cbd5e1';
+            btnDelivery.style.background = '#ffffff';
+            const icon = btnDelivery.querySelector('i');
+            if (icon) icon.style.color = '#64748b';
+        }
+        if (infoRetiro) infoRetiro.style.display = 'flex';
+        if (seccionDelivery) seccionDelivery.style.display = 'none';
+        if (contDireccion) contDireccion.style.display = 'none';
+        if (inputAddr) inputAddr.required = false;
+
+        const costoInput = document.getElementById('costoDeliveryActual');
+        if (costoInput) costoInput.value = '0';
+    } else {
+        if (btnDelivery) {
+            btnDelivery.style.borderColor = '#ff6600';
+            btnDelivery.style.background = '#fff7ed';
+            const icon = btnDelivery.querySelector('i');
+            if (icon) icon.style.color = '#ff6600';
+        }
+        if (btnRetiro) {
+            btnRetiro.style.borderColor = '#cbd5e1';
+            btnRetiro.style.background = '#ffffff';
+            const icon = btnRetiro.querySelector('i');
+            if (icon) icon.style.color = '#64748b';
+        }
+        if (infoRetiro) infoRetiro.style.display = 'none';
+        if (seccionDelivery) seccionDelivery.style.display = 'block';
+        if (contDireccion) contDireccion.style.display = 'block';
+        if (inputAddr) inputAddr.required = true;
+
+        cambiarZonaDelivery();
+    }
+    updateCart();
+}
+window.seleccionarModalidadEntrega = seleccionarModalidadEntrega;
+
+function cambiarZonaDelivery() {
+    const sel = document.getElementById('selectZonaDelivery');
+    const costoInput = document.getElementById('costoDeliveryActual');
+    const badge = document.getElementById('badgeTarifaDelivery');
+    if (!sel) return;
+
+    const opt = sel.options[sel.selectedIndex];
+    const costo = opt ? parseFloat(opt.getAttribute('data-costo') || 0) : 0;
+    if (costoInput) costoInput.value = String(costo);
+
+    if (badge) {
+        if (costo === 0) {
+            badge.style.color = '#059669';
+            badge.innerHTML = '<i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>';
+        } else {
+            const bsCosto = (typeof BcvManager !== 'undefined' && BcvManager.rate) 
+                ? BcvManager.formatBs(BcvManager.toBs(costo)) 
+                : `Bs. ${(costo * 45).toFixed(2)}`;
+            badge.style.color = '#2563eb';
+            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa de Delivery a esta zona: <strong>$${costo.toFixed(2)} USD</strong> (${bsCosto})</span>`;
+        }
+    }
+    updateCart();
+}
+window.cambiarZonaDelivery = cambiarZonaDelivery;
+
+function obtenerCostoDelivery() {
+    const inputMod = document.getElementById('modalidadEntrega');
+    if (!inputMod || inputMod.value === 'retiro') return 0;
+    const costoInput = document.getElementById('costoDeliveryActual');
+    return costoInput ? parseFloat(costoInput.value || 0) : 0;
+}
+window.obtenerCostoDelivery = obtenerCostoDelivery;
+
 function updateCart() {
     const items = document.getElementById('orderItems');
     const total = document.getElementById('orderTotal');
     const btn = document.getElementById('submitBtn');
     const btnForm = document.getElementById('submitBtnForm');
+    
+    const elSubtotal = document.getElementById('cartSubtotal');
+    const elIva = document.getElementById('cartIva');
+    const elDeliveryLabel = document.getElementById('labelDeliveryResumen');
+    const elDeliveryCost = document.getElementById('costoDeliveryResumen');
     
     // Actualizar carrito flotante siempre
     try { updateFloatingCart(); } catch(e) {}
@@ -4844,6 +4953,9 @@ function updateCart() {
     if (!cart.length) {
         items.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-basket"></i><p>Tu pedido está vacío</p></div>';
         if (total) total.textContent = '$0.00';
+        if (elSubtotal) elSubtotal.textContent = '$0.00';
+        if (elIva) elIva.textContent = '$0.00';
+        if (elDeliveryCost) elDeliveryCost.textContent = '$0.00';
         if (btn) btn.disabled = true;
         if (btnForm) btnForm.disabled = true;
         return;
@@ -4867,9 +4979,37 @@ function updateCart() {
         </div>`;
     });
     items.innerHTML = html;
+
+    const subtotal = sum;
+    const iva = subtotal * 0.16;
+    const deliveryCost = obtenerCostoDelivery();
+    const grandTotal = subtotal + iva + deliveryCost;
+
+    const inputMod = document.getElementById('modalidadEntrega');
+    const isRetiro = !inputMod || inputMod.value === 'retiro';
+
+    if (elSubtotal) elSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+    if (elIva) elIva.textContent = `$${iva.toFixed(2)}`;
+    
+    if (elDeliveryLabel) {
+        elDeliveryLabel.innerHTML = isRetiro 
+            ? '<i class="fas fa-store"></i> Retiro en Local:' 
+            : '<i class="fas fa-motorcycle"></i> Costo de Delivery:';
+    }
+    if (elDeliveryCost) {
+        if (isRetiro || deliveryCost === 0) {
+            elDeliveryCost.style.color = '#059669';
+            elDeliveryCost.textContent = '¡GRATIS ($0.00)!';
+        } else {
+            const bsDel = BcvManager.formatBs(BcvManager.toBs(deliveryCost));
+            elDeliveryCost.style.color = '#2563eb';
+            elDeliveryCost.innerHTML = `+$${deliveryCost.toFixed(2)} <small style="font-size:0.72rem;font-weight:normal;color:#64748b;">(${bsDel})</small>`;
+        }
+    }
+
     if (total) {
-        const bsSum = BcvManager.formatBs(BcvManager.toBs(sum));
-        total.innerHTML = `<span>$${sum.toFixed(2)}</span> <small style="font-size:0.85rem;color:#64748b;font-weight:600;display:block;">(≈ ${bsSum})</small>`;
+        const bsSum = BcvManager.formatBs(BcvManager.toBs(grandTotal));
+        total.innerHTML = `<span>$${grandTotal.toFixed(2)}</span> <small style="font-size:0.85rem;color:#64748b;font-weight:600;display:block;">(≈ ${bsSum})</small>`;
     }
     if (btn) btn.disabled = false;
     if (btnForm) btnForm.disabled = false;
@@ -4884,10 +5024,20 @@ async function submitOrder() {
     const newCi = document.getElementById('newClientCi');
     const newEmail = document.getElementById('newClientEmail');
     const newPhone = document.getElementById('newClientPhone');
+
+    const inputMod = document.getElementById('modalidadEntrega');
+    const isDelivery = inputMod && inputMod.value === 'delivery';
+    const selectZona = document.getElementById('selectZonaDelivery');
+    const deliveryCost = obtenerCostoDelivery();
     
     if (!clientSelect || !clientSelect.value) { showToast('Selecciona o escribe tu nombre', 'error'); return; }
     if (!cart.length) { showToast('Agrega productos al pedido', 'error'); return; }
-    if (address && address.value && address.value.length < 10) { showToast('Dirección muy corta', 'error'); return; }
+    
+    if (isDelivery && (!address || !address.value || address.value.trim().length < 8)) {
+        showToast('Por favor escribe tu dirección exacta para realizar el delivery', 'error');
+        if (address) address.focus();
+        return;
+    }
     
     if (!newName || !newName.value.trim()) { showToast('Por favor escribe tu nombre completo', 'error'); return; }
     if (!newCi || !newCi.value.trim()) { showToast('Por favor ingresa tu número de Cédula o RIF', 'error'); return; }
@@ -4906,18 +5056,28 @@ async function submitOrder() {
     const geoInput = document.getElementById('geoCoords');
     const geoCoords = geoInput ? geoInput.value.trim() : '';
     let mapsLink = '';
-    let fullDeliveryAddress = addr;
 
-    if (geoCoords) {
-        mapsLink = `https://maps.google.com/?q=${geoCoords}`;
-        fullDeliveryAddress = addr ? `${addr} | GPS: ${mapsLink}` : `GPS: ${mapsLink}`;
+    let deliveryZoneLabel = 'Retiro en Local';
+    let fullDeliveryAddress = 'Retiro en Sede Comercial Inversiones Duri (Av. Bolívar Oeste, Maracay)';
+
+    if (isDelivery) {
+        const zonaOpt = selectZona ? selectZona.options[selectZona.selectedIndex] : null;
+        deliveryZoneLabel = zonaOpt ? zonaOpt.text.split('—')[0].replace('📍', '').trim() : 'Delivery a Domicilio';
+        if (geoCoords) {
+            mapsLink = `https://maps.google.com/?q=${geoCoords}`;
+            fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr} | GPS: ${mapsLink}`;
+        } else {
+            fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr}`;
+        }
+    } else {
+        fullDeliveryAddress = 'Retiro en Sede Comercial Inversiones Duri (Av. Bolívar Oeste, Maracay)';
     }
     
-    // Calcular total
+    // Calcular total incluyendo delivery
     let subtotal = 0;
     cart.forEach(it => { subtotal += it.price * it.qty; });
     const iva = subtotal * 0.16;
-    const total = subtotal + iva;
+    const total = subtotal + iva + deliveryCost;
     const totalBs = BcvManager.formatBs(BcvManager.toBs(total));
     const rateBsStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
     
@@ -4928,13 +5088,20 @@ async function submitOrder() {
         prodLines += `📦 ${it.name} x${it.qty} — $${(it.price * it.qty).toFixed(2)} (${itemBs})\n`;
     });
     
+    const deliveryMsgLine = isDelivery 
+        ? `🛵 Entrega: Delivery (${deliveryZoneLabel}) — ${deliveryCost === 0 ? '¡GRATIS ($0.00)!' : `+$${deliveryCost.toFixed(2)} USD`}`
+        : `🏪 Entrega: Retiro en Sede Comercial — ¡GRATIS ($0.00)!`;
+
     // Mensaje predeterminado con Cédula, tasa BCV y Link de Google Maps
-    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}${clientEmail ? `\n📧 Correo: ${clientEmail}` : ''}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n\n🔥 TOTAL: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección: ${addr || 'Por confirmar'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
+    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}${clientEmail ? `\n📧 Correo: ${clientEmail}` : ''}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n${deliveryMsgLine}\n\n🔥 TOTAL A PAGAR: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección / Entrega: ${isDelivery ? (addr || 'Por confirmar') : 'Retiro en Tienda Inversiones Duri'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
     
     // Guardar datos temporalmente para el modal
     window._pendingOrder = {
         cliente_id: clientSelect.value,
         direccion_entrega: fullDeliveryAddress,
+        modalidad_entrega: isDelivery ? 'delivery' : 'retiro',
+        delivery_cost: deliveryCost,
+        zona_delivery: deliveryZoneLabel,
         notas: notes ? notes.value : '',
         forma_pago: payment ? payment.value : 'pago_movil',
         productos: cart.map(it => ({ producto_id: it.id, cantidad: it.qty, precio_unitario: it.price, nombre: it.name })),
@@ -4946,14 +5113,15 @@ async function submitOrder() {
         msg,
         subtotal,
         iva,
+        deliveryCost,
         total
     };
     
     // Mostrar modal de confirmación
-    showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, clientEmail, paymentLabel, addr, mapsLink, msg);
+    showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, clientEmail, paymentLabel, fullDeliveryAddress, mapsLink, msg, isDelivery, deliveryCost, deliveryZoneLabel);
 }
 
-function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, clientEmail, paymentLabel, addr, mapsLink, msg) {
+function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi, clientPhone, clientEmail, paymentLabel, addr, mapsLink, msg, isDelivery = false, deliveryCost = 0, deliveryZoneLabel = 'Retiro en Local') {
     // Remover modal anterior si existe
     const old = document.getElementById('confirmModal');
     if (old) old.remove();
@@ -5039,13 +5207,17 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
                 </div>
 
                 <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:0.88rem;border-bottom:1px solid #eee">
-                    <span>Subtotal</span><span>$${subtotal.toFixed(2)} <small style="color:#64748b;">(${subtotalBs})</small></span>
+                    <span>Subtotal Productos</span><span>$${subtotal.toFixed(2)} <small style="color:#64748b;">(${subtotalBs})</small></span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:0.88rem;border-bottom:1px solid #eee">
                     <span>IVA (16%)</span><span>$${iva.toFixed(2)} <small style="color:#64748b;">(${ivaBs})</small></span>
                 </div>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:0.88rem;border-bottom:1px solid #eee;color:#0284c7;font-weight:600;">
+                    <span><i class="${isDelivery ? 'fas fa-motorcycle' : 'fas fa-store'}"></i> ${isDelivery ? `Delivery (${deliveryZoneLabel})` : 'Retiro en Local'}:</span>
+                    <span style="color:${(isDelivery && deliveryCost > 0) ? '#2563eb' : '#059669'};">${deliveryCost === 0 ? '¡GRATIS ($0.00)!' : `+$${deliveryCost.toFixed(2)} USD`}</span>
+                </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:1.2rem;font-weight:700;color:var(--accent,#FF6600)">
-                    <span>TOTAL</span>
+                    <span>TOTAL A PAGAR</span>
                     <div style="text-align:right;">
                         <div>$${total.toFixed(2)} USD</div>
                         <div style="font-size:0.85rem;color:#64748b;font-weight:600;">≈ ${totalBs}</div>
@@ -5056,7 +5228,7 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
 
                 <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:0.84rem;color:#555;background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0;">
                     <div><i class="fas fa-credit-card"></i> <strong>Forma de Pago:</strong> ${paymentLabel}</div>
-                    <div><i class="fas fa-map-marker-alt"></i> <strong>Entrega:</strong> ${addr || 'Por confirmar'}</div>
+                    <div><i class="fas fa-truck"></i> <strong>Entrega:</strong> ${addr || 'Retiro en Sede Comercial'}</div>
                     ${mapsLink ? `<div><i class="fas fa-map-marked-alt" style="color:#28a745;"></i> <a href="${mapsLink}" target="_blank" style="color:#28a745;font-weight:600;text-decoration:underline;">Ver punto GPS en Google Maps</a></div>` : ''}
                 </div>
                 <div style="margin-top:14px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:10px;padding:12px;font-size:0.82rem;line-height:1.6;color:#2e7d32">
