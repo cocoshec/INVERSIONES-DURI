@@ -179,6 +179,7 @@
                                     <div>
                                         <strong>¡Ubicación fijada con éxito!</strong>
                                         <span id="ubicacionConfirmadaCoords" style="display:block; font-size:0.75rem; color:#555;"></span>
+                                        <span id="ubicacionConfirmadaPrecio" style="display:block; font-size:0.8rem; font-weight:700; color:#1e40af; margin-top:2px;"></span>
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:8px; align-items:center;">
@@ -189,10 +190,38 @@
 
                             <textarea id="deliveryAddress" rows="2" placeholder="Describe tu dirección (Sector, calle, casa/apto y punto de referencia)..."></textarea>
                             <div style="font-size:0.74rem; color:#6c757d; margin-top:4px; display:flex; align-items:center; gap:5px;">
-                                <i class="fas fa-info-circle" style="color:#17a2b8;"></i> <span>Puedes escribir tu dirección o pegar aquí un enlace de Google Maps / coordenadas.</span>
+                                <i class="fas fa-info-circle" style="color:#17a2b8;"></i> <span>Puedes escribir tu dirección o marcar tu ubicación en Google Maps.</span>
                             </div>
                             <input type="hidden" id="geoCoords" value="">
                         </div>
+
+                        <!-- Tarjeta de Cobro / Total a Pagar para esta Ubicación (SIEMPRE VISIBLE) -->
+                        <div id="cajaPagoUbicacion" style="margin-top:10px; margin-bottom:14px; background:linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border:1.5px solid #bfdbfe; border-radius:12px; padding:12px 14px; box-shadow:0 3px 10px rgba(37,99,235,0.08);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:4px;">
+                                <span style="font-size:0.82rem; font-weight:800; color:#1e3a8a; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-receipt" style="color:#2563eb;"></i> Resumen de Pago para esta Entrega
+                                </span>
+                                <span id="badgeZonaUbicacion" style="font-size:0.75rem; font-weight:700; background:#dbeafe; color:#1e40af; padding:3px 9px; border-radius:12px;">
+                                    Retiro en Local (Gratis)
+                                </span>
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:0.8rem; color:#475569; margin-bottom:8px; border-bottom:1px dashed #cbd5e1; padding-bottom:8px;">
+                                <div>🛵 <strong>Delivery a tu ubicación:</strong></div>
+                                <div id="montoDeliveryUbicacion" style="text-align:right; font-weight:700; color:#059669;">¡GRATIS ($0.00)!</div>
+                                <div>📦 <strong>Total Productos + IVA:</strong></div>
+                                <div id="montoProductosUbicacion" style="text-align:right; font-weight:700; color:#334155;">$0.00</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                                <div>
+                                    <div style="font-size:0.78rem; font-weight:800; color:#0f172a; text-transform:uppercase;">TOTAL A PAGAR:</div>
+                                    <div id="totalBsUbicacion" style="font-size:0.78rem; color:#64748b; font-weight:600;">(≈ Bs. 0.00 a tasa BCV)</div>
+                                </div>
+                                <div id="totalUsdUbicacion" style="font-size:1.35rem; font-weight:900; color:#2563eb;">
+                                    $0.00 USD
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label><i class="fas fa-sticky-note"></i> Notas</label>
                             <textarea id="orderNotes" rows="2" placeholder="Instrucciones especiales..."></textarea>
@@ -261,7 +290,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=30.0"></script>
+    <script src="../js/app.js?v=31.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -490,6 +519,57 @@
             setTimeout(() => { if (gmap) gmap.invalidateSize(); }, 250);
         }
 
+        function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function autoDetectarZonaDelivery(lat, lon, texto = '') {
+            const t = (texto || '').toLowerCase();
+            let zonaDetectada = 'centro';
+
+            if (t.includes('limon') || t.includes('limón') || t.includes('iragorry') || t.includes('arsenal') || t.includes('candelaria') || t.includes('base sucre')) {
+                zonaDetectada = 'limon';
+            } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || t.includes('coropo') || t.includes('guere') || t.includes('güere')) {
+                zonaDetectada = 'turmero';
+            } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('san mateo')) {
+                zonaDetectada = 'cagua';
+            } else if (t.includes('victoria') || t.includes('villa de cura') || t.includes('san sebastian') || t.includes('valencia') || t.includes('caracas')) {
+                zonaDetectada = 'lejana';
+            } else if (t.includes('delicias') || t.includes('san jacinto') || t.includes('piñonal') || t.includes('caña de azucar') || t.includes('azúcar') || t.includes('san jose') || t.includes('josé') || t.includes('coromoto')) {
+                zonaDetectada = 'cercanas';
+            } else if (t.includes('centro') || t.includes('calicanto') || t.includes('floresta') || t.includes('isidro') || t.includes('bolivar') || t.includes('bolívar')) {
+                zonaDetectada = 'centro';
+            } else if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
+                const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], lat, lon);
+                if (dKm <= 3.8) zonaDetectada = 'centro';
+                else if (dKm <= 7.0) zonaDetectada = 'cercanas';
+                else if (dKm <= 11.5) zonaDetectada = 'limon';
+                else if (dKm <= 18.0) zonaDetectada = 'turmero';
+                else if (dKm <= 26.0) zonaDetectada = 'cagua';
+                else zonaDetectada = 'lejana';
+            }
+
+            const sel = document.getElementById('selectZonaDelivery');
+            if (sel) {
+                if (sel.value !== zonaDetectada) {
+                    sel.value = zonaDetectada;
+                }
+                if (typeof cambiarZonaDelivery === 'function') {
+                    cambiarZonaDelivery();
+                }
+            }
+            if (typeof sincronizarMontosUbicacion === 'function') {
+                sincronizarMontosUbicacion();
+            }
+        }
+
         function aplicarUbicacionFijada(lat, lon, texto = '') {
             const formatted = `${parseFloat(lat).toFixed(6)},${parseFloat(lon).toFixed(6)}`;
             const geoInput = document.getElementById('geoCoords');
@@ -511,6 +591,11 @@
             if (card) card.style.display = 'flex';
             if (coordsText) coordsText.textContent = `${defaultText} (${formatted})`;
             if (testLink) testLink.href = `https://maps.google.com/?q=${formatted}`;
+
+            autoDetectarZonaDelivery(lat, lon, defaultText);
+            if (typeof sincronizarMontosUbicacion === 'function') {
+                sincronizarMontosUbicacion();
+            }
         }
 
         /**
@@ -625,7 +710,8 @@
                     if (typeof showToast === 'function') showToast('📍 Coordenadas fijadas con éxito', 'success');
                     return;
                 }
-            }
+            // 5. Texto normal (sector, urbanización, ciudad)
+            autoDetectarZonaDelivery(null, null, text);
         }
 
         /**
@@ -882,9 +968,12 @@
             const addressBox = document.getElementById('gmapsDetectedAddress');
             if (addressBox) addressBox.textContent = `Punto fijado: ${formatted}`;
 
+            autoDetectarZonaDelivery(lat, lon, formatted);
+
             reverseGeocodeReal(lat, lon, (desc) => {
                 selectedAddressText = desc;
                 if (addressBox) addressBox.textContent = desc;
+                autoDetectarZonaDelivery(lat, lon, desc);
             });
         }
 
@@ -977,6 +1066,23 @@
                     <div style="flex:1;">
                         <span style="font-size:0.72rem; color:#5f6368; text-transform:uppercase; font-weight:600;">Dirección detectada en el mapa:</span>
                         <div id="gmapsDetectedAddress" style="font-size:0.88rem; font-weight:600; color:#202124; line-height:1.25; min-height:20px;">Mueve el marcador rojo a tu casa...</div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Tarifa y Total a Pagar detectada en el Mapa -->
+                <div id="gmapsPaymentPreviewBox" style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:9px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    <div>
+                        <div style="font-size:0.74rem; font-weight:800; color:#166534; text-transform:uppercase; display:flex; align-items:center; gap:5px;">
+                            <i class="fas fa-motorcycle" style="color:#059669;"></i> Tarifa a esta ubicación:
+                        </div>
+                        <div id="gmapsDetectedZoneLabel" style="font-size:0.85rem; font-weight:700; color:#0f172a; margin-top:1px;">
+                            Centro de Maracay — ¡DELIVERY GRATIS ($0.00)!
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:0.72rem; color:#64748b; font-weight:600; display:block;">Total de tu Pedido:</span>
+                        <span id="gmapsTotalPagarPreview" style="font-size:1.18rem; font-weight:900; color:#15803d;">$0.00 USD</span>
+                        <small id="gmapsTotalBsPreview" style="font-size:0.72rem; color:#475569; display:block; font-weight:600;">(≈ Bs. 0.00)</small>
                     </div>
                 </div>
 

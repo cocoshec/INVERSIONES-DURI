@@ -4935,6 +4935,107 @@ function obtenerCostoDelivery() {
 }
 window.obtenerCostoDelivery = obtenerCostoDelivery;
 
+function sincronizarMontosUbicacion() {
+    const inputMod = document.getElementById('modalidadEntrega');
+    const isRetiro = !inputMod || inputMod.value === 'retiro';
+    const deliveryCost = obtenerCostoDelivery();
+    const selectZona = document.getElementById('selectZonaDelivery');
+    const optZona = selectZona ? selectZona.options[selectZona.selectedIndex] : null;
+    const zonaNombre = optZona ? optZona.text.split('—')[0].replace('📍', '').trim() : 'Centro de Maracay';
+    
+    let sum = 0;
+    if (typeof cart !== 'undefined' && Array.isArray(cart)) {
+        cart.forEach(it => { sum += (it.price || 0) * (it.qty || 1); });
+    }
+    const subtotal = sum;
+    const iva = subtotal * 0.16;
+    const grandTotal = subtotal + iva + (isRetiro ? 0 : deliveryCost);
+    
+    const rate = (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : 45.0;
+    const formatBs = (typeof BcvManager !== 'undefined' && BcvManager.formatBs) 
+        ? BcvManager.formatBs 
+        : (v => `Bs. ${Number(v).toFixed(2)}`);
+    const toBs = (typeof BcvManager !== 'undefined' && BcvManager.toBs) 
+        ? BcvManager.toBs 
+        : (v => v * rate);
+
+    const bsTotal = formatBs(toBs(grandTotal));
+    const bsDelivery = formatBs(toBs(deliveryCost));
+    const bsProds = formatBs(toBs(subtotal + iva));
+
+    // 1. Tarjeta en la sección de Ubicación del formulario
+    const badgeZona = document.getElementById('badgeZonaUbicacion');
+    const elMontoDelivery = document.getElementById('montoDeliveryUbicacion');
+    const elMontoProds = document.getElementById('montoProductosUbicacion');
+    const elTotalUsd = document.getElementById('totalUsdUbicacion');
+    const elTotalBs = document.getElementById('totalBsUbicacion');
+
+    if (badgeZona) {
+        if (isRetiro) {
+            badgeZona.textContent = 'Retiro en Local (Gratis)';
+            badgeZona.style.background = '#ecfdf5';
+            badgeZona.style.color = '#059669';
+        } else {
+            badgeZona.textContent = `${zonaNombre} (${deliveryCost === 0 ? 'Gratis' : `$${deliveryCost.toFixed(2)}`})`;
+            badgeZona.style.background = deliveryCost === 0 ? '#ecfdf5' : '#eff6ff';
+            badgeZona.style.color = deliveryCost === 0 ? '#059669' : '#1d4ed8';
+        }
+    }
+
+    if (elMontoDelivery) {
+        if (isRetiro || deliveryCost === 0) {
+            elMontoDelivery.style.color = '#059669';
+            elMontoDelivery.textContent = '¡GRATIS ($0.00)!';
+        } else {
+            elMontoDelivery.style.color = '#2563eb';
+            elMontoDelivery.innerHTML = `<strong>+$${deliveryCost.toFixed(2)} USD</strong> <small style="color:#64748b;">(${bsDelivery})</small>`;
+        }
+    }
+
+    if (elMontoProds) {
+        elMontoProds.innerHTML = `$${(subtotal + iva).toFixed(2)} USD <small style="color:#64748b;">(${bsProds})</small>`;
+    }
+
+    if (elTotalUsd) {
+        elTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
+    }
+    if (elTotalBs) {
+        elTotalBs.textContent = `(≈ ${bsTotal} a tasa BCV)`;
+    }
+
+    // 2. Tarjeta de ubicación confirmada por GPS
+    const cardPrecio = document.getElementById('ubicacionConfirmadaPrecio');
+    if (cardPrecio) {
+        if (isRetiro) {
+            cardPrecio.innerHTML = `<i class="fas fa-store" style="color:#059669;"></i> Retiro en Tienda: <strong>GRATIS</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+        } else if (deliveryCost === 0) {
+            cardPrecio.innerHTML = `<i class="fas fa-gift" style="color:#059669;"></i> Delivery ${zonaNombre}: <strong>GRATIS ($0.00)</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+        } else {
+            cardPrecio.innerHTML = `<i class="fas fa-motorcycle" style="color:#2563eb;"></i> Delivery ${zonaNombre}: <strong>+$${deliveryCost.toFixed(2)} USD</strong> (${bsDelivery}) | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+        }
+    }
+
+    // 3. Vista previa dentro del Modal de Google Maps
+    const gmapsZoneLabel = document.getElementById('gmapsDetectedZoneLabel');
+    const gmapsTotalUsd = document.getElementById('gmapsTotalPagarPreview');
+    const gmapsTotalBs = document.getElementById('gmapsTotalBsPreview');
+
+    if (gmapsZoneLabel) {
+        if (deliveryCost === 0) {
+            gmapsZoneLabel.innerHTML = `<span style="color:#059669; font-weight:700;"><i class="fas fa-gift"></i> ${zonaNombre} — ¡DELIVERY GRATIS ($0.00)!</span>`;
+        } else {
+            gmapsZoneLabel.innerHTML = `<span style="color:#1d4ed8; font-weight:700;"><i class="fas fa-motorcycle"></i> ${zonaNombre} — Tarifa: +$${deliveryCost.toFixed(2)} USD (${bsDelivery})</span>`;
+        }
+    }
+    if (gmapsTotalUsd) {
+        gmapsTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
+    }
+    if (gmapsTotalBs) {
+        gmapsTotalBs.textContent = `≈ ${bsTotal}`;
+    }
+}
+window.sincronizarMontosUbicacion = sincronizarMontosUbicacion;
+
 function updateCart() {
     const items = document.getElementById('orderItems');
     const total = document.getElementById('orderTotal');
@@ -4958,6 +5059,7 @@ function updateCart() {
         if (elDeliveryCost) elDeliveryCost.textContent = '$0.00';
         if (btn) btn.disabled = true;
         if (btnForm) btnForm.disabled = true;
+        try { sincronizarMontosUbicacion(); } catch(e) {}
         return;
     }
     let html = '', sum = 0;
@@ -5013,6 +5115,8 @@ function updateCart() {
     }
     if (btn) btn.disabled = false;
     if (btnForm) btnForm.disabled = false;
+
+    try { sincronizarMontosUbicacion(); } catch(e) {}
 }
 
 async function submitOrder() {
