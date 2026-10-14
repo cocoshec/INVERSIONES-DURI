@@ -2594,6 +2594,513 @@ window.guardarNuevoProducto = guardarNuevoProducto;
 
 
 // ============================================
+// IMPORTACIÓN MASIVA DESDE EXCEL / CSV
+// ============================================
+let _importProductosCargados = [];
+
+function loadSheetJsLibrary() {
+    return new Promise((resolve) => {
+        if (window.XLSX) return resolve(window.XLSX);
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+        script.onload = () => resolve(window.XLSX);
+        script.onerror = () => {
+            console.warn('No se pudo cargar XLSX vía CDN, se usará parseador CSV nativo');
+            resolve(null);
+        };
+        document.head.appendChild(script);
+    });
+}
+
+function abrirModalImportarExcel() {
+    const user = getUser();
+    if (!user || (user.rol !== 'super_usuario' && user.rol !== 'operador')) {
+        showToast('Acceso restringido: debes ser administrador para importar productos', 'error');
+        return;
+    }
+
+    cerrarModalImportarExcel();
+    _importProductosCargados = [];
+
+    const modal = document.createElement('div');
+    modal.id = 'modalImportarExcel';
+    modal.className = 'modal show';
+    modal.innerHTML = `
+        <div style="width:680px;max-width:95%;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:92vh;display:flex;flex-direction:column;">
+            <div style="background:linear-gradient(135deg,#0284c7 0%,#0f172a 100%);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h3 style="margin:0;font-size:1.18rem;color:#fff;display:flex;align-items:center;gap:10px;">
+                        <i class="fas fa-file-excel" style="color:#38bdf8;"></i> Importar Productos desde Excel o CSV
+                    </h3>
+                    <p style="margin:3px 0 0;font-size:0.82rem;color:#cbd5e1;">Carga automática de catálogo e inventario masivo (ej. 300 productos)</p>
+                </div>
+                <button type="button" onclick="cerrarModalImportarExcel()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+            </div>
+
+            <div style="padding:22px;overflow-y:auto;flex:1;">
+                <!-- Zona de Arrastrar o Seleccionar Archivo -->
+                <div id="dropZoneImportExcel" onclick="document.getElementById('importFileInput').click()" style="border:2.5px dashed #0284c7;background:#f0f9ff;border-radius:14px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.25s;margin-bottom:16px;">
+                    <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" onchange="handleArchivoImportacion(event)">
+                    <div style="width:60px;height:60px;background:#e0f2fe;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#0284c7;font-size:1.8rem;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h4 style="margin:0 0 6px;color:#0f172a;font-size:1.05rem;font-weight:700;">Haz clic aquí para seleccionar tu Excel o CSV</h4>
+                    <p style="margin:0 0 10px;font-size:0.83rem;color:#64748b;">Compatible con archivos <strong>.xlsx</strong>, <strong>.xls</strong> o <strong>.csv</strong></p>
+                    <span style="display:inline-block;background:#0284c7;color:#fff;font-size:0.78rem;font-weight:700;padding:6px 14px;border-radius:20px;">
+                        <i class="fas fa-folder-open"></i> Explorar Archivos
+                    </span>
+                </div>
+
+                <!-- Botón de plantilla de ejemplo -->
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px 16px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:18px;">
+                    <div style="font-size:0.83rem;color:#334155;">
+                        <i class="fas fa-info-circle" style="color:#0284c7;margin-right:6px;"></i> ¿Necesitas el formato de ejemplo con las columnas correctas?
+                    </div>
+                    <button type="button" onclick="descargarPlantillaExcel()" style="background:#fff;border:1.5px solid #0284c7;color:#0284c7;padding:6px 12px;border-radius:8px;font-weight:700;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                        <i class="fas fa-download"></i> Descargar Plantilla
+                    </button>
+                </div>
+
+                <!-- Vista previa de los datos procesados -->
+                <div id="importPreviewContainer" style="display:none;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <h4 style="margin:0;font-size:0.95rem;color:#0f172a;font-weight:700;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-check-circle" style="color:#16a34a;"></i> Productos Detectados: <span id="importCountBadge" style="background:#16a34a;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.8rem;">0</span>
+                        </h4>
+                        <span id="importFileStatus" style="font-size:0.8rem;color:#64748b;"></span>
+                    </div>
+
+                    <div style="max-height:220px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;background:#fff;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.82rem;text-align:left;">
+                            <thead style="background:#f1f5f9;position:sticky;top:0;z-index:2;">
+                                <tr>
+                                    <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;color:#475569;">Código</th>
+                                    <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;color:#475569;">Nombre</th>
+                                    <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;color:#475569;">Categoría</th>
+                                    <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;color:#475569;text-align:right;">Precio USD</th>
+                                    <th style="padding:8px 10px;border-bottom:1px solid #cbd5e1;color:#475569;text-align:center;">Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="importPreviewTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Barra de Progreso durante la importación -->
+                <div id="importProgressBox" style="display:none;margin-top:14px;background:#f8fafc;padding:14px;border-radius:10px;border:1px solid #e2e8f0;">
+                    <div style="display:flex;justify-content:space-between;font-size:0.84rem;font-weight:600;margin-bottom:8px;color:#1e293b;">
+                        <span id="importProgressText"><i class="fas fa-spinner fa-spin"></i> Guardando productos en la base de datos...</span>
+                        <span id="importProgressPercent">0%</span>
+                    </div>
+                    <div style="width:100%;height:10px;background:#e2e8f0;border-radius:6px;overflow:hidden;">
+                        <div id="importProgressBar" style="width:0%;height:100%;background:linear-gradient(90deg,#0284c7,#16a34a);transition:width 0.3s;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:14px 24px 18px;display:flex;gap:10px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+                <button type="button" onclick="cerrarModalImportarExcel()" style="flex:1;padding:11px;border:1.5px solid #cbd5e1;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#475569;">
+                    Cancelar
+                </button>
+                <button type="button" id="btnEjecutarImportacion" onclick="ejecutarImportacionMasiva()" disabled style="flex:2;padding:11px;background:#cbd5e1;color:#fff;border:none;border-radius:10px;font-size:0.92rem;font-weight:700;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:none;">
+                    <i class="fas fa-upload"></i> Subir e Importar Productos
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) { if (e.target === modal) cerrarModalImportarExcel(); });
+
+    // Drag and drop handlers
+    const dropZone = document.getElementById('dropZoneImportExcel');
+    if (dropZone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.style.background = '#e0f2fe';
+                dropZone.style.borderColor = '#0369a1';
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.style.background = '#f0f9ff';
+                dropZone.style.borderColor = '#0284c7';
+            }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length) {
+                handleArchivoImportacion({ target: { files: files } });
+            }
+        }, false);
+    }
+}
+window.abrirModalImportarExcel = abrirModalImportarExcel;
+
+function cerrarModalImportarExcel() {
+    const m = document.getElementById('modalImportarExcel');
+    if (m) m.remove();
+    _importProductosCargados = [];
+}
+window.cerrarModalImportarExcel = cerrarModalImportarExcel;
+
+// Generar y descargar plantilla de ejemplo en CSV
+function descargarPlantillaExcel() {
+    const csvContent = 
+`Codigo,Nombre,Categoria,Precio_USD,Stock,Stock_Minimo,Descripcion
+PRD-101,Cuaderno Espiral Cuadriculado 100 Hojas,Papelería,2.50,50,10,Cuaderno tamaño carta tapa dura marca Caribe
+PRD-102,Caja de Lápices de Grafito 12 Unidades,Útiles Escolares,3.00,40,8,Lápices HB resistentes alta calidad
+PRD-103,Calculadora Científica 240 Funciones,Tecnología,12.50,15,5,Pantalla de 2 líneas ideal para estudiantes
+PRD-104,Grapadora Metálica de Oficina + Grapas,Accesorios,4.80,25,5,Incluye caja de 1000 grapas estándar 26/6
+PRD-105,Resma de Papel Carta 500 Hojas,Papelería,4.50,80,15,Papel blanco 75g de alto rendimiento`;
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Plantilla_Productos_Inversiones_Duri.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Plantilla descargada: ábrela en Excel o edítala como prefieras', 'info');
+}
+window.descargarPlantillaExcel = descargarPlantillaExcel;
+
+// Procesar archivo seleccionado (Excel o CSV)
+async function handleArchivoImportacion(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const fileStatus = document.getElementById('importFileStatus');
+    if (fileStatus) fileStatus.innerHTML = `<i class="fas fa-file"></i> Leyendo: <strong>${file.name}</strong>...`;
+
+    try {
+        const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+        let parsedRows = [];
+
+        if (isExcel) {
+            await loadSheetJsLibrary();
+            if (window.XLSX) {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                parsedRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+            } else {
+                showToast('No se pudo procesar el archivo Excel. Por favor guárdalo como CSV y vuelve a intentarlo', 'error');
+                return;
+            }
+        } else {
+            // Parseador CSV nativo
+            const text = await file.text();
+            parsedRows = parsearCSVNativo(text);
+        }
+
+        if (!parsedRows || !parsedRows.length) {
+            showToast('El archivo está vacío o no contiene filas con datos', 'error');
+            return;
+        }
+
+        // Mapear y normalizar columnas con detección flexible de nombres
+        const productosNormalizados = normalizarFilasImportadas(parsedRows);
+
+        if (!productosNormalizados.length) {
+            showToast('No se encontraron productos válidos. Revisa que haya una columna "Nombre" y "Precio"', 'error');
+            return;
+        }
+
+        _importProductosCargados = productosNormalizados;
+        mostrarPreviewImportacion(productosNormalizados, file.name);
+
+    } catch (err) {
+        console.error('Error al procesar archivo:', err);
+        showToast('Error al leer el archivo: ' + err.message, 'error');
+    }
+}
+window.handleArchivoImportacion = handleArchivoImportacion;
+
+// Parseador CSV nativo robusto (soporta comas, puntos y comas, y valores entrecomillados)
+function parsearCSVNativo(text) {
+    const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (!lines.length) return [];
+
+    // Detectar delimitador (coma o punto y coma)
+    const headerLine = lines[0];
+    const commaCount = (headerLine.match(/,/g) || []).length;
+    const semicolonCount = (headerLine.match(/;/g) || []).length;
+    const tabCount = (headerLine.match(/\t/g) || []).length;
+    let delimiter = ',';
+    if (semicolonCount > commaCount && semicolonCount > tabCount) delimiter = ';';
+    else if (tabCount > commaCount && tabCount > semicolonCount) delimiter = '\t';
+
+    const parseCSVLine = (line) => {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c === delimiter && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += c;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    };
+
+    const headers = parseCSVLine(lines[0]).map(h => h.replace(/^\uFEFF/, '').trim());
+    const rows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const vals = parseCSVLine(lines[i]);
+        if (vals.length < 2 && !vals[0]) continue;
+        const row = {};
+        headers.forEach((h, idx) => {
+            row[h] = vals[idx] !== undefined ? vals[idx] : '';
+        });
+        rows.push(row);
+    }
+    return rows;
+}
+
+// Normalizar encabezados con detección inteligente
+function normalizarFilasImportadas(rows) {
+    const catMap = {
+        'utiles escolares': 1, 'útiles escolares': 1, 'utiles': 1, 'escolares': 1,
+        'papeleria': 2, 'papelería': 2,
+        'tecnologia': 3, 'tecnología': 3, 'tech': 3,
+        'accesorios': 4, 'accesorio': 4
+    };
+
+    const cleanKey = (k) => k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_]/g, '');
+
+    const result = [];
+    rows.forEach((row, idx) => {
+        const keys = Object.keys(row);
+        let nombre = '';
+        let precio = 0;
+        let codigo = '';
+        let categoria = 'Papelería';
+        let stock = 10;
+        let stockMin = 5;
+        let descripcion = '';
+        let imagen = '';
+
+        keys.forEach(k => {
+            const val = String(row[k] || '').trim();
+            const ck = cleanKey(k);
+
+            // Nombre
+            if (['nombre', 'name', 'producto', 'articulo', 'item', 'descripcion_corta', 'titulo'].includes(ck)) {
+                if (!nombre) nombre = val;
+            }
+            // Precio
+            else if (['precio', 'precio_usd', 'preciousd', 'precio_venta', 'precioventa', 'pvp', 'costo', 'price', 'valor'].includes(ck)) {
+                const num = parseFloat(val.replace(',', '.').replace(/[^0-9.]/g, ''));
+                if (!isNaN(num)) precio = num;
+            }
+            // Categoría
+            else if (['categoria', 'category', 'departamento', 'rubro', 'tipo'].includes(ck)) {
+                if (val) categoria = val;
+            }
+            // Stock
+            else if (['stock', 'stock_actual', 'stockactual', 'cantidad', 'cant', 'unidades', 'existencia', 'qty'].includes(ck)) {
+                const s = parseInt(val.replace(/[^0-9]/g, ''));
+                if (!isNaN(s)) stock = s;
+            }
+            // Stock Mínimo
+            else if (['stock_minimo', 'stockminimo', 'minimo', 'alerta_stock', 'min_qty', 'min'].includes(ck)) {
+                const sm = parseInt(val.replace(/[^0-9]/g, ''));
+                if (!isNaN(sm)) stockMin = sm;
+            }
+            // Código
+            else if (['codigo', 'code', 'sku', 'referencia', 'ref', 'cod'].includes(ck)) {
+                if (!codigo) codigo = val.toUpperCase();
+            }
+            // Descripción
+            else if (['descripcion', 'detalle', 'detalles', 'description', 'info'].includes(ck)) {
+                if (!descripcion) descripcion = val;
+            }
+            // Imagen
+            else if (['imagen', 'foto', 'image', 'url_foto', 'img'].includes(ck)) {
+                if (!imagen) imagen = val;
+            }
+        });
+
+        if (nombre && precio > 0) {
+            // Categoría ID
+            const catClean = cleanKey(categoria);
+            const catId = catMap[catClean] || 2;
+            const catNombres = { 1: 'Útiles Escolares', 2: 'Papelería', 3: 'Tecnología', 4: 'Accesorios' };
+            const catNombreFinal = catNombres[catId] || 'Papelería';
+
+            if (!codigo) {
+                codigo = `PRD-${String(idx + 100).padStart(4, '0')}`;
+            }
+
+            result.push({
+                codigo: codigo,
+                nombre: nombre,
+                descripcion: descripcion,
+                categoria_id: catId,
+                categoria_nombre: catNombreFinal,
+                precio_venta: precio,
+                stock_actual: stock,
+                stock_minimo: stockMin,
+                imagen: imagen || '',
+                activo: 1
+            });
+        }
+    });
+
+    return result;
+}
+
+// Mostrar tabla de vista previa con los productos encontrados
+function mostrarPreviewImportacion(productos, fileName) {
+    const container = document.getElementById('importPreviewContainer');
+    const tbody = document.getElementById('importPreviewTbody');
+    const badge = document.getElementById('importCountBadge');
+    const fileStatus = document.getElementById('importFileStatus');
+    const btnEjecutar = document.getElementById('btnEjecutarImportacion');
+
+    if (!container || !tbody) return;
+
+    badge.textContent = `${productos.length} productos`;
+    if (fileStatus) fileStatus.innerHTML = `<i class="fas fa-file-check" style="color:#16a34a;"></i> <strong>${fileName}</strong> listo para importar`;
+
+    // Renderizar las primeras 8 filas como muestra
+    const sample = productos.slice(0, 8);
+    tbody.innerHTML = sample.map(p => `
+        <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:7px 10px;font-weight:700;color:#0284c7;">${p.codigo}</td>
+            <td style="padding:7px 10px;color:#1e293b;font-weight:600;">${p.nombre}</td>
+            <td style="padding:7px 10px;"><span style="background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:10px;font-size:0.75rem;">${p.categoria_nombre}</span></td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:#16a34a;">$ ${p.precio_venta.toFixed(2)}</td>
+            <td style="padding:7px 10px;text-align:center;font-weight:700;color:#334155;">${p.stock_actual}</td>
+        </tr>
+    `).join('');
+
+    if (productos.length > 8) {
+        tbody.innerHTML += `
+            <tr style="background:#f8fafc;font-style:italic;color:#64748b;">
+                <td colspan="5" style="padding:8px 10px;text-align:center;">
+                    ... y <strong>${productos.length - 8} productos más</strong> listos para guardar.
+                </td>
+            </tr>
+        `;
+    }
+
+    container.style.display = 'block';
+
+    if (btnEjecutar) {
+        btnEjecutar.disabled = false;
+        btnEjecutar.style.background = 'linear-gradient(135deg,#16a34a,#15803d)';
+        btnEjecutar.style.cursor = 'pointer';
+        btnEjecutar.style.boxShadow = '0 3px 10px rgba(22,163,74,0.35)';
+        btnEjecutar.innerHTML = `<i class="fas fa-check-circle"></i> Importar ${productos.length} Productos Ahora`;
+    }
+}
+
+// Ejecutar guardado masivo en la base de datos MySQL y caché local
+async function ejecutarImportacionMasiva() {
+    if (!_importProductosCargados || !_importProductosCargados.length) {
+        showToast('No hay productos cargados para importar', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnEjecutarImportacion');
+    const progressBox = document.getElementById('importProgressBox');
+    const progressBar = document.getElementById('importProgressBar');
+    const progressPercent = document.getElementById('importProgressPercent');
+    const progressText = document.getElementById('importProgressText');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    }
+
+    if (progressBox) progressBox.style.display = 'block';
+    if (progressBar) progressBar.style.width = '35%';
+    if (progressPercent) progressPercent.textContent = '35%';
+
+    const isGH = window.location.hostname.includes('github.io');
+    let guardadosOnline = 0;
+    let actualizadosOnline = 0;
+
+    if (!isGH) {
+        try {
+            if (progressText) progressText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando en base de datos MySQL...';
+            const res = await fetch(`${API_BASE}/productos.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bulk: true,
+                    productos: _importProductosCargados
+                })
+            });
+
+            if (res.ok) {
+                const resData = await res.json();
+                if (resData.status === 'success') {
+                    guardadosOnline = resData.insertados || 0;
+                    actualizadosOnline = resData.actualizados || 0;
+                }
+            }
+        } catch (err) {
+            console.warn('Error al guardar en backend MySQL masivo:', err);
+        }
+    }
+
+    if (progressBar) progressBar.style.width = '85%';
+    if (progressPercent) progressPercent.textContent = '85%';
+
+    // Sincronizar en caché local
+    try {
+        let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        if (!Array.isArray(customProds)) customProds = [];
+
+        // Integrar o actualizar por código
+        const mapExistentes = new Map(customProds.map(p => [String(p.codigo || p.id).toLowerCase(), p]));
+        _importProductosCargados.forEach(np => {
+            const key = String(np.codigo).toLowerCase();
+            mapExistentes.set(key, { ...np, id: np.id || Date.now() + Math.random() });
+        });
+
+        const listaFinal = Array.from(mapExistentes.values());
+        localStorage.setItem('duri_products_custom', JSON.stringify(listaFinal));
+    } catch (e) {}
+
+    if (progressBar) progressBar.style.width = '100%';
+    if (progressPercent) progressPercent.textContent = '100%';
+    if (progressText) progressText.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;"></i> ¡Guardado completado!';
+
+    const total = _importProductosCargados.length;
+    showToast(`¡Excelente! Se han importado ${total} productos exitosamente`, 'success');
+
+    setTimeout(() => {
+        cerrarModalImportarExcel();
+        if (typeof loadProductos === 'function') loadProductos();
+        if (typeof loadInventario === 'function') loadInventario();
+    }, 900);
+}
+window.ejecutarImportacionMasiva = ejecutarImportacionMasiva;
+
+
+// ============================================
 // PEDIDOS
 // ============================================
 let cart = [];

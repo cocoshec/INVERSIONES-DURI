@@ -52,7 +52,56 @@ switch ($method) {
 
     case 'POST':
         $data = json_decode(file_get_contents("php://input"), true);
-        
+
+        // Importación masiva (Bulk Import desde Excel o CSV)
+        if (!empty($data['bulk']) && !empty($data['productos']) && is_array($data['productos'])) {
+            $insertados = 0;
+            $actualizados = 0;
+            $db->beginTransaction();
+            try {
+                $stmtInsert = $db->prepare("INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmtUpdate = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ?, imagen = IF(? != '', ?, imagen), activo = 1 WHERE codigo = ?");
+                $stmtCheck = $db->prepare("SELECT id FROM productos WHERE codigo = ? LIMIT 1");
+
+                foreach ($data['productos'] as $prod) {
+                    if (empty($prod['nombre'])) continue;
+                    $codigo = !empty($prod['codigo']) ? trim($prod['codigo']) : ('PRD-' . str_pad(rand(100, 99999), 5, '0', STR_PAD_LEFT));
+                    $nombre = trim($prod['nombre']);
+                    $desc = trim($prod['descripcion'] ?? '');
+                    $catId = intval($prod['categoria_id'] ?? 1);
+                    $precio = floatval($prod['precio_venta'] ?? 0);
+                    $stock = intval($prod['stock_actual'] ?? 0);
+                    $stockMin = intval($prod['stock_minimo'] ?? 10);
+                    $imagen = trim($prod['imagen'] ?? '');
+
+                    $stmtCheck->execute([$codigo]);
+                    $exists = $stmtCheck->fetch();
+                    if ($exists) {
+                        $stmtUpdate->execute([$nombre, $desc, $catId, $precio, $stock, $stockMin, $imagen, $imagen, $codigo]);
+                        $actualizados++;
+                    } else {
+                        $stmtInsert->execute([$codigo, $nombre, $desc, $catId, $precio, $stock, $stockMin, $imagen]);
+                        $insertados++;
+                    }
+                }
+                $db->commit();
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Importación completada con éxito",
+                    "insertados" => $insertados,
+                    "actualizados" => $actualizados,
+                    "total" => ($insertados + $actualizados)
+                ]);
+            } catch (\Exception $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                http_response_code(500);
+                echo json_encode(["status" => "error", "message" => "Error al importar productos: " . $e->getMessage()]);
+            }
+            break;
+        }
+
         if (empty($data['nombre']) || empty($data['precio_venta'])) {
             http_response_code(400);
             echo json_encode(["status" => "error", "message" => "Nombre y precio son requeridos"]);
