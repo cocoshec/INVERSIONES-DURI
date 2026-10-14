@@ -290,7 +290,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=32.0"></script>
+    <script src="../js/app.js?v=33.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -421,17 +421,18 @@
         let selectedAddressText = '';
         const DEFAULT_COORD = [10.2502976, -67.5961389]; // Feria Escolar Inversiones Duri, Maracay
         const CIUDADES_VE = {
-            duri: { nombre: 'Sede Inversiones Duri (Feria Escolar)', coords: [10.2502976, -67.5961389], zoom: 17 },
-            maracay: { nombre: 'Maracay Centro, Aragua', coords: [10.2469, -67.5958], zoom: 15 },
-            delicias: { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zoom: 16 },
-            sanjacinto: { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zoom: 16 },
-            limon: { nombre: 'El Limón, Maracay', coords: [10.2798, -67.6322], zoom: 15 },
-            coromoto: { nombre: 'La Coromoto, Maracay', coords: [10.2520, -67.6180], zoom: 16 },
-            cagua: { nombre: 'Cagua / Turmero, Aragua', coords: [10.1856, -67.4589], zoom: 15 },
-            valencia: { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zoom: 15 },
-            naguanagua: { nombre: 'Naguanagua, Carabobo', coords: [10.2581, -68.0121], zoom: 15 },
-            sandiego: { nombre: 'San Diego, Carabobo', coords: [10.2300, -67.9618], zoom: 15 },
-            caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 14 }
+            duri: { nombre: 'Sede Inversiones Duri (Maracay Centro)', coords: [10.2502976, -67.5961389], zoom: 17, zona: 'centro', tarifa: 0 },
+            maracay: { nombre: 'Maracay Centro (Casco Central / Calicanto)', coords: [10.2469, -67.5958], zoom: 15, zona: 'centro', tarifa: 0 },
+            delicias: { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zoom: 16, zona: 'cercanas', tarifa: 2 },
+            sanjacinto: { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zoom: 16, zona: 'cercanas', tarifa: 2 },
+            coromoto: { nombre: 'La Coromoto / San José, Maracay', coords: [10.2520, -67.6180], zoom: 16, zona: 'cercanas', tarifa: 2 },
+            canadeazucar: { nombre: 'Caña de Azúcar / Piñonal, Maracay', coords: [10.2642, -67.6338], zoom: 15, zona: 'cercanas', tarifa: 2 },
+            limon: { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
+            turmero: { nombre: 'Turmero / Palo Negro', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
+            cagua: { nombre: 'Cagua / La Encrucijada', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
+            victoria: { nombre: 'La Victoria / Zonas Lejanas', coords: [10.2268, -67.3323], zoom: 13, zona: 'lejana', tarifa: 8 },
+            valencia: { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zoom: 14, zona: 'lejana', tarifa: 8 },
+            caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 13, zona: 'lejana', tarifa: 8 }
         };
 
         const googlePinIcon = L.icon({
@@ -450,9 +451,10 @@
                 gmap.flyTo(info.coords, info.zoom, { animate: true, duration: 1.2 });
                 if (gmarker) gmarker.setLatLng(info.coords);
             }
-            actualizarPuntoSeleccionado(info.coords[0], info.coords[1]);
+            actualizarPuntoSeleccionado(info.coords[0], info.coords[1], info.nombre, info.zona);
             if (typeof showToast === 'function') {
-                showToast('📍 Mapa centrado en ' + info.nombre, 'info');
+                const tarifaTxt = info.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `Tarifa Delivery: +$${info.tarifa.toFixed(2)} USD`;
+                showToast(`📍 ${info.nombre} — ${tarifaTxt}`, 'info');
             }
         }
 
@@ -530,30 +532,37 @@
             return R * c;
         }
 
-        function autoDetectarZonaDelivery(lat, lon, texto = '') {
-            const t = (texto || '').toLowerCase();
+        function autoDetectarZonaDelivery(lat, lon, texto = '', zonaForzada = null) {
             let zonaDetectada = 'centro';
 
-            if (t.includes('limon') || t.includes('limón') || t.includes('iragorry') || t.includes('arsenal') || t.includes('candelaria') || t.includes('base sucre')) {
-                zonaDetectada = 'limon';
-            } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || t.includes('coropo') || t.includes('guere') || t.includes('güere')) {
-                zonaDetectada = 'turmero';
-            } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('san mateo')) {
-                zonaDetectada = 'cagua';
-            } else if (t.includes('victoria') || t.includes('villa de cura') || t.includes('san sebastian') || t.includes('valencia') || t.includes('caracas')) {
-                zonaDetectada = 'lejana';
-            } else if (t.includes('delicias') || t.includes('san jacinto') || t.includes('piñonal') || t.includes('caña de azucar') || t.includes('azúcar') || t.includes('san jose') || t.includes('josé') || t.includes('coromoto')) {
-                zonaDetectada = 'cercanas';
-            } else if (t.includes('centro') || t.includes('calicanto') || t.includes('floresta') || t.includes('isidro') || t.includes('bolivar') || t.includes('bolívar')) {
-                zonaDetectada = 'centro';
-            } else if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
-                const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], lat, lon);
-                if (dKm <= 3.8) zonaDetectada = 'centro';
-                else if (dKm <= 7.0) zonaDetectada = 'cercanas';
-                else if (dKm <= 11.5) zonaDetectada = 'limon';
-                else if (dKm <= 18.0) zonaDetectada = 'turmero';
-                else if (dKm <= 26.0) zonaDetectada = 'cagua';
-                else zonaDetectada = 'lejana';
+            if (zonaForzada) {
+                zonaDetectada = zonaForzada;
+            } else {
+                const t = (texto || '').toLowerCase();
+
+                // 1. Detección por nombres de sectores y ciudades de Maracay
+                if (t.includes('victoria') || t.includes('villa de cura') || t.includes('san sebastian') || t.includes('valencia') || t.includes('caracas')) {
+                    zonaDetectada = 'lejana'; // $8.00
+                } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('san mateo')) {
+                    zonaDetectada = 'cagua'; // $6.00
+                } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || t.includes('coropo') || t.includes('guere') || t.includes('güere')) {
+                    zonaDetectada = 'turmero'; // $5.00
+                } else if (t.includes('limon') || t.includes('limón') || t.includes('iragorry') || t.includes('arsenal') || t.includes('candelaria') || t.includes('base sucre')) {
+                    zonaDetectada = 'limon'; // $3.00
+                } else if (t.includes('delicias') || t.includes('san jacinto') || t.includes('piñonal') || t.includes('caña de azucar') || t.includes('azúcar') || t.includes('san jose') || t.includes('josé') || t.includes('coromoto')) {
+                    zonaDetectada = 'cercanas'; // $2.00
+                } else if (t.includes('casco central') || t.includes('calicanto') || t.includes('la floresta') || t.includes('san isidro') || t.includes('parque aragua') || t.includes('bolivar oeste') || t.includes('bolívar oeste')) {
+                    zonaDetectada = 'centro'; // $0.00 Gratis
+                } else if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
+                    // 2. Detección por distancia métrica (coordenadas GPS) desde Sede Duri (Centro de Maracay)
+                    const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], lat, lon);
+                    if (dKm <= 1.8) zonaDetectada = 'centro';        // Centro de Maracay: GRATIS ($0.00)
+                    else if (dKm <= 5.5) zonaDetectada = 'cercanas'; // Zonas Cercanas Maracay: +$2.00
+                    else if (dKm <= 9.5) zonaDetectada = 'limon';    // El Limón / MBI: +$3.00
+                    else if (dKm <= 16.0) zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
+                    else if (dKm <= 23.0) zonaDetectada = 'cagua';   // Cagua / Encrucijada: +$6.00
+                    else zonaDetectada = 'lejana';                   // Zonas Lejanas: +$8.00
+                }
             }
 
             const sel = document.getElementById('selectZonaDelivery');
@@ -818,6 +827,9 @@
             if (!modal) return;
             modal.style.display = 'flex';
 
+            const selZona = document.getElementById('selectZonaDelivery');
+            const zonaActual = selZona ? selZona.value : 'centro';
+
             // Coordenadas a usar
             const currentCoordsVal = document.getElementById('geoCoords').value;
             let coordsToUse = DEFAULT_COORD;
@@ -826,12 +838,22 @@
                 coordsToUse = [parseFloat(parts[0]), parseFloat(parts[1])];
             } else if (selectedCoords && Array.isArray(selectedCoords)) {
                 coordsToUse = selectedCoords;
+            } else if (zonaActual && CIUDADES_VE[zonaActual]) {
+                coordsToUse = CIUDADES_VE[zonaActual].coords;
+            } else if (zonaActual === 'cercanas') {
+                coordsToUse = CIUDADES_VE.delicias.coords;
+            } else if (zonaActual === 'lejana') {
+                coordsToUse = CIUDADES_VE.victoria.coords;
             }
 
             initGoogleMap(coordsToUse);
             setTimeout(() => {
                 if (gmap) gmap.invalidateSize();
             }, 200);
+
+            if (typeof sincronizarMontosUbicacion === 'function') {
+                sincronizarMontosUbicacion();
+            }
 
             const alertBox = document.getElementById('gmapsPromptNotice');
             if (alertBox) {
@@ -962,21 +984,23 @@
                 });
         }
 
-        function actualizarPuntoSeleccionado(lat, lon) {
+        function actualizarPuntoSeleccionado(lat, lon, textoManual = '', zonaManual = null) {
             selectedCoords = [parseFloat(lat), parseFloat(lon)];
             const formatted = `${selectedCoords[0].toFixed(5)}, ${selectedCoords[1].toFixed(5)}`;
-            selectedAddressText = `Ubicación GPS (${formatted})`;
+            selectedAddressText = textoManual || `Ubicación GPS (${formatted})`;
 
             const addressBox = document.getElementById('gmapsDetectedAddress');
-            if (addressBox) addressBox.textContent = `Punto fijado: ${formatted}`;
+            if (addressBox) addressBox.textContent = selectedAddressText;
 
-            autoDetectarZonaDelivery(lat, lon, formatted);
+            autoDetectarZonaDelivery(lat, lon, selectedAddressText, zonaManual);
 
-            reverseGeocodeReal(lat, lon, (desc) => {
-                selectedAddressText = desc;
-                if (addressBox) addressBox.textContent = desc;
-                autoDetectarZonaDelivery(lat, lon, desc);
-            });
+            if (!textoManual) {
+                reverseGeocodeReal(lat, lon, (desc) => {
+                    selectedAddressText = desc;
+                    if (addressBox) addressBox.textContent = desc;
+                    autoDetectarZonaDelivery(lat, lon, desc, zonaManual);
+                });
+            }
         }
 
         function confirmarUbicacionDesdeModal() {
@@ -1018,35 +1042,38 @@
                     <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Limón)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
                     <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">Buscar</button>
                 </div>
-                <!-- Botones rápidos de ciudades y sectores principales -->
-                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                    <span style="font-size:0.72rem; color:#5f6368; font-weight:600;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Ir a:</span>
-                    <button type="button" onclick="centrarEnCiudad('duri')" style="background:#e85d26; color:#ffffff; border:none; border-radius:14px; padding:3px 11px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 4px rgba(232,93,38,0.25);">
-                        🏢 Sede Inversiones Duri
+                <!-- Botones rápidos de ciudades y sectores principales con sus tarifas exactas -->
+                <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                    <span style="font-size:0.72rem; color:#475569; font-weight:800;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Zonas:</span>
+                    <button type="button" onclick="centrarEnCiudad('duri')" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        🏢 Sede Duri <span style="color:#059669;">($0)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#fce8e6; color:#c5221f; border:1px solid #fad2cf; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Maracay Centro
+                    <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Centro Maracay <span style="color:#059669;">(Gratis)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('delicias')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 Las Delicias
+                    <button type="button" onclick="centrarEnCiudad('delicias')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Las Delicias <span style="color:#2563eb;">(+$2.00)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 San Jacinto
+                    <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 San Jacinto <span style="color:#2563eb;">(+$2.00)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('limon')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 El Limón
+                    <button type="button" onclick="centrarEnCiudad('coromoto')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 La Coromoto <span style="color:#2563eb;">(+$2.00)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('coromoto')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 La Coromoto
+                    <button type="button" onclick="centrarEnCiudad('canadeazucar')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Caña de Azúcar <span style="color:#2563eb;">(+$2.00)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('cagua')" style="background:#e8f0fe; color:#1a73e8; border:1px solid #c2e7ff; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 Cagua / Turmero
+                    <button type="button" onclick="centrarEnCiudad('limon')" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 El Limón <span style="color:#b45309;">(+$3.00)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('valencia')" style="background:#f1f3f4; color:#3c4043; border:1px solid #dadce0; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 Valencia
+                    <button type="button" onclick="centrarEnCiudad('turmero')" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Turmero / Palo Negro <span style="color:#dc2626;">(+$5.00)</span>
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('caracas')" style="background:#f1f3f4; color:#3c4043; border:1px solid #dadce0; border-radius:14px; padding:3px 10px; font-size:0.75rem; font-weight:600; cursor:pointer;">
-                        📍 Caracas
+                    <button type="button" onclick="centrarEnCiudad('cagua')" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 Cagua <span style="color:#dc2626;">(+$6.00)</span>
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('victoria')" style="background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
+                        📍 La Victoria / Lejanas <span style="color:#4b5563;">(+$8.00)</span>
                     </button>
                 </div>
             </div>
