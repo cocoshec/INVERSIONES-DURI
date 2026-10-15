@@ -346,8 +346,12 @@
                 resultsBox.classList.add('show');
             }
 
+            let searchDebounceTimer = null;
             searchInput.addEventListener('input', function() {
-                displayProductResults(this.value);
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => {
+                    displayProductResults(this.value);
+                }, 120);
             });
 
             searchInput.addEventListener('focus', function() {
@@ -362,11 +366,15 @@
                 setTimeout(() => resultsBox.classList.remove('show'), 250);
             });
 
-            // Escuchar cambios y pegado de texto en Dirección para auto-detectar links de Google Maps o coordenadas
+            // Escuchar cambios y pegado de texto en Dirección con debounce para evitar cálculos repetitivos
             const deliveryInput = document.getElementById('deliveryAddress');
+            let addrDebounceTimer = null;
             if (deliveryInput) {
                 deliveryInput.addEventListener('input', function() {
-                    analizarTextoDireccion(this.value);
+                    clearTimeout(addrDebounceTimer);
+                    addrDebounceTimer = setTimeout(() => {
+                        analizarTextoDireccion(this.value);
+                    }, 200);
                 });
                 deliveryInput.addEventListener('paste', function() {
                     setTimeout(() => {

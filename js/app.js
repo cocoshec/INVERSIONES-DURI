@@ -138,19 +138,23 @@ const BcvManager = {
     lastUpdated: null,
     isLoaded: false,
 
-    async init() {
+    init() {
         this.loadCachedRate();
         this.renderTopBarWidget();
         this.updateStaticPrices();
-        await this.fetchLiveRate();
-        this.renderTopBarWidget();
-        this.updateStaticPrices();
-        if (typeof sincronizarMontosUbicacion === 'function') {
-            try { sincronizarMontosUbicacion(); } catch(e) {}
-        }
-        if (typeof updateCart === 'function') {
-            try { updateCart(); } catch(e) {}
-        }
+        // Carga asíncrona reactiva sin bloquear el render inicial
+        this.fetchLiveRate().then(updated => {
+            if (updated) {
+                this.renderTopBarWidget();
+                this.updateStaticPrices();
+                if (typeof sincronizarMontosUbicacion === 'function') {
+                    try { sincronizarMontosUbicacion(); } catch(e) {}
+                }
+                if (typeof updateCart === 'function') {
+                    try { updateCart(); } catch(e) {}
+                }
+            }
+        });
     },
 
     loadCachedRate() {
@@ -169,6 +173,15 @@ const BcvManager = {
 
     async fetchLiveRate() {
         try {
+            // Reutilizar tasa en caché si tiene menos de 10 minutos (ahorra cientos de peticiones HTTP innecesarias)
+            const cached = localStorage.getItem('duri_bcv_rate');
+            if (cached) {
+                const data = JSON.parse(cached);
+                if (data && data.savedAt && (Date.now() - data.savedAt < 10 * 60 * 1000) && data.rate > 0) {
+                    return false;
+                }
+            }
+
             const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
             if (res.ok) {
                 const data = await res.json();
@@ -181,11 +194,13 @@ const BcvManager = {
                         lastUpdated: this.lastUpdated,
                         savedAt: Date.now()
                     }));
+                    return true;
                 }
             }
         } catch(err) {
             console.warn('No se pudo conectar a la API del BCV en vivo, utilizando tasa de respaldo:', err);
         }
+        return false;
     },
 
     toBs(usd) {
@@ -921,15 +936,27 @@ function initCinematicEffects() {
         hero.appendChild(particlesDiv);
     }
     
-    // Smooth parallax for hero shapes
+    // Smooth hardware-accelerated parallax for hero shapes (60fps)
+    let isParallaxTicking = false;
+    let shapesCache = null;
     window.addEventListener('scroll', () => {
-        const shapes = document.querySelectorAll('.shape');
-        const scrollY = window.scrollY;
-        shapes.forEach((shape, i) => {
-            const speed = (i + 1) * 0.15;
-            shape.style.transform = 'translateY(' + (scrollY * speed) + 'px)';
-        });
-    });
+        if (!isParallaxTicking) {
+            window.requestAnimationFrame(() => {
+                const scrollY = window.scrollY;
+                if (scrollY < 1200) {
+                    if (!shapesCache) shapesCache = document.querySelectorAll('.shape');
+                    if (shapesCache.length > 0) {
+                        shapesCache.forEach((shape, i) => {
+                            const speed = (i + 1) * 0.15;
+                            shape.style.transform = `translate3d(0, ${(scrollY * speed).toFixed(1)}px, 0)`;
+                        });
+                    }
+                }
+                isParallaxTicking = false;
+            });
+            isParallaxTicking = true;
+        }
+    }, { passive: true });
 }
 
 function showInventoryLink() {
