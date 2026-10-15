@@ -140,7 +140,7 @@
                                     <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre, Arias Blanco, Valle Verde) — +$3.00 USD</option>
                                     <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / La Morita / Coropo / Samán de Güere / Santa Cruz — +$5.00 USD</option>
                                     <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo / Bella Vista / Corinsa — +$6.00 USD</option>
-                                    <option value="lejana" data-costo="8">📍 La Victoria / Villa de Cura / San Sebastián / Otras Zonas Lejanas — +$8.00 USD</option>
+                                    <option value="lejana" data-costo="8">📍 Zonas Lejanas / Foráneas (Magdaleno, Villa de Cura, Tocorón, La Victoria, San Sebastián, Zuata) — +$8.00 USD</option>
                                     <option value="otra" data-costo="3">📍 Otra Zona / Sector no listado (Tarifa estimada: $3.00 USD / Calculada con tu GPS)</option>
                                 </select>
                                 <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
@@ -292,7 +292,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=34.0"></script>
+    <script src="../js/app.js?v=35.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -511,7 +511,12 @@
             'villa de cura': { nombre: 'Villa de Cura, Aragua', coords: [10.0385, -67.4885], zona: 'lejana', tarifa: 8 },
             'san sebastian': { nombre: 'San Sebastián de los Reyes', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 8 },
             'san sebastián': { nombre: 'San Sebastián de los Reyes', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 8 },
-            'magdaleno': { nombre: 'Magdaleno, Aragua', coords: [10.1020, -67.6250], zona: 'lejana', tarifa: 8 },
+            'magdaleno': { nombre: 'Magdaleno, Zamora', coords: [10.1020, -67.6250], zona: 'lejana', tarifa: 8 },
+            'zamora': { nombre: 'Municipio Zamora (Magdaleno / Villa de Cura)', coords: [10.1020, -67.6250], zona: 'lejana', tarifa: 8 },
+            'tocoron': { nombre: 'Tocorón, Zamora', coords: [10.1250, -67.5750], zona: 'lejana', tarifa: 8 },
+            'tocorón': { nombre: 'Tocorón, Zamora', coords: [10.1250, -67.5750], zona: 'lejana', tarifa: 8 },
+            'san francisco de asis': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'lejana', tarifa: 8 },
+            'san francisco de asís': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'lejana', tarifa: 8 },
             'zuata': { nombre: 'Zuata, Aragua', coords: [10.2100, -67.3600], zona: 'lejana', tarifa: 8 },
             'tejerias': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
             'tejerías': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
@@ -528,6 +533,7 @@
             limon: { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
             turmero: { nombre: 'Turmero / Palo Negro', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
             cagua: { nombre: 'Cagua / La Encrucijada', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
+            magdaleno: { nombre: 'Magdaleno (Municipio Zamora)', coords: [10.1020, -67.6250], zoom: 15, zona: 'lejana', tarifa: 8 },
             victoria: { nombre: 'La Victoria / Zonas Lejanas', coords: [10.2268, -67.3323], zoom: 13, zona: 'lejana', tarifa: 8 },
             valencia: { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zoom: 14, zona: 'lejana', tarifa: 8 },
             caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 13, zona: 'lejana', tarifa: 8 }
@@ -635,29 +641,72 @@
 
             if (zonaForzada) {
                 zonaDetectada = zonaForzada;
-            } else if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
-                // 1. Si hay coordenadas GPS válidas, calcular distancia métrica satelital real
-                const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], parseFloat(lat), parseFloat(lon));
-                if (dKm <= 1.8) zonaDetectada = 'centro';        // Centro de Maracay: GRATIS ($0.00)
-                else if (dKm <= 5.5) zonaDetectada = 'cercanas'; // Zonas Cercanas Maracay: +$2.00
-                else if (dKm <= 9.5) zonaDetectada = 'limon';    // El Limón / MBI: +$3.00
-                else if (dKm <= 16.0) zonaDetectada = 'turmero'; // Turmero / Palo Negro / La Morita: +$5.00
-                else if (dKm <= 23.0) zonaDetectada = 'cagua';   // Cagua / Encrucijada: +$6.00
-                else zonaDetectada = 'lejana';                   // Zonas Lejanas: +$8.00
             } else {
-                // 2. Si es solo texto escrito en el formulario, consultar diccionario exhaustivo de sectores
                 const t = (texto || '').toLowerCase();
-                let matched = false;
-                if (typeof SECTORES_MARACAY !== 'undefined') {
+                let matchedByText = false;
+
+                // 1. Detección inteligente por nombre de sector, parroquia o municipio
+                if (t.includes('magdaleno') || t.includes('zamora') || t.includes('tocoron') || t.includes('tocorón') || 
+                    t.includes('villa de cura') || t.includes('san sebastian') || t.includes('san sebastián') || 
+                    t.includes('san casimiro') || t.includes('san francisco de asis') || t.includes('san francisco de asís') ||
+                    t.includes('victoria') || t.includes('tejerias') || t.includes('tejerías') || t.includes('zuata') || 
+                    t.includes('valencia') || t.includes('caracas') || t.includes('carabobo')) {
+                    zonaDetectada = 'lejana';
+                    matchedByText = true;
+                } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('san mateo') || 
+                           t.includes('bella vista') || t.includes('corinsa') || (t.includes('sucre') && !t.includes('base sucre') && !t.includes('barrio sucre'))) {
+                    zonaDetectada = 'cagua';
+                    matchedByText = true;
+                } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || 
+                           t.includes('morita') || t.includes('coropo') || t.includes('saman de guere') || 
+                           t.includes('samán de güere') || t.includes('santa cruz') || t.includes('lamas') || 
+                           t.includes('libertador') || t.includes('linares alcantara') || t.includes('linares alcántara')) {
+                    zonaDetectada = 'turmero';
+                    matchedByText = true;
+                } else if (t.includes('limon') || t.includes('limón') || t.includes('mario briceño') || 
+                           t.includes('mbi') || t.includes('arsenal') || t.includes('candelaria') || 
+                           t.includes('base sucre') || t.includes('valle verde') || t.includes('el paseo') || t.includes('arias blanco')) {
+                    zonaDetectada = 'limon';
+                    matchedByText = true;
+                } else if (typeof SECTORES_MARACAY !== 'undefined') {
                     for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
                         if (t.includes(key)) {
                             zonaDetectada = sec.zona;
-                            matched = true;
+                            matchedByText = true;
                             break;
                         }
                     }
                 }
-                if (!matched) {
+
+                // 2. Si no hubo coincidencia por texto y hay coordenadas GPS, calcular por cuadrante geográfico satelital
+                if (!matchedByText && lat && lon && typeof DEFAULT_COORD !== 'undefined') {
+                    const latNum = parseFloat(lat);
+                    const lonNum = parseFloat(lon);
+                    const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], latNum, lonNum);
+
+                    // Zona Sur del Lago / Zamora (Magdaleno, Tocorón, Villa de Cura):
+                    // Latitud menor o igual a 10.135 es geográficamente Sur del Lago / Municipio Zamora
+                    if (latNum <= 10.135) {
+                        zonaDetectada = 'lejana'; // Magdaleno / Tocorón / Villa de Cura: +$8.00
+                    } else if (dKm <= 2.2) {
+                        zonaDetectada = 'centro'; // Centro Maracay: GRATIS ($0.00)
+                    } else if (dKm <= 6.0) {
+                        zonaDetectada = 'cercanas'; // Zonas Urbanas Cercanas: +$2.00
+                    } else if (dKm <= 10.5 && (lonNum < -67.61 || latNum > 10.27)) {
+                        zonaDetectada = 'limon'; // El Limón / MBI: +$3.00
+                    } else if (dKm <= 16.5) {
+                        zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
+                    } else if (dKm <= 24.0) {
+                        // Cagua / Encrucijada está al Este (Lon > -67.49 y Lat >= 10.14)
+                        if (lonNum >= -67.49 && lonNum <= -67.38 && latNum >= 10.14) {
+                            zonaDetectada = 'cagua'; // Cagua: +$6.00
+                        } else {
+                            zonaDetectada = 'lejana'; // Resto a esta distancia es foránea/lejana: +$8.00
+                        }
+                    } else {
+                        zonaDetectada = 'lejana'; // Más de 24 km: Zonas Lejanas: +$8.00
+                    }
+                } else if (!matchedByText) {
                     if (t.length > 5) {
                         zonaDetectada = 'otra'; // Tarifa provisional de sector no listado: $3.00
                     } else {
@@ -681,6 +730,9 @@
         }
 
         function aplicarUbicacionFijada(lat, lon, texto = '') {
+            if (typeof seleccionarModalidadEntrega === 'function') {
+                seleccionarModalidadEntrega('delivery');
+            }
             const formatted = `${parseFloat(lat).toFixed(6)},${parseFloat(lon).toFixed(6)}`;
             const geoInput = document.getElementById('geoCoords');
             if (geoInput) geoInput.value = formatted;
@@ -957,6 +1009,9 @@
         }
 
         function abrirModalMapa(usarGpsAutomatico = false, mensajeAlerta = false) {
+            if (typeof seleccionarModalidadEntrega === 'function') {
+                seleccionarModalidadEntrega('delivery');
+            }
             const modal = document.getElementById('modalGoogleMaps');
             if (!modal) return;
             modal.style.display = 'flex';
@@ -1166,117 +1221,124 @@
                 return;
             }
 
+            if (typeof seleccionarModalidadEntrega === 'function') {
+                seleccionarModalidadEntrega('delivery');
+            }
+
             aplicarUbicacionFijada(selectedCoords[0], selectedCoords[1], selectedAddressText);
             cerrarModalMapa();
 
             if (typeof showToast === 'function') {
-                showToast('📍 Dirección y GPS fijados con éxito', 'success');
+                showToast('📍 Dirección y GPS fijados con éxito: ' + (selectedAddressText.split(',')[0] || ''), 'success');
             }
         }
     </script>
 
     <!-- MODAL DE SELECCIÓN DE DIRECCIÓN GOOGLE MAPS (RESPONSIVO PARA MÓVIL Y PC) -->
-    <div id="modalGoogleMaps" style="display:none; position:fixed; inset:0; width:100%; height:100%; height:100dvh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); padding:max(8px,env(safe-area-inset-top,8px)) 8px max(10px,env(safe-area-inset-bottom,10px)); box-sizing:border-box; overflow-y:auto;">
-        <div style="background:#fff; width:680px; max-width:100%; max-height:min(92dvh,680px); height:100%; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; margin:auto;">
+    <div id="modalGoogleMaps" style="display:none; position:fixed; inset:0; width:100%; height:100%; height:100dvh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); padding:max(6px,env(safe-area-inset-top,6px)) 8px max(8px,env(safe-area-inset-bottom,8px)); box-sizing:border-box; overflow-y:auto;">
+        <div style="background:#fff; width:680px; max-width:100%; max-height:min(94dvh,640px); height:min(94dvh,640px); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; margin:auto;">
             <!-- Header Modal -->
-            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:9px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="fab fa-google" style="color:#ea4335; font-size:1.15rem;"></i>
-                    <strong style="font-size:1rem; color:#202124;">Ubicar Dirección en Google Maps</strong>
+                    <i class="fab fa-google" style="color:#ea4335; font-size:1.1rem;"></i>
+                    <strong style="font-size:0.95rem; color:#202124;">Ubicar Dirección en Google Maps</strong>
                 </div>
-                <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:34px; height:34px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;" aria-label="Cerrar">&times;</button>
+                <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:30px; height:30px; border-radius:50%; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;" aria-label="Cerrar">&times;</button>
             </div>
 
-            <div id="gmapsPromptNotice" style="display:none; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:8px 14px; font-size:0.8rem; color:#035388; align-items:center; gap:8px; flex-shrink:0;">
-                <i class="fas fa-hand-pointer" style="color:#007bff; font-size:0.95rem;"></i>
+            <div id="gmapsPromptNotice" style="display:none; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:5px 12px; font-size:0.76rem; color:#035388; align-items:center; gap:6px; flex-shrink:0;">
+                <i class="fas fa-hand-pointer" style="color:#007bff; font-size:0.9rem;"></i>
                 <span><b>Toca en el mapa donde está tu casa</b> o arrastra el marcador rojo para fijar tu entrega.</span>
             </div>
 
             <!-- Buscador rápido de sector / ciudad / avenida en toda Venezuela -->
-            <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:8px 12px; display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
+            <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:6px 12px; display:flex; flex-direction:column; gap:5px; flex-shrink:0;">
                 <div style="display:flex; gap:6px; background:#fff; border:1.5px solid #d0d7de; border-radius:8px; padding:2px 6px; align-items:center;">
-                    <i class="fas fa-search" style="color:#5f6368; padding-left:6px; font-size:0.85rem;"></i>
-                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Limón)..." style="flex:1; border:none; background:transparent; padding:7px 6px; font-size:0.82rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
-                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">Buscar</button>
+                    <i class="fas fa-search" style="color:#5f6368; padding-left:4px; font-size:0.8rem;"></i>
+                    <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Limón)..." style="flex:1; border:none; background:transparent; padding:5px 6px; font-size:0.8rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
+                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:5px 10px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">Buscar</button>
                 </div>
-                <!-- Botones rápidos de ciudades y sectores principales con sus tarifas exactas -->
-                <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
-                    <span style="font-size:0.72rem; color:#475569; font-weight:800;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Zonas:</span>
-                    <button type="button" onclick="centrarEnCiudad('duri')" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        🏢 Sede Duri <span style="color:#059669;">($0)</span>
+                <!-- Botones rápidos con scroll horizontal para ahorrar espacio vertical -->
+                <div style="display:flex; gap:5px; align-items:center; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:thin;">
+                    <span style="font-size:0.7rem; color:#475569; font-weight:800; white-space:nowrap; flex-shrink:0;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Zonas:</span>
+                    <button type="button" onclick="centrarEnCiudad('duri')" style="white-space:nowrap; flex-shrink:0; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        🏢 Sede Duri ($0)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('maracay')" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Centro Maracay <span style="color:#059669;">(Gratis)</span>
+                    <button type="button" onclick="centrarEnCiudad('maracay')" style="white-space:nowrap; flex-shrink:0; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Centro Maracay (Gratis)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('delicias')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Las Delicias <span style="color:#2563eb;">(+$2.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('delicias')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Las Delicias (+$2.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 San Jacinto <span style="color:#2563eb;">(+$2.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 San Jacinto (+$2.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('coromoto')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 La Coromoto <span style="color:#2563eb;">(+$2.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('coromoto')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 La Coromoto (+$2.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('canadeazucar')" style="background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Caña de Azúcar <span style="color:#2563eb;">(+$2.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('canadeazucar')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Caña de Azúcar (+$2.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('limon')" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 El Limón <span style="color:#b45309;">(+$3.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('limon')" style="white-space:nowrap; flex-shrink:0; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 El Limón (+$3.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('turmero')" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Turmero / Palo Negro <span style="color:#dc2626;">(+$5.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('turmero')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Turmero / Palo Negro (+$5.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('cagua')" style="background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 Cagua <span style="color:#dc2626;">(+$6.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('cagua')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Cagua (+$6.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('victoria')" style="background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:14px; padding:3px 9px; font-size:0.75rem; font-weight:700; cursor:pointer;">
-                        📍 La Victoria / Lejanas <span style="color:#4b5563;">(+$8.00)</span>
+                    <button type="button" onclick="centrarEnCiudad('magdaleno')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Magdaleno / Zamora (+$8.00)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('victoria')" style="white-space:nowrap; flex-shrink:0; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 La Victoria / Lejanas (+$8.00)
                     </button>
                 </div>
             </div>
 
             <!-- Mapa con Cartografía de Google Maps -->
-            <div style="flex:1; position:relative; width:100%; min-height:160px;">
-                <div id="gmapsCanvas" style="width:100%; height:100%; z-index:1;"></div>
+            <div style="flex:1; min-height:130px; position:relative; width:100%;">
+                <div id="gmapsCanvas" style="width:100%; height:100%; min-height:130px; z-index:1;"></div>
                 
                 <!-- Botón flotante para recentrar con GPS del teléfono -->
-                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:14px; right:14px; z-index:999; background:#fff; border:1px solid #dadce0; width:44px; height:44px; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-size:1.2rem;" title="Mi ubicación GPS">
+                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:10px; right:10px; z-index:999; background:#fff; border:1px solid #dadce0; width:40px; height:40px; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-size:1.1rem;" title="Mi ubicación GPS">
                     <i class="fas fa-crosshairs"></i>
                 </button>
             </div>
 
-            <!-- Footer con Dirección Detectada y Botón Aceptar -->
-            <div style="background:#fff; border-top:1px solid #e0e0e0; padding:12px 16px; padding-bottom:max(12px,env(safe-area-inset-bottom,12px)); display:flex; flex-direction:column; gap:10px; flex-shrink:0;">
-                <div style="display:flex; align-items:flex-start; gap:8px;">
-                    <i class="fas fa-map-pin" style="color:#ea4335; font-size:1.1rem; margin-top:2px;"></i>
-                    <div style="flex:1;">
-                        <span style="font-size:0.72rem; color:#5f6368; text-transform:uppercase; font-weight:600;">Dirección detectada en el mapa:</span>
-                        <div id="gmapsDetectedAddress" style="font-size:0.88rem; font-weight:600; color:#202124; line-height:1.25; min-height:20px;">Mueve el marcador rojo a tu casa...</div>
+            <!-- Footer con Dirección Detectada y Botón Aceptar (Siempre 100% visible) -->
+            <div style="background:#fff; border-top:1px solid #e0e0e0; padding:8px 12px 10px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; box-shadow:0 -4px 12px rgba(0,0,0,0.05);">
+                <div style="display:flex; align-items:flex-start; gap:6px;">
+                    <i class="fas fa-map-pin" style="color:#ea4335; font-size:0.95rem; margin-top:2px;"></i>
+                    <div style="flex:1; min-width:0;">
+                        <span style="font-size:0.68rem; color:#64748b; text-transform:uppercase; font-weight:700; display:block; line-height:1;">Dirección detectada en el mapa:</span>
+                        <div id="gmapsDetectedAddress" style="font-size:0.82rem; font-weight:700; color:#1e293b; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Mueve el marcador rojo a tu casa...</div>
                     </div>
                 </div>
 
                 <!-- Tarjeta de Tarifa y Total a Pagar detectada en el Mapa -->
-                <div id="gmapsPaymentPreviewBox" style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:9px 12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                    <div>
-                        <div style="font-size:0.74rem; font-weight:800; color:#166534; text-transform:uppercase; display:flex; align-items:center; gap:5px;">
+                <div id="gmapsPaymentPreviewBox" style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+                    <div style="min-width:0;">
+                        <div style="font-size:0.7rem; font-weight:800; color:#166534; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
                             <i class="fas fa-motorcycle" style="color:#059669;"></i> Tarifa a esta ubicación:
                         </div>
-                        <div id="gmapsDetectedZoneLabel" style="font-size:0.85rem; font-weight:700; color:#0f172a; margin-top:1px;">
+                        <div id="gmapsDetectedZoneLabel" style="font-size:0.8rem; font-weight:700; color:#0f172a; margin-top:1px;">
                             Centro de Maracay — ¡DELIVERY GRATIS ($0.00)!
                         </div>
                     </div>
                     <div style="text-align:right;">
-                        <span style="font-size:0.72rem; color:#64748b; font-weight:600; display:block;">Total de tu Pedido:</span>
-                        <span id="gmapsTotalPagarPreview" style="font-size:1.18rem; font-weight:900; color:#15803d;">$0.00 USD</span>
-                        <small id="gmapsTotalBsPreview" style="font-size:0.72rem; color:#475569; display:block; font-weight:600;">(≈ Bs. 0.00)</small>
+                        <span id="gmapsTotalPagarTitle" style="font-size:0.68rem; color:#64748b; font-weight:700; display:block; line-height:1;">Total de tu Pedido:</span>
+                        <span id="gmapsTotalPagarPreview" style="font-size:1.05rem; font-weight:900; color:#15803d; line-height:1.15;">$0.00 USD</span>
+                        <small id="gmapsTotalBsPreview" style="font-size:0.68rem; color:#475569; display:block; font-weight:600; line-height:1;">(≈ Bs. 0.00)</small>
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
-                    <button type="button" onclick="cerrarModalMapa()" style="min-height:44px; padding:10px; background:#f1f3f4; color:#3c4043; border:none; border-radius:10px; font-weight:600; font-size:0.88rem; cursor:pointer;">
+                <div style="display:grid; grid-template-columns: 1fr 2fr; gap:8px;">
+                    <button type="button" onclick="cerrarModalMapa()" style="min-height:38px; padding:7px; background:#f1f3f4; color:#3c4043; border:none; border-radius:8px; font-weight:700; font-size:0.84rem; cursor:pointer;">
                         Cancelar
                     </button>
-                    <button type="button" id="btnConfirmarUbicacion" onclick="confirmarUbicacionDesdeModal()" style="min-height:44px; padding:10px; background:#28a745; color:#fff; border:none; border-radius:10px; font-weight:700; font-size:0.92rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 12px rgba(40,167,69,0.35);">
+                    <button type="button" id="btnConfirmarUbicacion" onclick="confirmarUbicacionDesdeModal()" style="min-height:38px; padding:7px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:800; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 3px 10px rgba(40,167,69,0.35);">
                         <i class="fas fa-check-circle"></i> Aceptar y Usar Dirección
                     </button>
                 </div>

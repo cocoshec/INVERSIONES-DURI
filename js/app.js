@@ -145,6 +145,12 @@ const BcvManager = {
         await this.fetchLiveRate();
         this.renderTopBarWidget();
         this.updateStaticPrices();
+        if (typeof sincronizarMontosUbicacion === 'function') {
+            try { sincronizarMontosUbicacion(); } catch(e) {}
+        }
+        if (typeof updateCart === 'function') {
+            try { updateCart(); } catch(e) {}
+        }
     },
 
     loadCachedRate() {
@@ -183,7 +189,10 @@ const BcvManager = {
     },
 
     toBs(usd) {
-        return (parseFloat(usd) || 0) * this.rate;
+        const r = (this && typeof this.rate === 'number' && this.rate > 0) 
+            ? this.rate 
+            : ((typeof BcvManager !== 'undefined' && BcvManager.rate > 0) ? BcvManager.rate : 879.12);
+        return (parseFloat(usd) || 0) * r;
     },
 
     formatBs(amount) {
@@ -4948,22 +4957,42 @@ function sincronizarMontosUbicacion() {
     if (optZona) {
         zonaNombre = optZona.text.split('—')[0].split('(')[0].replace('📍', '').trim();
     }
+
+    // Refinar nombre de sector si se detectó una zona específica en el texto o mapa
+    let nombrePersonalizado = zonaNombre;
+    const currentAddr = (typeof selectedAddressText === 'string' ? selectedAddressText : (document.getElementById('deliveryAddress')?.value || '')).toLowerCase();
+    if (currentAddr.includes('magdaleno')) {
+        nombrePersonalizado = 'Magdaleno (Zona Lejana / Municipio Zamora)';
+    } else if (currentAddr.includes('tocoron') || currentAddr.includes('tocorón')) {
+        nombrePersonalizado = 'Tocorón (Zona Lejana / Municipio Zamora)';
+    } else if (currentAddr.includes('villa de cura')) {
+        nombrePersonalizado = 'Villa de Cura (Municipio Zamora)';
+    } else if (currentAddr.includes('cagua')) {
+        nombrePersonalizado = 'Cagua (Municipio Sucre)';
+    } else if (currentAddr.includes('turmero')) {
+        nombrePersonalizado = 'Turmero (Municipio Santiago Mariño)';
+    } else if (currentAddr.includes('palo negro')) {
+        nombrePersonalizado = 'Palo Negro (Municipio Libertador)';
+    } else if (currentAddr.includes('el limon') || currentAddr.includes('el limón')) {
+        nombrePersonalizado = 'El Limón (Municipio MBI)';
+    }
     
     let sum = 0;
-    if (typeof cart !== 'undefined' && Array.isArray(cart)) {
+    const cartItemsCount = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart.length : 0;
+    if (cartItemsCount > 0) {
         cart.forEach(it => { sum += (it.price || 0) * (it.qty || 1); });
     }
     const subtotal = sum;
     const iva = subtotal * 0.16;
     const grandTotal = subtotal + iva + (isRetiro ? 0 : deliveryCost);
     
-    const rate = (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : 45.0;
-    const formatBs = (typeof BcvManager !== 'undefined' && BcvManager.formatBs) 
-        ? BcvManager.formatBs 
-        : (v => `Bs. ${Number(v).toFixed(2)}`);
-    const toBs = (typeof BcvManager !== 'undefined' && BcvManager.toBs) 
-        ? BcvManager.toBs 
-        : (v => v * rate);
+    const rate = (typeof BcvManager !== 'undefined' && BcvManager.rate > 0) ? BcvManager.rate : 879.12;
+    const formatBs = (typeof BcvManager !== 'undefined' && typeof BcvManager.formatBs === 'function') 
+        ? (v => BcvManager.formatBs(v)) 
+        : (v => `Bs. ${Number(v).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    const toBs = (typeof BcvManager !== 'undefined' && typeof BcvManager.toBs === 'function') 
+        ? (v => BcvManager.toBs(v)) 
+        : (v => (parseFloat(v) || 0) * rate);
 
     const bsTotal = formatBs(toBs(grandTotal));
     const bsDelivery = formatBs(toBs(deliveryCost));
@@ -4982,7 +5011,7 @@ function sincronizarMontosUbicacion() {
             badgeZona.style.background = '#ecfdf5';
             badgeZona.style.color = '#059669';
         } else {
-            badgeZona.textContent = `${zonaNombre} (${deliveryCost === 0 ? 'Gratis' : `$${deliveryCost.toFixed(2)}`})`;
+            badgeZona.textContent = `${nombrePersonalizado} (${deliveryCost === 0 ? 'Gratis' : `$${deliveryCost.toFixed(2)}`})`;
             badgeZona.style.background = deliveryCost === 0 ? '#ecfdf5' : '#eff6ff';
             badgeZona.style.color = deliveryCost === 0 ? '#059669' : '#1d4ed8';
         }
@@ -5015,9 +5044,9 @@ function sincronizarMontosUbicacion() {
         if (isRetiro) {
             cardPrecio.innerHTML = `<i class="fas fa-store" style="color:#059669;"></i> Retiro en Tienda: <strong>GRATIS</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
         } else if (deliveryCost === 0) {
-            cardPrecio.innerHTML = `<i class="fas fa-gift" style="color:#059669;"></i> Delivery ${zonaNombre}: <strong>GRATIS ($0.00)</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+            cardPrecio.innerHTML = `<i class="fas fa-gift" style="color:#059669;"></i> Delivery ${nombrePersonalizado}: <strong>GRATIS ($0.00)</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
         } else {
-            cardPrecio.innerHTML = `<i class="fas fa-motorcycle" style="color:#2563eb;"></i> Delivery ${zonaNombre}: <strong>+$${deliveryCost.toFixed(2)} USD</strong> (${bsDelivery}) | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+            cardPrecio.innerHTML = `<i class="fas fa-motorcycle" style="color:#2563eb;"></i> Delivery ${nombrePersonalizado}: <strong>+$${deliveryCost.toFixed(2)} USD</strong> (${bsDelivery}) | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
         }
     }
 
@@ -5025,19 +5054,32 @@ function sincronizarMontosUbicacion() {
     const gmapsZoneLabel = document.getElementById('gmapsDetectedZoneLabel');
     const gmapsTotalUsd = document.getElementById('gmapsTotalPagarPreview');
     const gmapsTotalBs = document.getElementById('gmapsTotalBsPreview');
+    const gmapsTitle = document.getElementById('gmapsTotalPagarTitle');
 
     if (gmapsZoneLabel) {
         if (deliveryCost === 0) {
-            gmapsZoneLabel.innerHTML = `<span style="color:#059669; font-weight:700;"><i class="fas fa-gift"></i> ${zonaNombre} — ¡DELIVERY GRATIS ($0.00)!</span>`;
+            gmapsZoneLabel.innerHTML = `<span style="color:#059669; font-weight:700;"><i class="fas fa-gift"></i> ${nombrePersonalizado} — ¡DELIVERY GRATIS ($0.00)!</span>`;
         } else {
-            gmapsZoneLabel.innerHTML = `<span style="color:#1d4ed8; font-weight:700;"><i class="fas fa-motorcycle"></i> ${zonaNombre} — Tarifa: +$${deliveryCost.toFixed(2)} USD (${bsDelivery})</span>`;
+            gmapsZoneLabel.innerHTML = `<span style="color:#1d4ed8; font-weight:700;"><i class="fas fa-motorcycle"></i> ${nombrePersonalizado} — Tarifa: +$${deliveryCost.toFixed(2)} USD (${bsDelivery})</span>`;
         }
     }
+
     if (gmapsTotalUsd) {
-        gmapsTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
+        if (cartItemsCount === 0) {
+            gmapsTotalUsd.textContent = `$${deliveryCost.toFixed(2)} USD`;
+        } else {
+            gmapsTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
+        }
     }
     if (gmapsTotalBs) {
-        gmapsTotalBs.textContent = `≈ ${bsTotal}`;
+        if (cartItemsCount === 0) {
+            gmapsTotalBs.textContent = `≈ ${bsDelivery} (Costo Delivery)`;
+        } else {
+            gmapsTotalBs.textContent = `≈ ${bsTotal} (Productos + Delivery)`;
+        }
+    }
+    if (gmapsTitle) {
+        gmapsTitle.textContent = cartItemsCount === 0 ? 'Tarifa de Delivery:' : 'Total de tu Pedido:';
     }
 }
 window.sincronizarMontosUbicacion = sincronizarMontosUbicacion;
