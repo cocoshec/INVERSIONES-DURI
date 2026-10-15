@@ -284,7 +284,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=42.0"></script>
+    <script src="../js/app.js?v=43.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -824,15 +824,7 @@
             // Actualizar el campo de texto en la página donde el usuario escribe su dirección
             const addrInput = document.getElementById('deliveryAddress');
             if (addrInput) {
-                const prev = addrInput.value.trim();
-                const esGenerico = !prev || prev.startsWith('Ubicación GPS') || prev.startsWith('Punto GPS') || prev.startsWith('Coordenadas') || prev.includes('http');
-                if (esGenerico) {
-                    addrInput.value = defaultText;
-                } else if (defaultText && !prev.includes(defaultText)) {
-                    // Mantener notas de referencia previas escritas por el cliente
-                    const refLimpia = prev.replace(/^.*?\(Ref:\s*/i, '').replace(/\)$/, '').trim();
-                    addrInput.value = refLimpia ? `${defaultText} (Ref: ${refLimpia})` : defaultText;
-                }
+                addrInput.value = defaultText;
             }
 
             // Mostrar tarjeta de confirmación de ubicación con link directo a Google Maps
