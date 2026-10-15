@@ -153,27 +153,17 @@
                         <div id="contenedorDireccionDespacho" style="display:none;" class="form-group">
                             <label><i class="fas fa-map-marker-alt"></i> Dirección Exacta de Despacho <span style="color:#dc3545">*</span></label>
                             
-                            <!-- Botones adaptados para móvil -->
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(40,167,69,0.25);">
+                            <!-- Botones: Solo Mi GPS Actual y Sede Duri -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
+                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.84rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(40,167,69,0.25);">
                                     <i class="fas fa-crosshairs"></i> Mi GPS Actual
                                 </button>
-                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#ea4335; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 3px 10px rgba(234,67,53,0.3);">
-                                    <i class="fab fa-google"></i> Abrir en Maps (Pin)
-                                </button>
-                            </div>
-
-                            <!-- Botones rápidos de pegar enlace Google Maps y ver sede oficial -->
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-                                <button type="button" onclick="pegarEnlaceGoogleMaps()" style="background:#eff6ff; color:#1d4ed8; border:1px dashed #93c5fd; padding:7px 8px; border-radius:8px; font-size:0.76rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-                                    <i class="fas fa-paste"></i> Pegar Link Maps
-                                </button>
-                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.76rem; color:#991b1b; text-decoration:none; padding:7px 8px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca; font-weight:700; text-align:center;">
-                                    <i class="fas fa-store"></i> Sede Duri Maps
+                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.84rem; color:#991b1b; text-decoration:none; padding:10px 8px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca; font-weight:700; text-align:center;">
+                                    <i class="fas fa-store"></i> Sede Duri
                                 </a>
                             </div>
 
-                            <!-- Tarjeta de Confirmación de Ubicación fijada con Google Maps -->
+                            <!-- Tarjeta de Confirmación de Ubicación fijada con GPS -->
                             <div id="ubicacionConfirmadaCard" style="display:none; margin-bottom:8px; padding:10px 12px; background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:8px; font-size:0.82rem; color:#2e7d32; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <i class="fas fa-check-circle" style="font-size:1.3rem; color:#28a745;"></i>
@@ -185,7 +175,7 @@
                                 </div>
                                 <div style="display:flex; gap:6px; align-items:center;">
                                     <a id="ubicacionTestMapsLink" href="#" target="_blank" style="background:#fff; border:1px solid #28a745; color:#155724; padding:5px 9px; border-radius:6px; font-size:0.78rem; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:4px;"><i class="fab fa-google" style="color:#ea4335;"></i> Ver en Maps</a>
-                                    <button type="button" onclick="abrirModalMapa(false)" style="background:#fff; border:1px solid #ccc; padding:5px 9px; border-radius:6px; font-size:0.78rem; cursor:pointer; color:#333; font-weight:600;">Cambiar</button>
+                                    <button type="button" onclick="obtenerGpsDirecto()" style="background:#fff; border:1px solid #ccc; padding:5px 9px; border-radius:6px; font-size:0.78rem; cursor:pointer; color:#333; font-weight:600;"><i class="fas fa-sync-alt"></i> Actualizar GPS</button>
                                 </div>
                             </div>
 
@@ -1125,13 +1115,41 @@
         }
 
         function obtenerGpsDirecto() {
+            if (typeof seleccionarModalidadEntrega === 'function') {
+                seleccionarModalidadEntrega('delivery');
+            }
             const btn = document.getElementById('btnGpsDirect');
             const originalHtml = btn ? btn.innerHTML : '';
-            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abriendo GPS...';
-            abrirModalMapa(true, false);
-            setTimeout(() => {
-                if (btn) btn.innerHTML = originalHtml;
-            }, 800);
+            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo GPS...';
+
+            if (typeof showToast === 'function') {
+                showToast('📡 Localizando tu posición GPS...', 'info');
+            }
+
+            capturarGpsTiempoReal(
+                (pos, tipo) => {
+                    if (btn) btn.innerHTML = originalHtml;
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    aplicarUbicacionFijada(lat, lon);
+                    reverseGeocodeReal(lat, lon, (desc) => {
+                        aplicarUbicacionFijada(lat, lon, desc);
+                    });
+                    setTimeout(() => {
+                        const card = document.getElementById('ubicacionConfirmadaCard');
+                        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 120);
+                    if (typeof showToast === 'function') {
+                        showToast('📍 ¡Ubicación GPS fijada con éxito!', 'success');
+                    }
+                },
+                (msgError) => {
+                    if (btn) btn.innerHTML = originalHtml;
+                    if (typeof showToast === 'function') {
+                        showToast(msgError || 'No se pudo obtener el GPS. Escribe tu dirección en el recuadro.', 'warning');
+                    }
+                }
+            );
         }
 
         function abrirModalMapa(usarGpsAutomatico = false, mensajeAlerta = false) {
