@@ -95,30 +95,30 @@ img { max-width:100%; }
 /* ============================================
    HERO - Image background + gradient
    ============================================ */
-.hero { min-height:100vh; display:flex; align-items:center; position:relative; overflow:hidden; background:var(--dark); }
+.hero { min-height:calc(100vh - 115px); display:flex; align-items:center; position:relative; overflow:hidden; background:var(--dark); padding:20px 0 40px; }
 .hero-bg { position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1600&q=80') center/cover no-repeat; opacity:0.35; }
 .hero-overlay { position:absolute; inset:0; background:linear-gradient(135deg, rgba(26,15,46,0.92) 0%, rgba(26,15,46,0.7) 40%, rgba(232,93,38,0.3) 100%); }
 .hero-shapes { position:absolute; inset:0; pointer-events:none; }
 .shape { position:absolute; border-radius:50%; }
 .shape-1 { width:600px; height:600px; background:radial-gradient(circle, rgba(232,93,38,0.15) 0%, transparent 70%); top:-200px; right:-200px; }
 .shape-2 { width:400px; height:400px; background:radial-gradient(circle, rgba(245,197,66,0.08) 0%, transparent 70%); bottom:-100px; left:-100px; }
-.hero-content { max-width:1120px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:60px; position:relative; z-index:2; width:100%; }
+.hero-content { max-width:1120px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:60px; position:relative; z-index:2; width:100%; transform:translateY(-26px); }
 .hero-text { flex:1; }
-.hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(232,93,38,0.2); color:var(--accent); padding:7px 16px; border-radius:100px; font-size:0.8rem; font-weight:600; margin-bottom:24px; border:1px solid rgba(232,93,38,0.3); backdrop-filter:blur(8px); }
-.hero h1 { font-size:4rem; line-height:1.05; margin-bottom:20px; color:var(--white); letter-spacing:-0.035em; }
+.hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(232,93,38,0.2); color:var(--accent); padding:6px 14px; border-radius:100px; font-size:0.8rem; font-weight:600; margin-bottom:16px; border:1px solid rgba(232,93,38,0.3); backdrop-filter:blur(8px); }
+.hero h1 { font-size:3.65rem; line-height:1.06; margin-bottom:14px; color:var(--white); letter-spacing:-0.035em; }
 .hero h1 .highlight { color:var(--accent); position:relative; }
 .hero h1 .highlight::after { content:''; position:absolute; bottom:2px; left:0; right:0; height:4px; background:var(--accent); border-radius:2px; opacity:0.4; }
-.hero p { font-size:1.05rem; color:rgba(255,255,255,0.6); margin-bottom:32px; max-width:480px; line-height:1.7; }
-.hero-buttons { display:flex; gap:12px; margin-bottom:50px; flex-wrap:wrap; }
-.hero-stats { display:flex; gap:20px; }
-.stat-item { display:flex; align-items:center; gap:12px; padding:14px 20px; border-radius:var(--radius); background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(8px); }
-.stat-icon { width:42px; height:42px; background:var(--accent); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; color:var(--white); font-size:0.9rem; }
+.hero p { font-size:1.02rem; color:rgba(255,255,255,0.7); margin-bottom:24px; max-width:480px; line-height:1.65; }
+.hero-buttons { display:flex; gap:12px; margin-bottom:32px; flex-wrap:wrap; }
+.hero-stats { display:flex; gap:16px; }
+.stat-item { display:flex; align-items:center; gap:12px; padding:12px 18px; border-radius:var(--radius); background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(8px); }
+.stat-icon { width:40px; height:40px; background:var(--accent); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; color:var(--white); font-size:0.9rem; }
 .stat-icon.yellow { background:var(--yellow); color:var(--dark); }
 .stat-icon.brown { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.8); }
-.stat-info strong { display:block; font-size:1.2rem; font-weight:700; color:var(--white); }
-.stat-info span { font-size:0.75rem; color:rgba(255,255,255,0.45); font-weight:500; }
+.stat-info strong { display:block; font-size:1.15rem; font-weight:700; color:var(--white); }
+.stat-info span { font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500; }
 .hero-image { flex:1; display:flex; justify-content:center; position:relative; }
-.hero-image img { width:320px; position:relative; z-index:1; filter:drop-shadow(0 24px 48px rgba(0,0,0,0.3)); }
+.hero-image img { width:315px; position:relative; z-index:1; filter:drop-shadow(0 24px 48px rgba(0,0,0,0.3)); transform:translateY(-6px); }
 
 /* ============================================
    BUTTONS
