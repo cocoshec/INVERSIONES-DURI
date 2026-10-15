@@ -5216,7 +5216,7 @@ async function submitOrder() {
         const zonaOpt = selectZona ? selectZona.options[selectZona.selectedIndex] : null;
         deliveryZoneLabel = zonaOpt ? zonaOpt.text.split('—')[0].replace('📍', '').trim() : 'Delivery a Domicilio';
         if (geoCoords) {
-            mapsLink = `https://maps.google.com/?q=${geoCoords}`;
+            mapsLink = `https://www.google.com/maps/search/?api=1&query=${geoCoords}`;
             fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr} | GPS: ${mapsLink}`;
         } else {
             fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr}`;

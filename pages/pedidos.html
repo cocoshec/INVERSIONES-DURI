@@ -158,23 +158,20 @@
                                 <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
                                     <i class="fas fa-crosshairs"></i> Mi GPS Actual
                                 </button>
-                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(true)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
                                     <i class="fas fa-map-marked-alt"></i> Abrir en Maps
                                 </button>
                             </div>
 
-                            <!-- Botón directo para abrir la app oficial de Google Maps o ver la sede oficial -->
-                            <div style="margin-bottom:8px; display:flex; gap:6px; flex-wrap:wrap;">
-                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="flex:1; min-width:190px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#c5221f; text-decoration:none; padding:7px 10px; background:#fce8e6; border-radius:8px; border:1px solid #fad2cf; font-weight:600; text-align:center;">
-                                    <i class="fas fa-store"></i> Ver Sede Duri en Google Maps
-                                </a>
-                                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" style="flex:1; min-width:180px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#1a73e8; text-decoration:none; padding:7px 10px; background:#f0f4f9; border-radius:8px; border:1px dashed #a8c7fa; font-weight:600; text-align:center;">
-                                    <i class="fab fa-google" style="color:#ea4335;"></i> App Google Maps (copiar pin)
+                            <!-- Botón directo para ver la sede oficial en Google Maps -->
+                            <div style="margin-bottom:8px;">
+                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="width:100%; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#c5221f; text-decoration:none; padding:7px 10px; background:#fce8e6; border-radius:8px; border:1px solid #fad2cf; font-weight:600; text-align:center;">
+                                    <i class="fas fa-store"></i> Ver Sede Principal Duri en Google Maps
                                 </a>
                             </div>
 
                             <!-- Tarjeta de Confirmación de Ubicación fijada con Google Maps -->
-                            <div id="ubicacionConfirmadaCard" style="display:none; margin-bottom:8px; padding:10px 12px; background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:8px; font-size:0.82rem; color:#2e7d32; display:flex; justify-content:space-between; align-items:center;">
+                            <div id="ubicacionConfirmadaCard" style="display:none; margin-bottom:8px; padding:10px 12px; background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:8px; font-size:0.82rem; color:#2e7d32; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <i class="fas fa-check-circle" style="font-size:1.3rem; color:#28a745;"></i>
                                     <div>
@@ -183,9 +180,9 @@
                                         <span id="ubicacionConfirmadaPrecio" style="display:block; font-size:0.8rem; font-weight:700; color:#1e40af; margin-top:2px;"></span>
                                     </div>
                                 </div>
-                                <div style="display:flex; gap:8px; align-items:center;">
-                                    <a id="ubicacionTestMapsLink" href="#" target="_blank" style="color:#155724; font-size:0.78rem; text-decoration:underline; font-weight:600;"><i class="fas fa-external-link-alt"></i> Ver</a>
-                                    <button type="button" onclick="abrirModalMapa(false)" style="background:#fff; border:1px solid #ccc; padding:3px 7px; border-radius:4px; font-size:0.75rem; cursor:pointer; color:#333;">Cambiar</button>
+                                <div style="display:flex; gap:6px; align-items:center;">
+                                    <a id="ubicacionTestMapsLink" href="#" target="_blank" style="background:#fff; border:1px solid #28a745; color:#155724; padding:5px 9px; border-radius:6px; font-size:0.78rem; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:4px;"><i class="fab fa-google" style="color:#ea4335;"></i> Ver en Maps</a>
+                                    <button type="button" onclick="abrirModalMapa(false)" style="background:#fff; border:1px solid #ccc; padding:5px 9px; border-radius:6px; font-size:0.78rem; cursor:pointer; color:#333; font-weight:600;">Cambiar</button>
                                 </div>
                             </div>
 
@@ -292,7 +289,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=35.0"></script>
+    <script src="../js/app.js?v=36.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -752,7 +749,7 @@
 
             if (card) card.style.display = 'flex';
             if (coordsText) coordsText.textContent = `${defaultText} (${formatted})`;
-            if (testLink) testLink.href = `https://maps.google.com/?q=${formatted}`;
+            if (testLink) testLink.href = `https://www.google.com/maps/search/?api=1&query=${formatted}`;
 
             autoDetectarZonaDelivery(lat, lon, defaultText);
             if (typeof sincronizarMontosUbicacion === 'function') {
@@ -1022,11 +1019,14 @@
             // Coordenadas a usar
             const currentCoordsVal = document.getElementById('geoCoords').value;
             let coordsToUse = DEFAULT_COORD;
+            let tieneCoordsFijadas = false;
             if (currentCoordsVal && currentCoordsVal.includes(',')) {
                 const parts = currentCoordsVal.split(',');
                 coordsToUse = [parseFloat(parts[0]), parseFloat(parts[1])];
+                tieneCoordsFijadas = true;
             } else if (selectedCoords && Array.isArray(selectedCoords)) {
                 coordsToUse = selectedCoords;
+                tieneCoordsFijadas = true;
             } else if (zonaActual && CIUDADES_VE[zonaActual]) {
                 coordsToUse = CIUDADES_VE[zonaActual].coords;
             } else if (zonaActual === 'cercanas') {
@@ -1049,7 +1049,7 @@
                 alertBox.style.display = mensajeAlerta ? 'flex' : 'none';
             }
 
-            if (usarGpsAutomatico) {
+            if (usarGpsAutomatico && !tieneCoordsFijadas) {
                 centrarGpsModal(true);
             }
         }
