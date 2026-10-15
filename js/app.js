@@ -717,17 +717,17 @@ async function processDuriQuery(rawQuery) {
         return;
     }
 
-    // 3. Envíos y Delivery
-    if (q.includes('envio') || q.includes('delivery') || q.includes('entrega') || q.includes('maracay') || q.includes('cagua') || q.includes('turmero') || q.includes('valencia') || q.includes('caracas') || q.includes('mrw') || q.includes('zoom') || q.includes('tealca')) {
+    // 3. Envíos y Delivery (Solo Estado Aragua)
+    if (q.includes('envio') || q.includes('delivery') || q.includes('entrega') || q.includes('maracay') || q.includes('cagua') || q.includes('turmero') || q.includes('valencia') || q.includes('caracas') || q.includes('aragua') || q.includes('mrw') || q.includes('zoom') || q.includes('tealca')) {
         const pedidosUrl = (window.location.pathname.includes('/pages/') ? 'pedidos.html' : 'pages/pedidos.html');
         const html = `
-            🚚 <strong>Zonas de Entrega y Envíos:</strong><br><br>
-            • 🛵 <strong>Delivery en Maracay y Aragua:</strong> Contamos con entrega rápida con fijación GPS en Maracay (El Limón, Las Delicias, La Coromoto, San Ignacio), Cagua y Turmero.<br>
-            • 📦 <strong>Envíos Nacionales:</strong> Enviamos a toda Venezuela por agencias de encomienda (<strong>MRW, Zoom, Tealca</strong>) con cobro a destino y embalaje seguro.<br><br>
-            ¿Deseas verificar si cubrimos tu sector específico?
+            🛵 <strong>Cobertura Exclusiva en el Estado Aragua:</strong><br><br>
+            • 📍 <strong>Entregas en Aragua:</strong> Realizamos cotizaciones y despachos únicamente dentro del <strong>Estado Aragua</strong> (Maracay Centro GRATIS, Zonas Urbanas, El Limón, Turmero, Cagua, Palo Negro, La Victoria, etc.).<br>
+            • 🚫 <strong>Fuera del Estado Aragua:</strong> No es posible cotizar ni realizar entregas fuera del estado (Carabobo, Valencia, Caracas u otras entidades). Para clientes foráneos disponemos de la opción <strong>"Retiro en Tienda"</strong> en nuestra sede comercial de Maracay.<br><br>
+            ¿Deseas verificar tu sector dentro del Estado Aragua?
             <div class="duribot-chips">
-                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Preguntar por mi sector</button>
-                <button type="button" class="duribot-chip" onclick="window.location.href='${pedidosUrl}'">📍 Ir a Pedidos con GPS</button>
+                <button type="button" class="duribot-chip" onclick="window.location.href='${pedidosUrl}'">📍 Calcular Delivery en Aragua</button>
+                <button type="button" class="duribot-chip" onclick="sendDuriQuickReply('Quiero hablar con un asesor')">🟢 Hablar con un asesor</button>
             </div>
             <span class="duribot-time">${getFormattedTime()}</span>
         `;
@@ -4961,11 +4961,23 @@ function cambiarZonaDelivery() {
     if (!sel) return;
 
     const opt = sel.options[sel.selectedIndex];
-    const costo = opt ? parseFloat(opt.getAttribute('data-costo') || 0) : 0;
+    const optVal = sel.value;
+    const esBloqueado = optVal === 'fuera_aragua' || (opt && opt.getAttribute('data-bloqueado') === 'true');
+    const costo = esBloqueado ? -1 : (opt ? parseFloat(opt.getAttribute('data-costo') || 0) : 0);
     if (costoInput) costoInput.value = String(costo);
 
     if (badge) {
-        if (costo === 0) {
+        if (esBloqueado) {
+            badge.style.color = '#dc2626';
+            badge.innerHTML = `
+                <div style="background:#fef2f2; border:1.5px solid #fecaca; border-radius:8px; padding:10px 12px; color:#991b1b; line-height:1.45; width:100%; box-sizing:border-box; margin-top:4px;">
+                    <div style="font-weight:800; font-size:0.86rem; display:flex; align-items:center; gap:6px; margin-bottom:3px; color:#dc2626;">
+                        <i class="fas fa-ban"></i> Cobertura Exclusiva Estado Aragua
+                    </div>
+                    <span>Lo sentimos, <strong>no es posible cotizar ni despachar fuera del Estado Aragua</strong>. Nuestro servicio de delivery opera únicamente dentro del estado. Para compras foráneas, por favor selecciona la opción <strong>"Retiro en Tienda"</strong> en nuestra sede comercial de Maracay.</span>
+                </div>
+            `;
+        } else if (costo === 0) {
             badge.style.color = '#059669';
             badge.innerHTML = '<i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>';
         } else {
@@ -4973,8 +4985,7 @@ function cambiarZonaDelivery() {
                 ? BcvManager.formatBs(BcvManager.toBs(costo)) 
                 : `Bs. ${(costo * 45).toFixed(2)}`;
             badge.style.color = '#2563eb';
-            const optVal = sel.value;
-            const extraDesc = optVal === 'otra' ? ' (Sector fuera de lista / Estimada por GPS)' : '';
+            const extraDesc = optVal === 'otra' ? ' (Sector dentro de Aragua / Calculada por GPS)' : '';
             badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa de Delivery a esta zona: <strong>$${costo.toFixed(2)} USD</strong> (${bsCosto})${extraDesc}</span>`;
         }
     }
@@ -4987,14 +4998,18 @@ function obtenerCostoDelivery() {
     const inputMod = document.getElementById('modalidadEntrega');
     if (!inputMod || inputMod.value === 'retiro') return 0;
     const costoInput = document.getElementById('costoDeliveryActual');
-    return costoInput ? parseFloat(costoInput.value || 0) : 0;
+    const val = costoInput ? parseFloat(costoInput.value || 0) : 0;
+    return val;
 }
 window.obtenerCostoDelivery = obtenerCostoDelivery;
 
 function sincronizarMontosUbicacion() {
     const inputMod = document.getElementById('modalidadEntrega');
     const isRetiro = !inputMod || inputMod.value === 'retiro';
-    const deliveryCost = obtenerCostoDelivery();
+    const deliveryCostRaw = obtenerCostoDelivery();
+    const esFueraDeAragua = !isRetiro && deliveryCostRaw < 0;
+    const deliveryCost = esFueraDeAragua ? 0 : deliveryCostRaw;
+
     const selectZona = document.getElementById('selectZonaDelivery');
     const optZona = selectZona ? selectZona.options[selectZona.selectedIndex] : null;
     let zonaNombre = 'Centro de Maracay';
@@ -5005,24 +5020,22 @@ function sincronizarMontosUbicacion() {
     // Refinar nombre de sector si se detectó una zona específica en el texto o mapa
     let nombrePersonalizado = zonaNombre;
     const currentAddr = (typeof selectedAddressText === 'string' ? selectedAddressText : (document.getElementById('deliveryAddress')?.value || '')).toLowerCase();
-    if (currentAddr.includes('mariara') || currentAddr.includes('diego ibarra')) {
-        nombrePersonalizado = 'Mariara (Municipio Diego Ibarra, Carabobo)';
-    } else if (currentAddr.includes('san joaquin') || currentAddr.includes('san joaquín')) {
-        nombrePersonalizado = 'San Joaquín (Carabobo)';
+    if (currentAddr.includes('mariara') || currentAddr.includes('valencia') || currentAddr.includes('caracas') || currentAddr.includes('carabobo')) {
+        nombrePersonalizado = 'Fuera del Estado Aragua (No disponible)';
     } else if (currentAddr.includes('magdaleno')) {
-        nombrePersonalizado = 'Magdaleno (Zona Lejana / Municipio Zamora)';
+        nombrePersonalizado = 'Magdaleno (Zona Lejana / Municipio Zamora, Aragua)';
     } else if (currentAddr.includes('tocoron') || currentAddr.includes('tocorón')) {
-        nombrePersonalizado = 'Tocorón (Zona Lejana / Municipio Zamora)';
+        nombrePersonalizado = 'Tocorón (Zona Lejana / Municipio Zamora, Aragua)';
     } else if (currentAddr.includes('villa de cura')) {
-        nombrePersonalizado = 'Villa de Cura (Municipio Zamora)';
+        nombrePersonalizado = 'Villa de Cura (Municipio Zamora, Aragua)';
     } else if (currentAddr.includes('cagua')) {
-        nombrePersonalizado = 'Cagua (Municipio Sucre)';
+        nombrePersonalizado = 'Cagua (Municipio Sucre, Aragua)';
     } else if (currentAddr.includes('turmero')) {
-        nombrePersonalizado = 'Turmero (Municipio Santiago Mariño)';
+        nombrePersonalizado = 'Turmero (Municipio Santiago Mariño, Aragua)';
     } else if (currentAddr.includes('palo negro')) {
-        nombrePersonalizado = 'Palo Negro (Municipio Libertador)';
+        nombrePersonalizado = 'Palo Negro (Municipio Libertador, Aragua)';
     } else if (currentAddr.includes('el limon') || currentAddr.includes('el limón')) {
-        nombrePersonalizado = 'El Limón (Municipio MBI)';
+        nombrePersonalizado = 'El Limón (Municipio MBI, Aragua)';
     }
     
     let sum = 0;
@@ -5058,6 +5071,10 @@ function sincronizarMontosUbicacion() {
             badgeZona.textContent = 'Retiro en Local (Gratis)';
             badgeZona.style.background = '#ecfdf5';
             badgeZona.style.color = '#059669';
+        } else if (esFueraDeAragua) {
+            badgeZona.textContent = '🚫 Fuera de Aragua (No disponible)';
+            badgeZona.style.background = '#fef2f2';
+            badgeZona.style.color = '#dc2626';
         } else {
             badgeZona.textContent = `${nombrePersonalizado} (${deliveryCost === 0 ? 'Gratis' : `$${deliveryCost.toFixed(2)}`})`;
             badgeZona.style.background = deliveryCost === 0 ? '#ecfdf5' : '#eff6ff';
@@ -5066,7 +5083,13 @@ function sincronizarMontosUbicacion() {
     }
 
     if (elMontoDelivery) {
-        if (isRetiro || deliveryCost === 0) {
+        if (isRetiro) {
+            elMontoDelivery.style.color = '#059669';
+            elMontoDelivery.textContent = '¡GRATIS ($0.00)!';
+        } else if (esFueraDeAragua) {
+            elMontoDelivery.style.color = '#dc2626';
+            elMontoDelivery.innerHTML = '<strong>🚫 NO DISPONIBLE</strong>';
+        } else if (deliveryCost === 0) {
             elMontoDelivery.style.color = '#059669';
             elMontoDelivery.textContent = '¡GRATIS ($0.00)!';
         } else {
@@ -5080,10 +5103,18 @@ function sincronizarMontosUbicacion() {
     }
 
     if (elTotalUsd) {
-        elTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
+        if (esFueraDeAragua) {
+            elTotalUsd.innerHTML = '<span style="color:#dc2626; font-size:0.95rem; font-weight:800;">🚫 No cotizable fuera de Aragua</span>';
+        } else {
+            elTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
+        }
     }
     if (elTotalBs) {
-        elTotalBs.textContent = `(≈ ${bsTotal} a tasa BCV)`;
+        if (esFueraDeAragua) {
+            elTotalBs.innerHTML = '<small style="color:#dc2626; font-weight:600;">Selecciona una zona en Aragua o Retiro en Tienda</small>';
+        } else {
+            elTotalBs.textContent = `(≈ ${bsTotal} a tasa BCV)`;
+        }
     }
 
     // 2. Tarjeta de ubicación confirmada por GPS
@@ -5091,6 +5122,8 @@ function sincronizarMontosUbicacion() {
     if (cardPrecio) {
         if (isRetiro) {
             cardPrecio.innerHTML = `<i class="fas fa-store" style="color:#059669;"></i> Retiro en Tienda: <strong>GRATIS</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+        } else if (esFueraDeAragua) {
+            cardPrecio.innerHTML = `<span style="color:#dc2626; font-weight:700;"><i class="fas fa-ban"></i> Ubicación Fuera del Estado Aragua: Solo cotizamos dentro de Aragua</span>`;
         } else if (deliveryCost === 0) {
             cardPrecio.innerHTML = `<i class="fas fa-gift" style="color:#059669;"></i> Delivery ${nombrePersonalizado}: <strong>GRATIS ($0.00)</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
         } else {
@@ -5105,7 +5138,9 @@ function sincronizarMontosUbicacion() {
     const gmapsTitle = document.getElementById('gmapsTotalPagarTitle');
 
     if (gmapsZoneLabel) {
-        if (deliveryCost === 0) {
+        if (esFueraDeAragua) {
+            gmapsZoneLabel.innerHTML = `<span style="color:#dc2626; font-weight:700;"><i class="fas fa-ban"></i> Ubicación Fuera del Estado Aragua — No es posible cotizar</span>`;
+        } else if (deliveryCost === 0) {
             gmapsZoneLabel.innerHTML = `<span style="color:#059669; font-weight:700;"><i class="fas fa-gift"></i> ${nombrePersonalizado} — ¡DELIVERY GRATIS ($0.00)!</span>`;
         } else {
             gmapsZoneLabel.innerHTML = `<span style="color:#1d4ed8; font-weight:700;"><i class="fas fa-motorcycle"></i> ${nombrePersonalizado} — Tarifa: +$${deliveryCost.toFixed(2)} USD (${bsDelivery})</span>`;
@@ -5113,21 +5148,25 @@ function sincronizarMontosUbicacion() {
     }
 
     if (gmapsTotalUsd) {
-        if (cartItemsCount === 0) {
+        if (esFueraDeAragua) {
+            gmapsTotalUsd.textContent = 'No cotizable fuera de Aragua';
+        } else if (cartItemsCount === 0) {
             gmapsTotalUsd.textContent = `$${deliveryCost.toFixed(2)} USD`;
         } else {
             gmapsTotalUsd.textContent = `$${grandTotal.toFixed(2)} USD`;
         }
     }
     if (gmapsTotalBs) {
-        if (cartItemsCount === 0) {
+        if (esFueraDeAragua) {
+            gmapsTotalBs.textContent = 'Solo despachos en Edo. Aragua';
+        } else if (cartItemsCount === 0) {
             gmapsTotalBs.textContent = `≈ ${bsDelivery} (Costo Delivery)`;
         } else {
             gmapsTotalBs.textContent = `≈ ${bsTotal} (Productos + Delivery)`;
         }
     }
     if (gmapsTitle) {
-        gmapsTitle.textContent = cartItemsCount === 0 ? 'Tarifa de Delivery:' : 'Total de tu Pedido:';
+        gmapsTitle.textContent = esFueraDeAragua ? 'Atención:' : (cartItemsCount === 0 ? 'Tarifa de Delivery:' : 'Total de tu Pedido:');
     }
 }
 window.sincronizarMontosUbicacion = sincronizarMontosUbicacion;
@@ -5180,11 +5219,12 @@ function updateCart() {
 
     const subtotal = sum;
     const iva = subtotal * 0.16;
-    const deliveryCost = obtenerCostoDelivery();
-    const grandTotal = subtotal + iva + deliveryCost;
-
     const inputMod = document.getElementById('modalidadEntrega');
     const isRetiro = !inputMod || inputMod.value === 'retiro';
+    const rawDeliveryCost = obtenerCostoDelivery();
+    const esFueraDeAragua = !isRetiro && rawDeliveryCost < 0;
+    const deliveryCost = esFueraDeAragua ? 0 : rawDeliveryCost;
+    const grandTotal = subtotal + iva + deliveryCost;
 
     if (elSubtotal) elSubtotal.textContent = `$${subtotal.toFixed(2)}`;
     if (elIva) elIva.textContent = `$${iva.toFixed(2)}`;
@@ -5195,7 +5235,13 @@ function updateCart() {
             : '<i class="fas fa-motorcycle"></i> Costo de Delivery:';
     }
     if (elDeliveryCost) {
-        if (isRetiro || deliveryCost === 0) {
+        if (isRetiro) {
+            elDeliveryCost.style.color = '#059669';
+            elDeliveryCost.textContent = '¡GRATIS ($0.00)!';
+        } else if (esFueraDeAragua) {
+            elDeliveryCost.style.color = '#dc2626';
+            elDeliveryCost.innerHTML = '<strong>🚫 NO DISPONIBLE</strong>';
+        } else if (deliveryCost === 0) {
             elDeliveryCost.style.color = '#059669';
             elDeliveryCost.textContent = '¡GRATIS ($0.00)!';
         } else {
@@ -5206,8 +5252,12 @@ function updateCart() {
     }
 
     if (total) {
-        const bsSum = BcvManager.formatBs(BcvManager.toBs(grandTotal));
-        total.innerHTML = `<span>$${grandTotal.toFixed(2)}</span> <small style="font-size:0.85rem;color:#64748b;font-weight:600;display:block;">(≈ ${bsSum})</small>`;
+        if (esFueraDeAragua) {
+            total.innerHTML = `<span style="color:#dc2626; font-size:1.05rem; font-weight:800;">🚫 No disponible</span> <small style="font-size:0.78rem;color:#dc2626;display:block;">(Fuera del Edo. Aragua)</small>`;
+        } else {
+            const bsSum = BcvManager.formatBs(BcvManager.toBs(grandTotal));
+            total.innerHTML = `<span>$${grandTotal.toFixed(2)}</span> <small style="font-size:0.85rem;color:#64748b;font-weight:600;display:block;">(≈ ${bsSum})</small>`;
+        }
     }
     if (btn) btn.disabled = false;
     if (btnForm) btnForm.disabled = false;
@@ -5361,6 +5411,27 @@ async function submitOrder() {
 
     if (isDelivery) {
         const zonaOpt = selectZona ? selectZona.options[selectZona.selectedIndex] : null;
+        const optVal = selectZona ? selectZona.value : '';
+        const rawCost = obtenerCostoDelivery();
+
+        // Validar si la zona o dirección está FUERA DEL ESTADO ARAGUA
+        const addrLower = (addr || '').toLowerCase();
+        const palabrasFuera = [
+            'valencia', 'carabobo', 'mariara', 'diego ibarra', 'san joaquin', 'san joaquín', 
+            'guacara', 'naguanagua', 'san diego', 'puerto cabello', 'moron', 'morón', 'los guayos', 'tocuyito',
+            'caracas', 'distrito capital', 'dto capital', 'miranda', 'los teques', 'san antonio', 'guarenas', 'guatire', 
+            'chacao', 'baruta', 'petare', 'guarico', 'guárico', 'san juan de los morros', 'cojedes', 'san carlos', 
+            'yaracuy', 'san felipe', 'maracaibo', 'zulia', 'barquisimeto', 'lara', 'falcon', 'falcón'
+        ];
+        const esFueraPorDireccion = palabrasFuera.some(p => addrLower.includes(p));
+
+        if (optVal === 'fuera_aragua' || rawCost < 0 || esFueraPorDireccion) {
+            showToast('🚫 Solo cotizamos y realizamos entregas dentro del Estado Aragua.', 'error');
+            alert('🚫 COBERTURA EXCLUSIVA — ESTADO ARAGUA:\n\nInversiones Duri C.A. solo cotiza y realiza entregas dentro del Estado Aragua.\n\nNo es posible cotizar ni despachar fuera del estado. Para proceder con su compra, por favor elija una dirección dentro del Estado Aragua o seleccione la modalidad "Retiro en Tienda" en nuestra sede de Maracay.');
+            if (address) address.focus();
+            return;
+        }
+
         deliveryZoneLabel = zonaOpt ? zonaOpt.text.split('—')[0].replace('📍', '').trim() : 'Delivery a Domicilio';
         if (geoCoords) {
             mapsLink = `https://www.google.com/maps/search/?api=1&query=${geoCoords}`;

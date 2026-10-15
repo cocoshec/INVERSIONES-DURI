@@ -133,8 +133,12 @@
 
                             <!-- Selector de Zonas de Delivery -->
                             <div id="seccionDeliveryOpciones" style="display:none; margin-top:10px;">
+                                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 12px; margin-bottom:8px; font-size:0.79rem; color:#1e40af; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-shield-alt" style="color:#2563eb;"></i>
+                                    <span><strong>Cobertura Exclusiva:</strong> Solo realizamos cotizaciones y despachos dentro del <strong>Estado Aragua</strong>.</span>
+                                </div>
                                 <label style="font-size:0.84rem; font-weight:700; color:#334155; margin-bottom:6px; display:block;">
-                                    <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona de Entrega:
+                                    <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona de Entrega (Solo Edo. Aragua):
                                 </label>
                                 <select id="selectZonaDelivery" onchange="cambiarZonaDelivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
                                     <option value="centro" data-costo="0" selected>📍 Centro de Maracay (Casco Central, Calicanto, La Floresta, San Isidro, Parque Aragua, Av. Bolívar/Miranda) — ¡GRATIS ($0.00)!</option>
@@ -142,8 +146,9 @@
                                     <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre, Arias Blanco, Valle Verde) — +$3.00 USD</option>
                                     <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / La Morita / Coropo / Samán de Güere / Santa Cruz — +$5.00 USD</option>
                                     <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo / Bella Vista / Corinsa — +$6.00 USD</option>
-                                    <option value="lejana" data-costo="8">📍 Zonas Lejanas / Foráneas (Mariara, Magdaleno, Villa de Cura, Tocorón, La Victoria, San Sebastián, Zuata, Carabobo) — +$8.00 USD</option>
-                                    <option value="otra" data-costo="3">📍 Otra Zona / Sector no listado (Tarifa estimada: $3.00 USD / Calculada con tu GPS)</option>
+                                    <option value="lejana" data-costo="8">📍 Otras Zonas del Estado Aragua (La Victoria, Magdaleno, Villa de Cura, Tocorón, San Sebastián, Zuata, San Casimiro) — +$8.00 USD</option>
+                                    <option value="otra" data-costo="3">📍 Otra Zona / Sector dentro de Aragua (Tarifa estimada: $3.00 USD / Calculada con tu GPS)</option>
+                                    <option value="fuera_aragua" data-costo="-1" data-bloqueado="true" style="color:#dc2626; font-weight:700;">🚫 Fuera del Estado Aragua (Carabobo, Valencia, Caracas, etc.) — NO DISPONIBLE</option>
                                 </select>
                                 <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>
@@ -538,11 +543,11 @@
             limon: { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
             turmero: { nombre: 'Turmero / Palo Negro', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
             cagua: { nombre: 'Cagua / La Encrucijada', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
-            magdaleno: { nombre: 'Magdaleno (Municipio Zamora)', coords: [10.1020, -67.6250], zoom: 15, zona: 'lejana', tarifa: 8 },
-            mariara: { nombre: 'Mariara (Municipio Diego Ibarra, Carabobo)', coords: [10.2893, -67.7033], zoom: 15, zona: 'lejana', tarifa: 8 },
-            victoria: { nombre: 'La Victoria / Zonas Lejanas', coords: [10.2268, -67.3323], zoom: 13, zona: 'lejana', tarifa: 8 },
-            valencia: { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zoom: 14, zona: 'lejana', tarifa: 8 },
-            caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 13, zona: 'lejana', tarifa: 8 }
+            magdaleno: { nombre: 'Magdaleno (Municipio Zamora, Aragua)', coords: [10.1020, -67.6250], zoom: 15, zona: 'lejana', tarifa: 8 },
+            villadecura: { nombre: 'Villa de Cura (Municipio Zamora, Aragua)', coords: [10.0380, -67.4890], zoom: 15, zona: 'lejana', tarifa: 8 },
+            victoria: { nombre: 'La Victoria (Municipio Ribas, Aragua)', coords: [10.2268, -67.3323], zoom: 13, zona: 'lejana', tarifa: 8 },
+            valencia: { nombre: 'Valencia, Carabobo (Fuera de Aragua)', coords: [10.1700, -68.0004], zoom: 14, zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            caracas: { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zoom: 13, zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
         };
 
         const googlePinIcon = L.icon({
@@ -563,8 +568,12 @@
             }
             actualizarPuntoSeleccionado(info.coords[0], info.coords[1], info.nombre, info.zona);
             if (typeof showToast === 'function') {
-                const tarifaTxt = info.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `Tarifa Delivery: +$${info.tarifa.toFixed(2)} USD`;
-                showToast(`📍 ${info.nombre} — ${tarifaTxt}`, 'info');
+                if (info.bloqueado || info.zona === 'fuera_aragua') {
+                    showToast(`🚫 ${info.nombre}: Solo cotizamos y entregamos dentro del Estado Aragua.`, 'error');
+                } else {
+                    const tarifaTxt = info.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `Tarifa Delivery: +$${info.tarifa.toFixed(2)} USD`;
+                    showToast(`📍 ${info.nombre} — ${tarifaTxt}`, 'info');
+                }
             }
         }
 
@@ -717,17 +726,28 @@
                 const t = (texto || '').toLowerCase();
                 let matchedByText = false;
 
-                // 1. Detección inteligente por nombre de sector, parroquia o municipio
-                if (t.includes('mariara') || t.includes('diego ibarra') || t.includes('san joaquin') || t.includes('san joaquín') || 
-                    t.includes('aguas calientes') || t.includes('magdaleno') || t.includes('zamora') || t.includes('tocoron') || t.includes('tocorón') || 
+                // 1. Detección de zonas FUERA DEL ESTADO ARAGUA (No cotizables)
+                const lugaresFueraAragua = [
+                    'valencia', 'carabobo', 'mariara', 'diego ibarra', 'san joaquin', 'san joaquín', 
+                    'guacara', 'naguanagua', 'san diego', 'puerto cabello', 'moron', 'morón', 'los guayos', 'tocuyito',
+                    'caracas', 'distrito capital', 'dto capital', 'miranda', 'los teques', 'san antonio', 'guarenas', 'guatire', 
+                    'chacao', 'baruta', 'petare', 'guarico', 'guárico', 'san juan de los morros', 'cojedes', 'san carlos', 
+                    'yaracuy', 'san felipe', 'maracaibo', 'zulia', 'barquisimeto', 'lara', 'falcon', 'falcón', 
+                    'tachira', 'táchira', 'merida', 'mérida', 'anzoategui', 'anzoátegui', 'bolivar', 'bolívar'
+                ];
+
+                if (lugaresFueraAragua.some(p => t.includes(p))) {
+                    zonaDetectada = 'fuera_aragua';
+                    matchedByText = true;
+                } else if (t.includes('magdaleno') || t.includes('zamora') || t.includes('tocoron') || t.includes('tocorón') || 
                     t.includes('villa de cura') || t.includes('san sebastian') || t.includes('san sebastián') || 
                     t.includes('san casimiro') || t.includes('san francisco de asis') || t.includes('san francisco de asís') ||
-                    t.includes('victoria') || t.includes('tejerias') || t.includes('tejerías') || t.includes('zuata') || 
-                    t.includes('valencia') || t.includes('caracas') || t.includes('carabobo')) {
+                    t.includes('victoria') || t.includes('tejerias') || t.includes('tejerías') || t.includes('zuata') ||
+                    t.includes('revenga') || t.includes('el consejo') || t.includes('santos michelena') || t.includes('san mateo')) {
                     zonaDetectada = 'lejana';
                     matchedByText = true;
-                } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('san mateo') || 
-                           t.includes('bella vista') || t.includes('corinsa') || (t.includes('sucre') && !t.includes('base sucre') && !t.includes('barrio sucre'))) {
+                } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('bella vista') || t.includes('corinsa') || 
+                           (t.includes('sucre') && !t.includes('base sucre') && !t.includes('barrio sucre'))) {
                     zonaDetectada = 'cagua';
                     matchedByText = true;
                 } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || 
@@ -757,12 +777,11 @@
                     const lonNum = parseFloat(lon);
                     const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], latNum, lonNum);
 
-                    // Zona Sur del Lago / Zamora (Magdaleno, Tocorón, Villa de Cura):
-                    if (latNum <= 10.135) {
-                        zonaDetectada = 'lejana'; // Magdaleno / Tocorón / Villa de Cura: +$8.00
-                    } else if (lonNum <= -67.665) {
-                        // Al OESTE de -67.665 ya es Carabobo (Mariara / San Joaquín / Valencia)
-                        zonaDetectada = 'lejana'; // Mariara / Diego Ibarra / Carabobo: +$8.00
+                    // Al OESTE de -67.67 ya es Carabobo (Mariara / San Joaquín / Valencia) -> Fuera de Aragua
+                    if (lonNum <= -67.67 || lonNum >= -67.10 || latNum <= 9.75 || latNum >= 10.60 || dKm > 52.0) {
+                        zonaDetectada = 'fuera_aragua';
+                    } else if (latNum <= 10.135) {
+                        zonaDetectada = 'lejana'; // Magdaleno / Tocorón / Villa de Cura (Aragua)
                     } else if (dKm <= 2.2) {
                         zonaDetectada = 'centro'; // Centro Maracay: GRATIS ($0.00)
                     } else if (dKm <= 6.0) {
@@ -770,25 +789,23 @@
                     } else if (dKm <= 10.5 && (lonNum < -67.61 || latNum > 10.27)) {
                         zonaDetectada = 'limon'; // El Limón / MBI: +$3.00
                     } else if (dKm <= 16.5) {
-                        // Turmero / Palo Negro está al ESTE o SUR (Lon >= -67.58 o Lat < 10.22)
                         if (lonNum >= -67.58 || latNum < 10.22) {
                             zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
                         } else {
                             zonaDetectada = 'lejana';
                         }
                     } else if (dKm <= 24.0) {
-                        // Cagua / Encrucijada está al Este (Lon > -67.49 y Lat >= 10.14)
                         if (lonNum >= -67.49 && lonNum <= -67.38 && latNum >= 10.14) {
                             zonaDetectada = 'cagua'; // Cagua: +$6.00
                         } else {
-                            zonaDetectada = 'lejana'; // Resto a esta distancia es foránea/lejana: +$8.00
+                            zonaDetectada = 'lejana';
                         }
                     } else {
-                        zonaDetectada = 'lejana'; // Más de 24 km: Zonas Lejanas: +$8.00
+                        zonaDetectada = 'lejana';
                     }
                 } else if (!matchedByText) {
                     if (t.length > 5) {
-                        zonaDetectada = 'otra'; // Tarifa provisional de sector no listado: $3.00
+                        zonaDetectada = 'otra'; // Tarifa provisional de sector dentro de Aragua no listado: $3.00
                     } else {
                         zonaDetectada = 'centro';
                     }
@@ -1023,19 +1040,33 @@
                 autoDetectarZonaDelivery(null, null, text, sectorEncontrado.zona);
                 if (infoSector) {
                     infoSector.style.display = 'flex';
+                    infoSector.style.background = '#eff6ff';
+                    infoSector.style.borderColor = '#bfdbfe';
+                    infoSector.style.color = '#1e40af';
                     const tarifaStr = sectorEncontrado.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `+$${sectorEncontrado.tarifa.toFixed(2)} USD`;
                     infoSector.innerHTML = `<i class="fas fa-check-circle" style="color:#059669; font-size:1.05rem;"></i> <span>Sector detectado: <strong>${sectorEncontrado.nombre}</strong> — Tarifa: <strong style="color:#1d4ed8;">${tarifaStr}</strong></span>`;
                 }
             } else {
                 autoDetectarZonaDelivery(null, null, text);
-                if (infoSector) {
+                const selZona = document.getElementById('selectZonaDelivery');
+                if (selZona && selZona.value === 'fuera_aragua') {
+                    if (infoSector) {
+                        infoSector.style.display = 'flex';
+                        infoSector.style.background = '#fef2f2';
+                        infoSector.style.borderColor = '#fecaca';
+                        infoSector.style.color = '#991b1b';
+                        infoSector.innerHTML = `<i class="fas fa-ban" style="color:#dc2626; font-size:1.15rem; flex-shrink:0;"></i> <span><strong>Zona Fuera del Estado Aragua:</strong> Solo realizamos cotizaciones y despachos dentro del Estado Aragua. No es posible cotizar fuera del estado.</span>`;
+                    }
+                } else if (infoSector) {
                     if (text.length > 5) {
                         infoSector.style.display = 'flex';
-                        const selZona = document.getElementById('selectZonaDelivery');
+                        infoSector.style.background = '#eff6ff';
+                        infoSector.style.borderColor = '#bfdbfe';
+                        infoSector.style.color = '#1e40af';
                         const opt = selZona ? selZona.options[selZona.selectedIndex] : null;
                         const costo = opt ? parseFloat(opt.getAttribute('data-costo') || 0) : 3;
                         const tarifaStr = costo === 0 ? '¡Delivery GRATIS ($0.00)!' : `+$${costo.toFixed(2)} USD`;
-                        infoSector.innerHTML = `<i class="fas fa-map-marker-alt" style="color:#2563eb; font-size:1.05rem;"></i> <span>Ubicación personalizada — Tarifa asignada: <strong style="color:#1d4ed8;">${tarifaStr}</strong> (Toca "Mi GPS Actual" para distancia exacta).</span>`;
+                        infoSector.innerHTML = `<i class="fas fa-map-marker-alt" style="color:#2563eb; font-size:1.05rem;"></i> <span>Ubicación personalizada (Edo. Aragua) — Tarifa asignada: <strong style="color:#1d4ed8;">${tarifaStr}</strong> (Toca "Mi GPS Actual" para distancia exacta).</span>`;
                     } else {
                         infoSector.style.display = 'none';
                     }
