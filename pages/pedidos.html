@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="../css/styles.css?v=30.0">
+    <link rel="stylesheet" href="../css/styles.css?v=31.0">
 </head>
 <body data-page="pedidos">
     <!-- Top Bar -->
@@ -155,18 +155,21 @@
                             
                             <!-- Botones adaptados para móvil -->
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
-                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(40,167,69,0.25);">
                                     <i class="fas fa-crosshairs"></i> Mi GPS Actual
                                 </button>
-                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#fff; color:#ea4335; border:1.5px solid #ea4335; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-                                    <i class="fas fa-map-marked-alt"></i> Abrir en Maps
+                                <button type="button" class="btn btn-sm" id="btnOpenMapModal" onclick="abrirModalMapa(false)" style="background:#ea4335; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 3px 10px rgba(234,67,53,0.3);">
+                                    <i class="fab fa-google"></i> Abrir en Maps (Pin)
                                 </button>
                             </div>
 
-                            <!-- Botón directo para ver la sede oficial en Google Maps -->
-                            <div style="margin-bottom:8px;">
-                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="width:100%; display:flex; align-items:center; justify-content:center; gap:7px; font-size:0.8rem; color:#c5221f; text-decoration:none; padding:7px 10px; background:#fce8e6; border-radius:8px; border:1px solid #fad2cf; font-weight:600; text-align:center;">
-                                    <i class="fas fa-store"></i> Ver Sede Principal Duri en Google Maps
+                            <!-- Botones rápidos de pegar enlace Google Maps y ver sede oficial -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+                                <button type="button" onclick="pegarEnlaceGoogleMaps()" style="background:#eff6ff; color:#1d4ed8; border:1px dashed #93c5fd; padding:7px 8px; border-radius:8px; font-size:0.76rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                                    <i class="fas fa-paste"></i> Pegar Link Maps
+                                </button>
+                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="width:100%; display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.76rem; color:#991b1b; text-decoration:none; padding:7px 8px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca; font-weight:700; text-align:center;">
+                                    <i class="fas fa-store"></i> Sede Duri Maps
                                 </a>
                             </div>
 
@@ -289,7 +292,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=36.0"></script>
+    <script src="../js/app.js?v=37.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -559,6 +562,26 @@
             }
         }
 
+        function obtenerSectorMasCercano(lat, lon) {
+            let masCercano = null;
+            let minDist = Infinity;
+            if (typeof SECTORES_MARACAY !== 'undefined') {
+                for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
+                    if (sec.coords) {
+                        const d = calcularDistanciaKm(lat, lon, sec.coords[0], sec.coords[1]);
+                        if (d < minDist) {
+                            minDist = d;
+                            masCercano = sec;
+                        }
+                    }
+                }
+            }
+            if (masCercano && minDist <= 1.8) {
+                return masCercano.nombre;
+            }
+            return null;
+        }
+
         function reverseGeocodeReal(lat, lon, callback) {
             try {
                 const controller = new AbortController();
@@ -567,7 +590,15 @@
                     .then(res => res.json())
                     .then(data => {
                         clearTimeout(timeoutId);
-                        if (data && data.display_name) {
+                        if (data && data.address) {
+                            const addr = data.address;
+                            const calle = addr.road || addr.pedestrian || addr.street || addr.footway || '';
+                            const sector = addr.neighbourhood || addr.suburb || addr.residential || addr.quarter || '';
+                            const ciudad = addr.city || addr.town || addr.municipality || 'Maracay';
+                            const partes = [calle, sector, ciudad].filter(p => p && p.trim().length > 0);
+                            const desc = partes.length > 0 ? partes.join(', ') : (data.display_name ? data.display_name.split(',').slice(0, 3).join(',').trim() : '');
+                            if (desc && callback) callback(desc);
+                        } else if (data && data.display_name) {
                             const parts = data.display_name.split(',');
                             const desc = parts.slice(0, 3).join(',').trim();
                             if (callback) callback(desc);
@@ -575,6 +606,43 @@
                     })
                     .catch(() => {});
             } catch(e) {}
+        }
+
+        let mapTileLayerRoad = null;
+        let mapTileLayerSat = null;
+        let currentMapTileMode = 'road';
+
+        function cambiarCapaMapa(tipo) {
+            if (!gmap) return;
+            const btnRoad = document.getElementById('btnMapStyleRoad');
+            const btnSat = document.getElementById('btnMapStyleSat');
+
+            if (tipo === 'sat') {
+                if (mapTileLayerRoad && gmap.hasLayer(mapTileLayerRoad)) {
+                    gmap.removeLayer(mapTileLayerRoad);
+                }
+                if (!mapTileLayerSat) {
+                    mapTileLayerSat = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                        attribution: '&copy; Google Maps Satelital'
+                    });
+                }
+                mapTileLayerSat.addTo(gmap);
+                currentMapTileMode = 'sat';
+                if (btnRoad) { btnRoad.style.background = '#f1f3f4'; btnRoad.style.color = '#3c4043'; }
+                if (btnSat) { btnSat.style.background = '#ea4335'; btnSat.style.color = '#fff'; }
+            } else {
+                if (mapTileLayerSat && gmap.hasLayer(mapTileLayerSat)) {
+                    gmap.removeLayer(mapTileLayerSat);
+                }
+                if (mapTileLayerRoad && !gmap.hasLayer(mapTileLayerRoad)) {
+                    mapTileLayerRoad.addTo(gmap);
+                }
+                currentMapTileMode = 'road';
+                if (btnRoad) { btnRoad.style.background = '#1a73e8'; btnRoad.style.color = '#fff'; }
+                if (btnSat) { btnSat.style.background = '#f1f3f4'; btnSat.style.color = '#3c4043'; }
+            }
         }
 
         function initGoogleMap(coords = DEFAULT_COORD, zoom = 15) {
@@ -594,7 +662,7 @@
             }).setView(coords, zoom);
 
             // Capa oficial de Calles de Google Maps
-            L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            mapTileLayerRoad = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 maxZoom: 20,
                 subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
                 attribution: '&copy; Google Maps'
@@ -603,18 +671,19 @@
             // Marcador rojo arrastrable
             gmarker = L.marker(coords, {
                 draggable: true,
-                icon: googlePinIcon
+                icon: googlePinIcon,
+                autoPan: true
             }).addTo(gmap);
 
-            // Evento al arrastrar el marcador
+            // Evento al arrastrar el marcador (donde yo deje la marca)
             gmarker.on('dragend', function(e) {
                 const pos = e.target.getLatLng();
                 actualizarPuntoSeleccionado(pos.lat, pos.lng);
             });
 
-            // Evento al hacer clic en cualquier parte del mapa
+            // Evento al hacer clic o tocar en cualquier parte del mapa
             gmap.on('click', function(e) {
-                gmarker.setLatLng(e.latlng);
+                if (gmarker) gmarker.setLatLng(e.latlng);
                 actualizarPuntoSeleccionado(e.latlng.lat, e.latlng.lng);
             });
 
@@ -730,28 +799,50 @@
             if (typeof seleccionarModalidadEntrega === 'function') {
                 seleccionarModalidadEntrega('delivery');
             }
-            const formatted = `${parseFloat(lat).toFixed(6)},${parseFloat(lon).toFixed(6)}`;
+            const latNum = parseFloat(lat);
+            const lonNum = parseFloat(lon);
+            const formatted = `${latNum.toFixed(6)},${lonNum.toFixed(6)}`;
+            
             const geoInput = document.getElementById('geoCoords');
             if (geoInput) geoInput.value = formatted;
-            selectedCoords = [parseFloat(lat), parseFloat(lon)];
+            selectedCoords = [latNum, lonNum];
 
-            const defaultText = texto || `Ubicación GPS (${parseFloat(lat).toFixed(5)}, ${parseFloat(lon).toFixed(5)})`;
+            // Si no se proporcionó texto explícito, buscar sector conocido más cercano
+            let defaultText = texto;
+            if (!defaultText || defaultText.startsWith('Ubicación GPS') || defaultText.startsWith('Punto GPS')) {
+                const secCercano = (typeof obtenerSectorMasCercano === 'function') ? obtenerSectorMasCercano(latNum, lonNum) : null;
+                defaultText = secCercano || `Ubicación GPS (${latNum.toFixed(5)}, ${lonNum.toFixed(5)})`;
+            }
             selectedAddressText = defaultText;
 
+            // Actualizar el campo de texto en la página donde el usuario escribe su dirección
             const addrInput = document.getElementById('deliveryAddress');
-            if (addrInput && (!addrInput.value.trim() || addrInput.value.startsWith('Ubicación GPS') || addrInput.value.startsWith('Punto GPS') || addrInput.value.startsWith('Coordenadas'))) {
-                addrInput.value = defaultText;
+            if (addrInput) {
+                const prev = addrInput.value.trim();
+                const esGenerico = !prev || prev.startsWith('Ubicación GPS') || prev.startsWith('Punto GPS') || prev.startsWith('Coordenadas') || prev.includes('http');
+                if (esGenerico) {
+                    addrInput.value = defaultText;
+                } else if (defaultText && !prev.includes(defaultText)) {
+                    // Mantener notas de referencia previas escritas por el cliente
+                    const refLimpia = prev.replace(/^.*?\(Ref:\s*/i, '').replace(/\)$/, '').trim();
+                    addrInput.value = refLimpia ? `${defaultText} (Ref: ${refLimpia})` : defaultText;
+                }
             }
 
+            // Mostrar tarjeta de confirmación de ubicación con link directo a Google Maps
             const card = document.getElementById('ubicacionConfirmadaCard');
             const coordsText = document.getElementById('ubicacionConfirmadaCoords');
             const testLink = document.getElementById('ubicacionTestMapsLink');
 
             if (card) card.style.display = 'flex';
-            if (coordsText) coordsText.textContent = `${defaultText} (${formatted})`;
+            if (coordsText) coordsText.textContent = `${defaultText} (GPS: ${formatted})`;
             if (testLink) testLink.href = `https://www.google.com/maps/search/?api=1&query=${formatted}`;
 
-            autoDetectarZonaDelivery(lat, lon, defaultText);
+            // Actualizar botón de vista externa en el modal si está abierto
+            const extModalBtn = document.getElementById('btnGmapsExternalView');
+            if (extModalBtn) extModalBtn.href = `https://www.google.com/maps/search/?api=1&query=${formatted}`;
+
+            autoDetectarZonaDelivery(latNum, lonNum, defaultText);
             if (typeof sincronizarMontosUbicacion === 'function') {
                 sincronizarMontosUbicacion();
             }
@@ -806,6 +897,28 @@
             setTimeout(() => { yaIntentoConPermiso = false; }, 6000);
         }
 
+        async function pegarEnlaceGoogleMaps() {
+            let texto = '';
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    texto = await navigator.clipboard.readText();
+                }
+            } catch(e) {}
+
+            if (!texto || !texto.trim()) {
+                texto = prompt('Pega aquí el enlace de Google Maps o tus coordenadas (ej: 10.2503, -67.5961):');
+            }
+
+            if (texto && texto.trim()) {
+                const addrInput = document.getElementById('deliveryAddress');
+                if (addrInput) addrInput.value = texto.trim();
+                analizarTextoDireccion(texto.trim());
+                if (typeof showToast === 'function') {
+                    showToast('📍 Enlace o coordenadas de Google Maps procesadas', 'success');
+                }
+            }
+        }
+
         /**
          * Detector inteligente de enlaces y coordenadas de Google Maps / WhatsApp
          */
@@ -814,7 +927,7 @@
             const text = val.trim();
 
             // 1. Enlace o texto con parámetros de Google Maps: ?q=lat,lon o query=lat,lon
-            const qMatch = text.match(/[?&](?:q|query)=(-?\d{1,2}\.\d{3,8}),(-?\d{1,3}\.\d{3,8})/i);
+            const qMatch = text.match(/[?&](?:q|query)=(-?\d{1,2}\.\d{2,12}),(-?\d{1,3}\.\d{2,12})/i);
             if (qMatch) {
                 const lat = parseFloat(qMatch[1]);
                 const lon = parseFloat(qMatch[2]);
@@ -828,7 +941,7 @@
             }
 
             // 2. Enlace de Google Maps con @lat,lon
-            const atMatch = text.match(/@(-?\d{1,2}\.\d{3,8}),(-?\d{1,3}\.\d{3,8})/);
+            const atMatch = text.match(/@(-?\d{1,2}\.\d{2,12}),(-?\d{1,3}\.\d{2,12})/);
             if (atMatch) {
                 const lat = parseFloat(atMatch[1]);
                 const lon = parseFloat(atMatch[2]);
@@ -842,7 +955,7 @@
             }
 
             // 3. Formato geo:lat,lon
-            const geoMatch = text.match(/geo:(-?\d{1,2}\.\d{3,8}),(-?\d{1,3}\.\d{3,8})/i);
+            const geoMatch = text.match(/geo:(-?\d{1,2}\.\d{2,12}),(-?\d{1,3}\.\d{2,12})/i);
             if (geoMatch) {
                 const lat = parseFloat(geoMatch[1]);
                 const lon = parseFloat(geoMatch[2]);
@@ -855,8 +968,24 @@
                 return;
             }
 
-            // 4. Coordenadas directas: ej. 10.258136, -68.012099
-            const coordMatch = text.match(/(-?\d{1,2}\.\d{3,8})\s*,\s*(-?\d{1,3}\.\d{3,8})/);
+            // 4. Formato Grados, Minutos y Segundos (DMS): ej: 10°15'01.1"N 67°35'46.1"W
+            const dmsMatch = text.match(/(\d{1,2})[°\s]+(\d{1,2})['\s]+([\d.]+)"?\s*([NSns])[\s,]+(\d{1,3})[°\s]+(\d{1,2})['\s]+([\d.]+)"?\s*([EWewOo])/);
+            if (dmsMatch) {
+                let lat = parseFloat(dmsMatch[1]) + parseFloat(dmsMatch[2])/60 + parseFloat(dmsMatch[3])/3600;
+                if (dmsMatch[4].toUpperCase() === 'S') lat = -lat;
+                let lon = parseFloat(dmsMatch[5]) + parseFloat(dmsMatch[6])/60 + parseFloat(dmsMatch[7])/3600;
+                if (dmsMatch[8].toUpperCase() === 'W' || dmsMatch[8].toUpperCase() === 'O') lon = -lon;
+                aplicarUbicacionFijada(lat, lon);
+                if (gmap) {
+                    gmap.setView([lat, lon], 17);
+                    if (gmarker) gmarker.setLatLng([lat, lon]);
+                }
+                if (typeof showToast === 'function') showToast('📍 Coordenadas DMS convertidas y fijadas', 'success');
+                return;
+            }
+
+            // 5. Coordenadas directas: ej. 10.258136, -68.012099
+            const coordMatch = text.match(/(-?\d{1,2}\.\d{2,12})\s*,\s*(-?\d{1,3}\.\d{2,12})/);
             if (coordMatch) {
                 const lat = parseFloat(coordMatch[1]);
                 const lon = parseFloat(coordMatch[2]);
@@ -1036,6 +1165,10 @@
             }
 
             initGoogleMap(coordsToUse);
+            const extModalBtn = document.getElementById('btnGmapsExternalView');
+            if (extModalBtn) {
+                extModalBtn.href = `https://www.google.com/maps/search/?api=1&query=${coordsToUse[0]},${coordsToUse[1]}`;
+            }
             setTimeout(() => {
                 if (gmap) gmap.invalidateSize();
             }, 200);
@@ -1197,20 +1330,39 @@
         }
 
         function actualizarPuntoSeleccionado(lat, lon, textoManual = '', zonaManual = null) {
-            selectedCoords = [parseFloat(lat), parseFloat(lon)];
-            const formatted = `${selectedCoords[0].toFixed(5)}, ${selectedCoords[1].toFixed(5)}`;
-            selectedAddressText = textoManual || `Ubicación GPS (${formatted})`;
+            const latNum = parseFloat(lat);
+            const lonNum = parseFloat(lon);
+            selectedCoords = [latNum, lonNum];
+            const formatted = `${latNum.toFixed(5)}, ${lonNum.toFixed(5)}`;
 
+            // 1. Obtener nombre inmediato con 0ms de latencia
+            let nombreInmediato = textoManual;
+            if (!nombreInmediato) {
+                const secCercano = (typeof obtenerSectorMasCercano === 'function') ? obtenerSectorMasCercano(latNum, lonNum) : null;
+                nombreInmediato = secCercano ? `${secCercano}` : `Ubicación GPS (${formatted})`;
+            }
+            selectedAddressText = nombreInmediato;
+
+            // 2. Actualizar visualización en el modal
             const addressBox = document.getElementById('gmapsDetectedAddress');
-            if (addressBox) addressBox.textContent = selectedAddressText;
+            if (addressBox) addressBox.innerHTML = `<strong>${nombreInmediato}</strong> <small style="color:#64748b;">(${formatted})</small>`;
 
-            autoDetectarZonaDelivery(lat, lon, selectedAddressText, zonaManual);
+            // 3. ¡AUTO-GUARDAR EN LA PÁGINA INMEDIATAMENTE!
+            // Donde el usuario deje la marca, esa ubicación se asigna de una vez a la orden en la página
+            aplicarUbicacionFijada(latNum, lonNum, nombreInmediato);
 
+            autoDetectarZonaDelivery(latNum, lonNum, nombreInmediato, zonaManual);
+
+            // 4. Geocodificación inversa para refinar calle y avenida exacta
             if (!textoManual) {
-                reverseGeocodeReal(lat, lon, (desc) => {
-                    selectedAddressText = desc;
-                    if (addressBox) addressBox.textContent = desc;
-                    autoDetectarZonaDelivery(lat, lon, desc, zonaManual);
+                reverseGeocodeReal(latNum, lonNum, (desc) => {
+                    if (desc && desc.trim()) {
+                        selectedAddressText = desc;
+                        if (addressBox) addressBox.innerHTML = `<strong>${desc}</strong> <small style="color:#64748b;">(${formatted})</small>`;
+                        autoDetectarZonaDelivery(latNum, lonNum, desc, zonaManual);
+                        // Refrescar en la página con la dirección de calle detectada
+                        aplicarUbicacionFijada(latNum, lonNum, desc);
+                    }
                 });
             }
         }
@@ -1228,8 +1380,16 @@
             aplicarUbicacionFijada(selectedCoords[0], selectedCoords[1], selectedAddressText);
             cerrarModalMapa();
 
+            // Desplazar suavemente hacia la tarjeta confirmada en la página para dar certeza visual al usuario
+            setTimeout(() => {
+                const card = document.getElementById('ubicacionConfirmadaCard');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 120);
+
             if (typeof showToast === 'function') {
-                showToast('📍 Dirección y GPS fijados con éxito: ' + (selectedAddressText.split(',')[0] || ''), 'success');
+                showToast('📍 Ubicación fijada con éxito en tu pedido', 'success');
             }
         }
     </script>
@@ -1238,17 +1398,27 @@
     <div id="modalGoogleMaps" style="display:none; position:fixed; inset:0; width:100%; height:100%; height:100dvh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); padding:max(6px,env(safe-area-inset-top,6px)) 8px max(8px,env(safe-area-inset-bottom,8px)); box-sizing:border-box; overflow-y:auto;">
         <div style="background:#fff; width:680px; max-width:100%; max-height:min(94dvh,640px); height:min(94dvh,640px); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; margin:auto;">
             <!-- Header Modal -->
-            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:9px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="fab fa-google" style="color:#ea4335; font-size:1.1rem;"></i>
-                    <strong style="font-size:0.95rem; color:#202124;">Ubicar Dirección en Google Maps</strong>
+                    <i class="fab fa-google" style="color:#ea4335; font-size:1.15rem;"></i>
+                    <div>
+                        <strong style="font-size:0.92rem; color:#202124; display:block; line-height:1.2;">Google Maps Interactivo</strong>
+                        <span style="font-size:0.68rem; color:#5f6368;">Mueve el marcador rojo a tu casa o entrega</span>
+                    </div>
                 </div>
-                <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:30px; height:30px; border-radius:50%; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;" aria-label="Cerrar">&times;</button>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <!-- Botón para ver en Google Maps externo si el usuario lo desea -->
+                    <a id="btnGmapsExternalView" href="https://maps.google.com" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:#1a73e8; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:4px; background:#e8f0fe; padding:5px 9px; border-radius:6px;" title="Ver punto en la App de Google Maps">
+                        <i class="fas fa-external-link-alt"></i> App Maps
+                    </a>
+                    <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:30px; height:30px; border-radius:50%; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;" aria-label="Cerrar">&times;</button>
+                </div>
             </div>
 
-            <div id="gmapsPromptNotice" style="display:none; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:5px 12px; font-size:0.76rem; color:#035388; align-items:center; gap:6px; flex-shrink:0;">
-                <i class="fas fa-hand-pointer" style="color:#007bff; font-size:0.9rem;"></i>
-                <span><b>Toca en el mapa donde está tu casa</b> o arrastra el marcador rojo para fijar tu entrega.</span>
+            <!-- Banner de confirmación e instrucciones claras -->
+            <div id="gmapsPromptNotice" style="display:flex; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:5px 12px; font-size:0.76rem; color:#035388; align-items:center; gap:6px; flex-shrink:0;">
+                <i class="fas fa-map-pin" style="color:#ea4335; font-size:0.9rem;"></i>
+                <span><b>Mueve o toca el mapa:</b> Donde dejes el marcador rojo, esa ubicación exacta se fija en tu pedido.</span>
             </div>
 
             <!-- Buscador rápido de sector / ciudad / avenida en toda Venezuela -->
@@ -1301,6 +1471,16 @@
             <div style="flex:1; min-height:130px; position:relative; width:100%;">
                 <div id="gmapsCanvas" style="width:100%; height:100%; min-height:130px; z-index:1;"></div>
                 
+                <!-- Selector flotante de capas Calles / Satélite -->
+                <div style="position:absolute; top:10px; right:10px; z-index:999; display:flex; gap:3px; background:rgba(255,255,255,0.92); padding:3px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.2); border:1px solid #dadce0;">
+                    <button type="button" id="btnMapStyleRoad" onclick="cambiarCapaMapa('road')" style="border:none; background:#1a73e8; color:#fff; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                        🗺️ Calles
+                    </button>
+                    <button type="button" id="btnMapStyleSat" onclick="cambiarCapaMapa('sat')" style="border:none; background:#f1f3f4; color:#3c4043; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                        🛰️ Satélite
+                    </button>
+                </div>
+
                 <!-- Botón flotante para recentrar con GPS del teléfono -->
                 <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:10px; right:10px; z-index:999; background:#fff; border:1px solid #dadce0; width:40px; height:40px; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-size:1.1rem;" title="Mi ubicación GPS">
                     <i class="fas fa-crosshairs"></i>
