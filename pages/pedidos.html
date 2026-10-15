@@ -133,22 +133,26 @@
 
                             <!-- Selector de Zonas de Delivery -->
                             <div id="seccionDeliveryOpciones" style="display:none; margin-top:10px;">
-                                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:8px 12px; margin-bottom:8px; font-size:0.79rem; color:#1e40af; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-shield-alt" style="color:#2563eb;"></i>
-                                    <span><strong>Cobertura Exclusiva:</strong> Solo realizamos cotizaciones y despachos dentro del <strong>Estado Aragua</strong>.</span>
+                                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:9px 12px; margin-bottom:8px; font-size:0.8rem; color:#1e40af; display:flex; align-items:flex-start; gap:8px; line-height:1.4;">
+                                    <i class="fas fa-route" style="color:#2563eb; font-size:1.1rem; margin-top:2px; flex-shrink:0;"></i>
+                                    <div>
+                                        <strong>Sistema de Tarifa Progresiva por Distancia:</strong> A mayor distancia de nuestra sede en el <strong>Centro de Maracay</strong>, mayor es el costo de delivery. ¡Centro de Maracay es <strong>100% GRATIS</strong>! <em>(Solo Estado Aragua)</em>.
+                                    </div>
                                 </div>
                                 <label style="font-size:0.84rem; font-weight:700; color:#334155; margin-bottom:6px; display:block;">
-                                    <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona de Entrega (Solo Edo. Aragua):
+                                    <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona o Rango de Distancia:
                                 </label>
                                 <select id="selectZonaDelivery" onchange="cambiarZonaDelivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
-                                    <option value="centro" data-costo="0" selected>📍 Centro de Maracay (Casco Central, Calicanto, La Floresta, San Isidro, Parque Aragua, Av. Bolívar/Miranda) — ¡GRATIS ($0.00)!</option>
-                                    <option value="cercanas" data-costo="2">📍 Zonas Urbanas de Maracay (Las Delicias, La Soledad, Base Aragua, El Bosque, San Jacinto, Piñonal, San José, La Barraca, Caña de Azúcar, Los Samanes, Campo Alegre, 23 de Enero, San Vicente, La Coromoto, Guasimal, El Castaño) — +$2.00 USD</option>
-                                    <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre, Arias Blanco, Valle Verde) — +$3.00 USD</option>
-                                    <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / La Morita / Coropo / Samán de Güere / Santa Cruz — +$5.00 USD</option>
-                                    <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo / Bella Vista / Corinsa — +$6.00 USD</option>
-                                    <option value="lejana" data-costo="8">📍 Otras Zonas del Estado Aragua (La Victoria, Magdaleno, Villa de Cura, Tocorón, San Sebastián, Zuata, San Casimiro) — +$8.00 USD</option>
-                                    <option value="otra" data-costo="3">📍 Otra Zona / Sector dentro de Aragua (Tarifa estimada: $3.00 USD / Calculada con tu GPS)</option>
-                                    <option value="fuera_aragua" data-costo="-1" data-bloqueado="true" style="color:#dc2626; font-weight:700;">🚫 Fuera del Estado Aragua (Carabobo, Valencia, Caracas, etc.) — NO DISPONIBLE</option>
+                                    <option value="centro" data-costo="0" data-dist="0 - 2.5 km" selected>📍 Centro de Maracay (0 a 2.5 km de la sede) — ¡GRATIS ($0.00)!</option>
+                                    <option value="cercanas" data-costo="2" data-dist="2.5 - 6 km">📍 Maracay Urbano Cercano (2.5 a 6 km: Delicias, Soledad, San Jacinto, Piñonal, Caña de Azúcar, etc.) — +$2.00 USD</option>
+                                    <option value="limon" data-costo="3" data-dist="6 - 10 km">📍 El Limón / MBI / Arsenal / Candelaria (6 a 10 km) — +$3.00 USD</option>
+                                    <option value="turmero" data-costo="5" data-dist="10 - 16 km">📍 Turmero / Palo Negro / Santa Rita / La Morita (10 a 16 km) — +$5.00 USD</option>
+                                    <option value="cagua" data-costo="6" data-dist="16 - 24 km">📍 Cagua / La Encrucijada / San Mateo (16 a 24 km) — +$6.00 USD</option>
+                                    <option value="villadecura" data-costo="8" data-dist="24 - 32 km">📍 Villa de Cura / Zamora / Bella Vista (24 a 32 km) — +$8.00 USD</option>
+                                    <option value="victoria" data-costo="10" data-dist="32 - 42 km">📍 La Victoria / Magdaleno / Tocorón (32 a 42 km) — +$10.00 USD</option>
+                                    <option value="lejana" data-costo="12" data-dist="42 - 55 km">📍 Zonas Foráneas de Aragua (42 a 55 km: Las Tejerías, San Casimiro, San Sebastián) — +$12.00 USD</option>
+                                    <option value="otra" data-costo="3" data-dist="Variable">📍 Otra Zona dentro de Aragua (Tarifa calculada según km de distancia)</option>
+                                    <option value="fuera_aragua" data-costo="-1" data-bloqueado="true" style="color:#dc2626; font-weight:700;">🚫 Fuera del Estado Aragua (> 55 km / Carabobo, Valencia, Caracas, etc.) — NO DISPONIBLE</option>
                                 </select>
                                 <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
                                     <i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>
@@ -511,41 +515,44 @@
             'corinsa': { nombre: 'Corinsa, Cagua', coords: [10.1785, -67.4652], zona: 'cagua', tarifa: 6 },
             'bella vista': { nombre: 'Bella Vista, Cagua', coords: [10.1912, -67.4485], zona: 'cagua', tarifa: 6 },
 
-            // Lejanas ($8.00)
-            'victoria': { nombre: 'La Victoria, Aragua', coords: [10.2268, -67.3323], zona: 'lejana', tarifa: 8 },
-            'villa de cura': { nombre: 'Villa de Cura, Aragua', coords: [10.0385, -67.4885], zona: 'lejana', tarifa: 8 },
-            'san sebastian': { nombre: 'San Sebastián de los Reyes', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 8 },
-            'san sebastián': { nombre: 'San Sebastián de los Reyes', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 8 },
-            'magdaleno': { nombre: 'Magdaleno, Zamora', coords: [10.1020, -67.6250], zona: 'lejana', tarifa: 8 },
-            'zamora': { nombre: 'Municipio Zamora (Magdaleno / Villa de Cura)', coords: [10.1020, -67.6250], zona: 'lejana', tarifa: 8 },
-            'tocoron': { nombre: 'Tocorón, Zamora', coords: [10.1250, -67.5750], zona: 'lejana', tarifa: 8 },
-            'tocorón': { nombre: 'Tocorón, Zamora', coords: [10.1250, -67.5750], zona: 'lejana', tarifa: 8 },
-            'san francisco de asis': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'lejana', tarifa: 8 },
-            'san francisco de asís': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'lejana', tarifa: 8 },
-            'zuata': { nombre: 'Zuata, Aragua', coords: [10.2100, -67.3600], zona: 'lejana', tarifa: 8 },
-            'tejerias': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
-            'tejerías': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
-            'valencia': { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zona: 'lejana', tarifa: 8 },
-            'mariara': { nombre: 'Mariara (Municipio Diego Ibarra, Carabobo)', coords: [10.2893, -67.7033], zona: 'lejana', tarifa: 8 },
-            'diego ibarra': { nombre: 'Municipio Diego Ibarra (Mariara / Aguas Calientes)', coords: [10.2893, -67.7033], zona: 'lejana', tarifa: 8 },
-            'san joaquin': { nombre: 'San Joaquín, Carabobo', coords: [10.2600, -67.7850], zona: 'lejana', tarifa: 8 },
-            'san joaquín': { nombre: 'San Joaquín, Carabobo', coords: [10.2600, -67.7850], zona: 'lejana', tarifa: 8 },
-            'aguas calientes': { nombre: 'Aguas Calientes, Mariara', coords: [10.2980, -67.7120], zona: 'lejana', tarifa: 8 },
-            'caracas': { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zona: 'lejana', tarifa: 8 }
+            // Zonas según Distancia Progresiva desde el Centro de Maracay
+            'villa de cura': { nombre: 'Villa de Cura, Aragua (24 a 32 km)', coords: [10.0385, -67.4885], zona: 'villadecura', tarifa: 8 },
+            'zamora': { nombre: 'Municipio Zamora (Villa de Cura / Magdaleno)', coords: [10.0385, -67.4885], zona: 'villadecura', tarifa: 8 },
+            'san francisco de asis': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'villadecura', tarifa: 8 },
+            'san francisco de asís': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'villadecura', tarifa: 8 },
+            'victoria': { nombre: 'La Victoria, Aragua (32 a 42 km)', coords: [10.2268, -67.3323], zona: 'victoria', tarifa: 10 },
+            'magdaleno': { nombre: 'Magdaleno, Zamora (32 a 42 km)', coords: [10.1020, -67.6250], zona: 'victoria', tarifa: 10 },
+            'tocoron': { nombre: 'Tocorón, Zamora (32 a 42 km)', coords: [10.1250, -67.5750], zona: 'victoria', tarifa: 10 },
+            'tocorón': { nombre: 'Tocorón, Zamora (32 a 42 km)', coords: [10.1250, -67.5750], zona: 'victoria', tarifa: 10 },
+            'zuata': { nombre: 'Zuata, Aragua (32 a 42 km)', coords: [10.2100, -67.3600], zona: 'victoria', tarifa: 10 },
+            'el consejo': { nombre: 'El Consejo / Revenga, Aragua', coords: [10.2310, -67.2750], zona: 'victoria', tarifa: 10 },
+            'san sebastian': { nombre: 'San Sebastián de los Reyes (42 a 55 km)', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 12 },
+            'san sebastián': { nombre: 'San Sebastián de los Reyes (42 a 55 km)', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 12 },
+            'tejerias': { nombre: 'Las Tejerías, Aragua (42 a 55 km)', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 12 },
+            'tejerías': { nombre: 'Las Tejerías, Aragua (42 a 55 km)', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 12 },
+            'san casimiro': { nombre: 'San Casimiro, Aragua (42 a 55 km)', coords: [10.0000, -67.0167], zona: 'lejana', tarifa: 12 },
+            'colonia tovar': { nombre: 'Colonia Tovar, Aragua', coords: [10.4056, -67.2889], zona: 'lejana', tarifa: 12 },
+            'valencia': { nombre: 'Valencia, Carabobo (Fuera de Aragua)', coords: [10.1700, -68.0004], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            'mariara': { nombre: 'Mariara, Carabobo (Fuera de Aragua)', coords: [10.2893, -67.7033], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            'diego ibarra': { nombre: 'Municipio Diego Ibarra (Fuera de Aragua)', coords: [10.2893, -67.7033], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            'san joaquin': { nombre: 'San Joaquín, Carabobo (Fuera de Aragua)', coords: [10.2600, -67.7850], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            'san joaquín': { nombre: 'San Joaquín, Carabobo (Fuera de Aragua)', coords: [10.2600, -67.7850], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            'aguas calientes': { nombre: 'Aguas Calientes (Fuera de Aragua)', coords: [10.2980, -67.7120], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+            'caracas': { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
         };
         const CIUDADES_VE = {
             duri: { nombre: 'Sede Inversiones Duri (Maracay Centro)', coords: [10.2502976, -67.5961389], zoom: 17, zona: 'centro', tarifa: 0 },
             maracay: { nombre: 'Maracay Centro (Casco Central / Calicanto)', coords: [10.2469, -67.5958], zoom: 15, zona: 'centro', tarifa: 0 },
-            delicias: { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zoom: 16, zona: 'cercanas', tarifa: 2 },
-            sanjacinto: { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zoom: 16, zona: 'cercanas', tarifa: 2 },
-            coromoto: { nombre: 'La Coromoto / San José, Maracay', coords: [10.2520, -67.6180], zoom: 16, zona: 'cercanas', tarifa: 2 },
-            canadeazucar: { nombre: 'Caña de Azúcar / Piñonal, Maracay', coords: [10.2642, -67.6338], zoom: 15, zona: 'cercanas', tarifa: 2 },
-            limon: { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
-            turmero: { nombre: 'Turmero / Palo Negro', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
-            cagua: { nombre: 'Cagua / La Encrucijada', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
-            magdaleno: { nombre: 'Magdaleno (Municipio Zamora, Aragua)', coords: [10.1020, -67.6250], zoom: 15, zona: 'lejana', tarifa: 8 },
-            villadecura: { nombre: 'Villa de Cura (Municipio Zamora, Aragua)', coords: [10.0380, -67.4890], zoom: 15, zona: 'lejana', tarifa: 8 },
-            victoria: { nombre: 'La Victoria (Municipio Ribas, Aragua)', coords: [10.2268, -67.3323], zoom: 13, zona: 'lejana', tarifa: 8 },
+            delicias: { nombre: 'Las Delicias, Maracay (2.5 a 6 km)', coords: [10.2721, -67.6015], zoom: 16, zona: 'cercanas', tarifa: 2 },
+            sanjacinto: { nombre: 'San Jacinto, Maracay (2.5 a 6 km)', coords: [10.2395, -67.5685], zoom: 16, zona: 'cercanas', tarifa: 2 },
+            coromoto: { nombre: 'La Coromoto / San José, Maracay (2.5 a 6 km)', coords: [10.2520, -67.6180], zoom: 16, zona: 'cercanas', tarifa: 2 },
+            canadeazucar: { nombre: 'Caña de Azúcar / Piñonal (2.5 a 6 km)', coords: [10.2642, -67.6338], zoom: 15, zona: 'cercanas', tarifa: 2 },
+            limon: { nombre: 'El Limón, Mario B. Iragorry (6 a 10 km)', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
+            turmero: { nombre: 'Turmero / Palo Negro (10 a 16 km)', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
+            cagua: { nombre: 'Cagua / La Encrucijada (16 a 24 km)', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
+            villadecura: { nombre: 'Villa de Cura, Zamora (24 a 32 km)', coords: [10.0380, -67.4890], zoom: 15, zona: 'villadecura', tarifa: 8 },
+            magdaleno: { nombre: 'Magdaleno, Zamora (32 a 42 km)', coords: [10.1020, -67.6250], zoom: 15, zona: 'victoria', tarifa: 10 },
+            victoria: { nombre: 'La Victoria, Ribas (32 a 42 km)', coords: [10.2268, -67.3323], zoom: 13, zona: 'victoria', tarifa: 10 },
             valencia: { nombre: 'Valencia, Carabobo (Fuera de Aragua)', coords: [10.1700, -68.0004], zoom: 14, zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
             caracas: { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zoom: 13, zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
         };
@@ -739,12 +746,19 @@
                 if (lugaresFueraAragua.some(p => t.includes(p))) {
                     zonaDetectada = 'fuera_aragua';
                     matchedByText = true;
-                } else if (t.includes('magdaleno') || t.includes('zamora') || t.includes('tocoron') || t.includes('tocorón') || 
-                    t.includes('villa de cura') || t.includes('san sebastian') || t.includes('san sebastián') || 
-                    t.includes('san casimiro') || t.includes('san francisco de asis') || t.includes('san francisco de asís') ||
-                    t.includes('victoria') || t.includes('tejerias') || t.includes('tejerías') || t.includes('zuata') ||
-                    t.includes('revenga') || t.includes('el consejo') || t.includes('santos michelena') || t.includes('san mateo')) {
+                } else if (t.includes('tejerias') || t.includes('tejerías') || t.includes('san sebastian') || 
+                           t.includes('san sebastián') || t.includes('san casimiro') || t.includes('colonia tovar') || 
+                           t.includes('ocumare') || t.includes('costa de oro')) {
                     zonaDetectada = 'lejana';
+                    matchedByText = true;
+                } else if (t.includes('victoria') || t.includes('magdaleno') || t.includes('tocoron') || 
+                           t.includes('tocorón') || t.includes('el consejo') || t.includes('revenga') || 
+                           t.includes('zuata') || t.includes('san mateo')) {
+                    zonaDetectada = 'victoria';
+                    matchedByText = true;
+                } else if (t.includes('villa de cura') || t.includes('zamora') || t.includes('san francisco de asis') || 
+                           t.includes('san francisco de asís')) {
+                    zonaDetectada = 'villadecura';
                     matchedByText = true;
                 } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('bella vista') || t.includes('corinsa') || 
                            (t.includes('sucre') && !t.includes('base sucre') && !t.includes('barrio sucre'))) {
@@ -771,37 +785,32 @@
                     }
                 }
 
-                // 2. Si no hubo coincidencia por texto y hay coordenadas GPS, calcular por cuadrante geográfico satelital
-                if (!matchedByText && lat && lon && typeof DEFAULT_COORD !== 'undefined') {
+                // 2. Si hay coordenadas GPS, calcular la distancia satelital exacta en kilómetros desde la sede central
+                if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
                     const latNum = parseFloat(lat);
                     const lonNum = parseFloat(lon);
                     const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], latNum, lonNum);
+                    window._distanciaDeliveryKm = dKm.toFixed(1);
 
                     // Al OESTE de -67.67 ya es Carabobo (Mariara / San Joaquín / Valencia) -> Fuera de Aragua
-                    if (lonNum <= -67.67 || lonNum >= -67.10 || latNum <= 9.75 || latNum >= 10.60 || dKm > 52.0) {
+                    if (lonNum <= -67.67 || lonNum >= -67.10 || latNum <= 9.75 || latNum >= 10.60 || dKm > 55.0) {
                         zonaDetectada = 'fuera_aragua';
-                    } else if (latNum <= 10.135) {
-                        zonaDetectada = 'lejana'; // Magdaleno / Tocorón / Villa de Cura (Aragua)
-                    } else if (dKm <= 2.2) {
-                        zonaDetectada = 'centro'; // Centro Maracay: GRATIS ($0.00)
+                    } else if (dKm <= 2.5) {
+                        zonaDetectada = 'centro'; // 0 a 2.5 km: GRATIS
                     } else if (dKm <= 6.0) {
-                        zonaDetectada = 'cercanas'; // Zonas Urbanas Cercanas: +$2.00
-                    } else if (dKm <= 10.5 && (lonNum < -67.61 || latNum > 10.27)) {
-                        zonaDetectada = 'limon'; // El Limón / MBI: +$3.00
-                    } else if (dKm <= 16.5) {
-                        if (lonNum >= -67.58 || latNum < 10.22) {
-                            zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
-                        } else {
-                            zonaDetectada = 'lejana';
-                        }
+                        zonaDetectada = 'cercanas'; // 2.5 a 6 km: +$2.00
+                    } else if (dKm <= 10.0) {
+                        zonaDetectada = 'limon'; // 6 a 10 km: +$3.00
+                    } else if (dKm <= 16.0) {
+                        zonaDetectada = 'turmero'; // 10 a 16 km: +$5.00
                     } else if (dKm <= 24.0) {
-                        if (lonNum >= -67.49 && lonNum <= -67.38 && latNum >= 10.14) {
-                            zonaDetectada = 'cagua'; // Cagua: +$6.00
-                        } else {
-                            zonaDetectada = 'lejana';
-                        }
+                        zonaDetectada = 'cagua'; // 16 a 24 km: +$6.00
+                    } else if (dKm <= 32.0) {
+                        zonaDetectada = 'villadecura'; // 24 a 32 km: +$8.00
+                    } else if (dKm <= 42.0) {
+                        zonaDetectada = 'victoria'; // 32 a 42 km: +$10.00
                     } else {
-                        zonaDetectada = 'lejana';
+                        zonaDetectada = 'lejana'; // 42 a 55 km: +$12.00
                     }
                 } else if (!matchedByText) {
                     if (t.length > 5) {

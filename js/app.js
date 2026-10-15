@@ -4964,6 +4964,7 @@ function cambiarZonaDelivery() {
     const optVal = sel.value;
     const esBloqueado = optVal === 'fuera_aragua' || (opt && opt.getAttribute('data-bloqueado') === 'true');
     const costo = esBloqueado ? -1 : (opt ? parseFloat(opt.getAttribute('data-costo') || 0) : 0);
+    const optDist = opt ? (opt.getAttribute('data-dist') || '') : '';
     if (costoInput) costoInput.value = String(costo);
 
     if (badge) {
@@ -4979,14 +4980,20 @@ function cambiarZonaDelivery() {
             `;
         } else if (costo === 0) {
             badge.style.color = '#059669';
-            badge.innerHTML = '<i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>';
+            const kmInfo = (typeof window._distanciaDeliveryKm !== 'undefined' && window._distanciaDeliveryKm) 
+                ? ` (GPS: <strong>${window._distanciaDeliveryKm} km</strong> del centro)` 
+                : ' (0 a 2.5 km de la sede)';
+            badge.innerHTML = `<i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es <strong>COMPLETAMENTE GRATIS</strong>!${kmInfo}</span>`;
         } else {
             const bsCosto = (typeof BcvManager !== 'undefined' && BcvManager.rate) 
                 ? BcvManager.formatBs(BcvManager.toBs(costo)) 
                 : `Bs. ${(costo * 45).toFixed(2)}`;
             badge.style.color = '#2563eb';
-            const extraDesc = optVal === 'otra' ? ' (Sector dentro de Aragua / Calculada por GPS)' : '';
-            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa de Delivery a esta zona: <strong>$${costo.toFixed(2)} USD</strong> (${bsCosto})${extraDesc}</span>`;
+            const kmInfo = (typeof window._distanciaDeliveryKm !== 'undefined' && window._distanciaDeliveryKm) 
+                ? `GPS: ~${window._distanciaDeliveryKm} km` 
+                : (optDist ? `Distancia: ${optDist}` : '');
+            const distTag = kmInfo ? ` <span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; font-size:0.78rem; font-weight:700; margin-left:4px;">📏 ${kmInfo}</span>` : '';
+            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa Progresiva Delivery: <strong>+$${costo.toFixed(2)} USD</strong> (${bsCosto})${distTag}</span>`;
         }
     }
     sincronizarMontosUbicacion();
@@ -5022,21 +5029,31 @@ function sincronizarMontosUbicacion() {
     const currentAddr = (typeof selectedAddressText === 'string' ? selectedAddressText : (document.getElementById('deliveryAddress')?.value || '')).toLowerCase();
     if (currentAddr.includes('mariara') || currentAddr.includes('valencia') || currentAddr.includes('caracas') || currentAddr.includes('carabobo')) {
         nombrePersonalizado = 'Fuera del Estado Aragua (No disponible)';
+    } else if (currentAddr.includes('tejerias') || currentAddr.includes('tejerías') || currentAddr.includes('san sebastian') || currentAddr.includes('san casimiro')) {
+        nombrePersonalizado = 'Zona Foránea Aragua (42 a 55 km / Las Tejerías)';
+    } else if (currentAddr.includes('la victoria') || currentAddr.includes('victoria') || currentAddr.includes('el consejo')) {
+        nombrePersonalizado = 'La Victoria (32 a 42 km / Municipio Ribas, Aragua)';
     } else if (currentAddr.includes('magdaleno')) {
-        nombrePersonalizado = 'Magdaleno (Zona Lejana / Municipio Zamora, Aragua)';
+        nombrePersonalizado = 'Magdaleno (32 a 42 km / Municipio Zamora, Aragua)';
     } else if (currentAddr.includes('tocoron') || currentAddr.includes('tocorón')) {
-        nombrePersonalizado = 'Tocorón (Zona Lejana / Municipio Zamora, Aragua)';
-    } else if (currentAddr.includes('villa de cura')) {
-        nombrePersonalizado = 'Villa de Cura (Municipio Zamora, Aragua)';
-    } else if (currentAddr.includes('cagua')) {
-        nombrePersonalizado = 'Cagua (Municipio Sucre, Aragua)';
+        nombrePersonalizado = 'Tocorón (32 a 42 km / Municipio Zamora, Aragua)';
+    } else if (currentAddr.includes('villa de cura') || currentAddr.includes('zamora')) {
+        nombrePersonalizado = 'Villa de Cura (24 a 32 km / Municipio Zamora, Aragua)';
+    } else if (currentAddr.includes('cagua') || currentAddr.includes('encrucijada')) {
+        nombrePersonalizado = 'Cagua / Encrucijada (16 a 24 km / Municipio Sucre, Aragua)';
     } else if (currentAddr.includes('turmero')) {
-        nombrePersonalizado = 'Turmero (Municipio Santiago Mariño, Aragua)';
+        nombrePersonalizado = 'Turmero (10 a 16 km / Municipio Santiago Mariño, Aragua)';
     } else if (currentAddr.includes('palo negro')) {
-        nombrePersonalizado = 'Palo Negro (Municipio Libertador, Aragua)';
+        nombrePersonalizado = 'Palo Negro (10 a 16 km / Municipio Libertador, Aragua)';
+    } else if (currentAddr.includes('santa rita')) {
+        nombrePersonalizado = 'Santa Rita (10 a 16 km / Municipio FLA, Aragua)';
     } else if (currentAddr.includes('el limon') || currentAddr.includes('el limón')) {
-        nombrePersonalizado = 'El Limón (Municipio MBI, Aragua)';
+        nombrePersonalizado = 'El Limón (6 a 10 km / Municipio MBI, Aragua)';
     }
+
+    const distInfoStr = (typeof window._distanciaDeliveryKm !== 'undefined' && window._distanciaDeliveryKm) 
+        ? ` • ~${window._distanciaDeliveryKm} km del centro` 
+        : '';
     
     let sum = 0;
     const cartItemsCount = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart.length : 0;
@@ -5076,7 +5093,7 @@ function sincronizarMontosUbicacion() {
             badgeZona.style.background = '#fef2f2';
             badgeZona.style.color = '#dc2626';
         } else {
-            badgeZona.textContent = `${nombrePersonalizado} (${deliveryCost === 0 ? 'Gratis' : `$${deliveryCost.toFixed(2)}`})`;
+            badgeZona.textContent = `${nombrePersonalizado}${distInfoStr} (${deliveryCost === 0 ? 'Gratis' : `+$${deliveryCost.toFixed(2)}`})`;
             badgeZona.style.background = deliveryCost === 0 ? '#ecfdf5' : '#eff6ff';
             badgeZona.style.color = deliveryCost === 0 ? '#059669' : '#1d4ed8';
         }
@@ -5125,9 +5142,9 @@ function sincronizarMontosUbicacion() {
         } else if (esFueraDeAragua) {
             cardPrecio.innerHTML = `<span style="color:#dc2626; font-weight:700;"><i class="fas fa-ban"></i> Ubicación Fuera del Estado Aragua: Solo cotizamos dentro de Aragua</span>`;
         } else if (deliveryCost === 0) {
-            cardPrecio.innerHTML = `<i class="fas fa-gift" style="color:#059669;"></i> Delivery ${nombrePersonalizado}: <strong>GRATIS ($0.00)</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+            cardPrecio.innerHTML = `<i class="fas fa-gift" style="color:#059669;"></i> Delivery ${nombrePersonalizado}${distInfoStr}: <strong>GRATIS ($0.00)</strong> | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
         } else {
-            cardPrecio.innerHTML = `<i class="fas fa-motorcycle" style="color:#2563eb;"></i> Delivery ${nombrePersonalizado}: <strong>+$${deliveryCost.toFixed(2)} USD</strong> (${bsDelivery}) | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
+            cardPrecio.innerHTML = `<i class="fas fa-motorcycle" style="color:#2563eb;"></i> Delivery ${nombrePersonalizado}${distInfoStr}: <strong>+$${deliveryCost.toFixed(2)} USD</strong> (${bsDelivery}) | Total a Pagar: <strong>$${grandTotal.toFixed(2)} USD</strong> (${bsTotal})`;
         }
     }
 
@@ -5141,9 +5158,9 @@ function sincronizarMontosUbicacion() {
         if (esFueraDeAragua) {
             gmapsZoneLabel.innerHTML = `<span style="color:#dc2626; font-weight:700;"><i class="fas fa-ban"></i> Ubicación Fuera del Estado Aragua — No es posible cotizar</span>`;
         } else if (deliveryCost === 0) {
-            gmapsZoneLabel.innerHTML = `<span style="color:#059669; font-weight:700;"><i class="fas fa-gift"></i> ${nombrePersonalizado} — ¡DELIVERY GRATIS ($0.00)!</span>`;
+            gmapsZoneLabel.innerHTML = `<span style="color:#059669; font-weight:700;"><i class="fas fa-gift"></i> ${nombrePersonalizado}${distInfoStr} — ¡DELIVERY GRATIS ($0.00)!</span>`;
         } else {
-            gmapsZoneLabel.innerHTML = `<span style="color:#1d4ed8; font-weight:700;"><i class="fas fa-motorcycle"></i> ${nombrePersonalizado} — Tarifa: +$${deliveryCost.toFixed(2)} USD (${bsDelivery})</span>`;
+            gmapsZoneLabel.innerHTML = `<span style="color:#1d4ed8; font-weight:700;"><i class="fas fa-motorcycle"></i> ${nombrePersonalizado}${distInfoStr} — Tarifa Progresiva: +$${deliveryCost.toFixed(2)} USD (${bsDelivery})</span>`;
         }
     }
 
@@ -5433,11 +5450,12 @@ async function submitOrder() {
         }
 
         deliveryZoneLabel = zonaOpt ? zonaOpt.text.split('—')[0].replace('📍', '').trim() : 'Delivery a Domicilio';
+        const distKmInfo = (typeof window._distanciaDeliveryKm !== 'undefined' && window._distanciaDeliveryKm) ? ` [~${window._distanciaDeliveryKm} km del centro]` : '';
         if (geoCoords) {
             mapsLink = `https://www.google.com/maps/search/?api=1&query=${geoCoords}`;
-            fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr} | GPS: ${mapsLink}`;
+            fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel}${distKmInfo} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr} | GPS: ${mapsLink}`;
         } else {
-            fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr}`;
+            fullDeliveryAddress = `[DELIVERY - ${deliveryZoneLabel}${distKmInfo} (Tarifa: $${deliveryCost.toFixed(2)})] ${addr}`;
         }
     } else {
         fullDeliveryAddress = 'Retiro en Sede Comercial Inversiones Duri (Av. Bolívar Oeste, Maracay)';
@@ -5458,8 +5476,9 @@ async function submitOrder() {
         prodLines += `📦 ${it.name} x${it.qty} — $${(it.price * it.qty).toFixed(2)} (${itemBs})\n`;
     });
     
+    const distKmMsg = (isDelivery && typeof window._distanciaDeliveryKm !== 'undefined' && window._distanciaDeliveryKm) ? ` (Distancia: ~${window._distanciaDeliveryKm} km del centro)` : '';
     const deliveryMsgLine = isDelivery 
-        ? `🛵 Entrega: Delivery (${deliveryZoneLabel}) — ${deliveryCost === 0 ? '¡GRATIS ($0.00)!' : `+$${deliveryCost.toFixed(2)} USD`}`
+        ? `🛵 Entrega: Delivery (${deliveryZoneLabel})${distKmMsg} — ${deliveryCost === 0 ? '¡GRATIS ($0.00)!' : `+$${deliveryCost.toFixed(2)} USD`}`
         : `🏪 Entrega: Retiro en Sede Comercial — ¡GRATIS ($0.00)!`;
 
     // Mensaje predeterminado con Cédula, tasa BCV y Link de Google Maps
