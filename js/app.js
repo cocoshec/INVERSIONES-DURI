@@ -5196,11 +5196,12 @@ async function submitOrder() {
     }
     
     if (!newName || !newName.value.trim()) { showToast('Por favor escribe tu nombre completo', 'error'); return; }
-    if (!newCi || !newCi.value.trim()) { showToast('Por favor ingresa tu número de Cédula o RIF', 'error'); return; }
+    if (!newCi || !newCi.value.trim()) { showToast('Por favor ingresa tu número de Cédula', 'error'); return; }
+    const clientCi = newCi.value.replace(/[^0-9]/g, '');
+    if (clientCi.length < 6) { showToast('La Cédula debe contener solo números (mínimo 6 dígitos)', 'error'); return; }
     if (!newPhone || !newPhone.value.trim()) { showToast('Por favor ingresa tu número de teléfono', 'error'); return; }
     
     const clientName = newName.value.trim();
-    const clientCi = newCi.value.trim().toUpperCase();
     const clientEmail = (newEmail && newEmail.value) ? newEmail.value.trim().toLowerCase() : '';
     const clientPhone = newPhone.value.trim();
     
@@ -5249,7 +5250,7 @@ async function submitOrder() {
         : `🏪 Entrega: Retiro en Sede Comercial — ¡GRATIS ($0.00)!`;
 
     // Mensaje predeterminado con Cédula, tasa BCV y Link de Google Maps
-    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 C.I / RIF: ${clientCi}\n📞 Teléfono: ${clientPhone}${clientEmail ? `\n📧 Correo: ${clientEmail}` : ''}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n${deliveryMsgLine}\n\n🔥 TOTAL A PAGAR: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección / Entrega: ${isDelivery ? (addr || 'Por confirmar') : 'Retiro en Tienda Inversiones Duri'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
+    const msg = `✅ ¡Hola! Quiero confirmar mi pedido en Inversiones Duri\n\n👤 Cliente: ${clientName}\n🪪 Cédula: ${clientCi}\n📞 Teléfono: ${clientPhone}${clientEmail ? `\n📧 Correo: ${clientEmail}` : ''}\n${prodLines}\n💰 Subtotal: $${subtotal.toFixed(2)}\n🧾 IVA (16%): $${iva.toFixed(2)}\n${deliveryMsgLine}\n\n🔥 TOTAL A PAGAR: $${total.toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n💳 Pago: ${paymentLabel}\n📍 Dirección / Entrega: ${isDelivery ? (addr || 'Por confirmar') : 'Retiro en Tienda Inversiones Duri'}${mapsLink ? `\n🗺️ Ubicación GPS (Google Maps): ${mapsLink}` : ''}\n\n¿Sigue disponible el producto? Confirma para proceder ✔`;
     
     // Guardar datos temporalmente para el modal
     window._pendingOrder = {
@@ -5347,7 +5348,7 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
                     <div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Datos del Cliente</div>
                     <div style="font-weight:700;font-size:1.05rem;color:#1e293b;">${clientName}</div>
                     <div style="font-size:0.84rem;color:#555;margin-top:2px;">
-                        <span><i class="fas fa-id-card"></i> <strong>C.I / RIF:</strong> ${clientCi}</span>
+                        <span><i class="fas fa-id-card"></i> <strong>Cédula:</strong> ${clientCi}</span>
                         <span style="margin-left:10px;"><i class="fas fa-phone"></i> ${clientPhone}</span>
                     </div>
                     ${clientEmail ? `
