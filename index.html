@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <link rel="stylesheet" href="css/styles.css?v=36.0">
+    <link rel="stylesheet" href="css/styles.css?v=37.0">
     <style>
         /* Alineación vertical permanente para DuriBot y Carrito */
         .floating-actions-stack {
@@ -394,26 +394,73 @@
     <!-- Services -->
     <section class="section services-section">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag"><i class="fas fa-cog"></i> Nuestros Servicios</span>
-                <h2>Soluciones completas para ti</h2>
-                <p>Ofrecemos una variedad de servicios diseñados para satisfacer tus necesidades</p>
+            <div class="section-header text-center" style="margin-bottom:34px;">
+                <span class="pilar-hero-badge"><i class="fas fa-concierge-bell"></i> Nuestros Servicios</span>
+                <h2 style="font-size:2.15rem; font-weight:800; color:#0f172a; margin:12px 0 8px; letter-spacing:-0.03em;">Soluciones completas para ti</h2>
+                <p style="color:#64748b; font-size:1rem; max-width:620px; margin:0 auto; line-height:1.6;">Ofrecemos una variedad de servicios diseñados para satisfacer tus necesidades en papelería y suministros</p>
             </div>
             <div class="services-grid">
+                <!-- 1. Gestión de Pedidos Online -->
                 <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="service-card-top">
+                        <div class="service-icon-wrap icon-orange">
+                            <i class="fas fa-cart-shopping"></i>
+                        </div>
+                        <span class="service-badge badge-orange"><i class="fas fa-bolt"></i> 100% Digital</span>
+                    </div>
                     <h3>Gestión de Pedidos</h3>
-                    <p>Realiza y gestiona tus pedidos de manera fácil y rápida desde nuestra plataforma</p>
+                    <p>Plataforma ágil para cotizar y comprar en tiempo real, con cálculo automático de IVA y tasa oficial BCV del día.</p>
+                    <ul class="service-benefits-list">
+                        <li><i class="fas fa-check-circle" style="color:#E85D26;"></i> Tasa oficial BCV actualizada en vivo</li>
+                        <li><i class="fas fa-check-circle" style="color:#E85D26;"></i> Cálculo y desglose transparente de IVA</li>
+                        <li><i class="fas fa-check-circle" style="color:#E85D26;"></i> Envío inmediato de ticket por WhatsApp</li>
+                    </ul>
+                    <a href="pages/pedidos.html" class="service-action-btn btn-card-orange">
+                        <span>Hacer Pedido Ahora</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
+
+                <!-- 2. Entrega a Domicilio Satelital -->
                 <div class="service-card">
-                    <div class="service-icon yellow"><i class="fas fa-truck"></i></div>
-                    <h3>Entrega a Domicilio</h3>
-                    <p>Recibe tus productos directamente en la comodidad de tu hogar u oficina</p>
+                    <div class="service-card-top">
+                        <div class="service-icon-wrap icon-blue">
+                            <i class="fas fa-truck-fast"></i>
+                        </div>
+                        <span class="service-badge badge-blue"><i class="fas fa-location-crosshairs"></i> GPS Satelital</span>
+                    </div>
+                    <h3>Delivery en Aragua</h3>
+                    <p>Despachos rápidos y seguros a tu puerta. Delivery 100% GRATIS en el Centro de Maracay y tarifas justas por distancia.</p>
+                    <ul class="service-benefits-list">
+                        <li><i class="fas fa-check-circle" style="color:#2563eb;"></i> Centro de Maracay 100% GRATIS</li>
+                        <li><i class="fas fa-check-circle" style="color:#2563eb;"></i> Medición satelital exacta por km</li>
+                        <li><i class="fas fa-check-circle" style="color:#2563eb;"></i> Cobertura en municipios de Aragua</li>
+                    </ul>
+                    <a href="pages/pedidos.html" class="service-action-btn btn-card-blue">
+                        <span>Ver Zonas y Tarifas</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
+
+                <!-- 3. Venta Mayorista y Crédito Corporativo -->
                 <div class="service-card">
-                    <div class="service-icon brown"><i class="fas fa-building"></i></div>
-                    <h3>Venta Mayorista</h3>
-                    <p>Soluciones especiales para empresas y compras al por mayor con precios preferenciales</p>
+                    <div class="service-card-top">
+                        <div class="service-icon-wrap icon-purple">
+                            <i class="fas fa-building-columns"></i>
+                        </div>
+                        <span class="service-badge badge-purple"><i class="fas fa-briefcase"></i> Solución B2B</span>
+                    </div>
+                    <h3>Ventas al Mayor y Crédito</h3>
+                    <p>Condiciones y precios especiales por bulto/volumen para colegios, academias, oficinas, comercios e industrias.</p>
+                    <ul class="service-benefits-list">
+                        <li><i class="fas fa-check-circle" style="color:#9333ea;"></i> Descuentos por volumen y bulto cerrado</li>
+                        <li><i class="fas fa-check-circle" style="color:#9333ea;"></i> Planes de crédito para clientes recurrentes</li>
+                        <li><i class="fas fa-check-circle" style="color:#9333ea;"></i> Despachos consolidados programados</li>
+                    </ul>
+                    <a href="pages/contacto.html" class="service-action-btn btn-card-purple">
+                        <span>Solicitar Plan Empresa</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
