@@ -1120,36 +1120,11 @@
             }
             const btn = document.getElementById('btnGpsDirect');
             const originalHtml = btn ? btn.innerHTML : '';
-            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo GPS...';
-
-            if (typeof showToast === 'function') {
-                showToast('📡 Localizando tu posición GPS...', 'info');
-            }
-
-            capturarGpsTiempoReal(
-                (pos, tipo) => {
-                    if (btn) btn.innerHTML = originalHtml;
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    aplicarUbicacionFijada(lat, lon);
-                    reverseGeocodeReal(lat, lon, (desc) => {
-                        aplicarUbicacionFijada(lat, lon, desc);
-                    });
-                    setTimeout(() => {
-                        const card = document.getElementById('ubicacionConfirmadaCard');
-                        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 120);
-                    if (typeof showToast === 'function') {
-                        showToast('📍 ¡Ubicación GPS fijada con éxito!', 'success');
-                    }
-                },
-                (msgError) => {
-                    if (btn) btn.innerHTML = originalHtml;
-                    if (typeof showToast === 'function') {
-                        showToast(msgError || 'No se pudo obtener el GPS. Escribe tu dirección en el recuadro.', 'warning');
-                    }
-                }
-            );
+            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abriendo GPS...';
+            abrirModalMapa(true, false);
+            setTimeout(() => {
+                if (btn) btn.innerHTML = originalHtml;
+            }, 800);
         }
 
         function abrirModalMapa(usarGpsAutomatico = false, mensajeAlerta = false) {
@@ -1200,7 +1175,7 @@
                 alertBox.style.display = mensajeAlerta ? 'flex' : 'none';
             }
 
-            if (usarGpsAutomatico && !tieneCoordsFijadas) {
+            if (usarGpsAutomatico) {
                 centrarGpsModal(true);
             }
         }
