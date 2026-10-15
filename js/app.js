@@ -5175,56 +5175,71 @@ function updateCart() {
 // ============================================
 // VALIDACIÓN ESTRICTA DE ENTRADAS NUMÉRICAS (Cédula y Teléfono)
 // ============================================
-function setupNumericInputValidation(input, errorNoticeId, fieldName) {
-    if (!input) return;
+window.mostrarErrorNumero = function(input, errorNoticeId, msg) {
+    if (typeof showToast === 'function') {
+        showToast(msg, 'error');
+    }
     const errorNotice = errorNoticeId ? document.getElementById(errorNoticeId) : null;
-    let errorTimeout = null;
-
-    const triggerNumericError = (msg) => {
-        showToast(msg || `⚠️ En ${fieldName} solo se permiten números, nada de letras.`, 'error');
-        if (errorNotice) {
-            errorNotice.style.display = 'block';
-        }
+    if (errorNotice) {
+        errorNotice.style.display = 'block';
+    }
+    if (input) {
         input.classList.remove('shake-input-error');
         void input.offsetWidth; // Forzar reflujo para reiniciar la animación
         input.classList.add('shake-input-error');
-
-        if (errorTimeout) clearTimeout(errorTimeout);
-        errorTimeout = setTimeout(() => {
-            if (errorNotice) errorNotice.style.display = 'none';
+        input.style.borderColor = '#dc2626';
+    }
+    if (window._errNumTimer) clearTimeout(window._errNumTimer);
+    window._errNumTimer = setTimeout(() => {
+        if (errorNotice) errorNotice.style.display = 'none';
+        if (input) {
             input.classList.remove('shake-input-error');
-        }, 3500);
-    };
+            input.style.borderColor = '';
+        }
+    }, 3500);
+};
 
-    // Bloqueo y aviso inmediato en keydown para teclado físico
+window.validarNumeroKey = function(e, input, errorNoticeId, fieldName) {
+    const allowed = ['Backspace', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Home', 'End'];
+    if (allowed.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key && e.key.length === 1 && !/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        window.mostrarErrorNumero(input, errorNoticeId, `⚠️ En ${fieldName} solo se permiten números, nada de letras.`);
+    }
+};
+
+window.validarNumeroInput = function(input, errorNoticeId, fieldName) {
+    if (/[^0-9]/.test(input.value)) {
+        input.value = input.value.replace(/[^0-9]/g, '');
+        window.mostrarErrorNumero(input, errorNoticeId, `⚠️ En ${fieldName} solo se permiten números, nada de letras.`);
+    } else if (input.value.length > 0) {
+        const errorNotice = errorNoticeId ? document.getElementById(errorNoticeId) : null;
+        if (errorNotice) errorNotice.style.display = 'none';
+        input.classList.remove('shake-input-error');
+        input.style.borderColor = '';
+    }
+};
+
+window.validarNumeroPaste = function(e, input, errorNoticeId, fieldName) {
+    const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+    if (/[^0-9]/.test(pasteData)) {
+        window.mostrarErrorNumero(input, errorNoticeId, `⚠️ En ${fieldName} solo se permiten números (se limpiaron las letras).`);
+    }
+};
+
+function setupNumericInputValidation(input, errorNoticeId, fieldName) {
+    if (!input) return;
+
     input.addEventListener('keydown', function(e) {
-        const allowedKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Home', 'End'];
-        if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) {
-            return;
-        }
-        if (e.key && e.key.length === 1 && !/^[0-9]$/.test(e.key)) {
-            e.preventDefault();
-            triggerNumericError(`⚠️ En ${fieldName} solo se permiten números, nada de letras.`);
-        }
+        window.validarNumeroKey(e, input, errorNoticeId, fieldName);
     });
 
-    // Filtro y aviso inmediato en input (teclados móviles, predicción, portapapeles)
     input.addEventListener('input', function() {
-        if (/[^0-9]/.test(this.value)) {
-            triggerNumericError(`⚠️ En ${fieldName} solo se permiten números (se eliminaron letras o símbolos).`);
-            this.value = this.value.replace(/[^0-9]/g, '');
-        } else if (this.value.length > 0) {
-            if (errorNotice) errorNotice.style.display = 'none';
-            input.classList.remove('shake-input-error');
-        }
+        window.validarNumeroInput(input, errorNoticeId, fieldName);
     });
 
-    // Manejo de pegado (paste)
     input.addEventListener('paste', function(e) {
-        const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
-        if (/[^0-9]/.test(pasteData)) {
-            triggerNumericError(`⚠️ En ${fieldName} solo se permiten números (se removieron letras/símbolos).`);
-        }
+        window.validarNumeroPaste(e, input, errorNoticeId, fieldName);
     });
 }
 
@@ -5288,7 +5303,6 @@ async function submitOrder() {
     
     const clientName = newName.value.trim();
     const clientEmail = (newEmail && newEmail.value) ? newEmail.value.trim().toLowerCase() : '';
-    const clientPhone = newPhone.value.trim();
     
     const paymentLabels = { pago_movil: 'Pago Móvil', transferencia: 'Transferencia Bancaria' };
     const paymentLabel = payment ? (paymentLabels[payment.value] || payment.value) : 'Pago Móvil';

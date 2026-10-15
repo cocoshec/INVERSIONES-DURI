@@ -66,7 +66,7 @@
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-id-card"></i> Cédula <span style="color:#dc3545">*</span></label>
-                            <input type="tel" id="newClientCi" placeholder="Ej: 12345678 (Solo números)" inputmode="numeric" pattern="[0-9]*" maxlength="10" autocomplete="off" required>
+                            <input type="tel" id="newClientCi" placeholder="Ej: 12345678 (Solo números)" inputmode="numeric" pattern="[0-9]*" maxlength="10" autocomplete="off" onkeydown="validarNumeroKey(event, this, 'ciErrorNotice', 'la Cédula')" oninput="validarNumeroInput(this, 'ciErrorNotice', 'la Cédula')" onpaste="validarNumeroPaste(event, this, 'ciErrorNotice', 'la Cédula')" required>
                             <div id="ciErrorNotice" style="display:none; color:#dc2626; font-size:0.8rem; margin-top:5px; font-weight:600;"><i class="fas fa-exclamation-circle"></i> Solo se permiten números en la Cédula (sin letras ni símbolos).</div>
                         </div>
                         <div class="form-group">
@@ -75,7 +75,7 @@
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-phone"></i> Teléfono <span style="color:#dc3545">*</span></label>
-                            <input type="tel" id="newClientPhone" placeholder="Ej: 04121234567 (Solo números)" inputmode="numeric" pattern="[0-9]*" maxlength="15" autocomplete="off" required>
+                            <input type="tel" id="newClientPhone" placeholder="Ej: 04121234567 (Solo números)" inputmode="numeric" pattern="[0-9]*" maxlength="15" autocomplete="off" onkeydown="validarNumeroKey(event, this, 'phoneErrorNotice', 'el Teléfono')" oninput="validarNumeroInput(this, 'phoneErrorNotice', 'el Teléfono')" onpaste="validarNumeroPaste(event, this, 'phoneErrorNotice', 'el Teléfono')" required>
                             <div id="phoneErrorNotice" style="display:none; color:#dc2626; font-size:0.8rem; margin-top:5px; font-weight:600;"><i class="fas fa-exclamation-circle"></i> Solo se permiten números en el Teléfono (sin letras ni símbolos).</div>
                         </div>
                         <input type="hidden" id="clientSelect" value="nuevo">
@@ -284,7 +284,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=40.0"></script>
+    <script src="../js/app.js?v=42.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
