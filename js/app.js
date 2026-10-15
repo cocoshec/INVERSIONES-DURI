@@ -1856,7 +1856,7 @@ function renderInventarioTable(productos) {
         
         const thumbSrc = getProductImageUrl(p);
         const thumbHtml = thumbSrc 
-            ? `<img src="${thumbSrc}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid #cbd5e1;flex-shrink:0;" onerror="this.style.display='none'">` 
+            ? `<img src="${thumbSrc}" style="width:34px;height:34px;border-radius:6px;object-fit:contain;background:#fff;padding:2px;border:1px solid #cbd5e1;flex-shrink:0;" onerror="this.style.display='none'">` 
             : `<div style="width:34px;height:34px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;"><i class="fas fa-box" style="font-size:0.9rem;"></i></div>`;
 
         const priceUsd = parseFloat(p.precio_venta || 0).toFixed(2);
@@ -2046,7 +2046,7 @@ async function editProduct(id) {
                         <div style="display:flex;gap:14px;align-items:center;">
                             <div id="editImagePreviewWrapper" style="width:96px;height:96px;border-radius:12px;overflow:hidden;border:2px solid #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
                                 ${currentImgSrc 
-                                    ? `<img id="editImagePreview" src="${currentImgSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<i class=\\\'fas fa-image\\\' style=\\\'color:#94a3b8;font-size:2rem;\\\'></i>'">` 
+                                    ? `<img id="editImagePreview" src="${currentImgSrc}" style="width:100%;height:100%;object-fit:contain;padding:4px;background:#fff;" onerror="this.outerHTML='<i class=\\\'fas fa-image\\\' style=\\\'color:#94a3b8;font-size:2rem;\\\'></i>'">` 
                                     : `<i id="editImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>`}
                             </div>
                             <div style="flex:1;min-width:0;">
@@ -2123,6 +2123,69 @@ async function editProduct(id) {
     }
 }
 
+/**
+ * Adapta y optimiza automáticamente cualquier imagen seleccionada
+ * Redimensiona proporcionalmente a un máximo de 800x800 manteniendo nitidez,
+ * evitando que fotos pesadas de celulares llenen la memoria o se corten.
+ */
+function optimizarImagenArchivo(file, maxWidth, maxHeight, callback) {
+    if (typeof maxWidth === 'function') {
+        callback = maxWidth;
+        maxWidth = 800;
+        maxHeight = 800;
+    }
+    maxWidth = maxWidth || 800;
+    maxHeight = maxHeight || 800;
+
+    if (!file || !file.type.startsWith('image/')) {
+        if (callback) callback(null, new Error('Archivo no es una imagen válida'));
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            let width = img.naturalWidth || img.width;
+            let height = img.naturalHeight || img.height;
+
+            if (width > maxWidth || height > maxHeight) {
+                if (width / height > maxWidth / maxHeight) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                } else {
+                    width = Math.round((width * maxHeight) / height);
+                    height = maxHeight;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const isPng = file.type === 'image/png';
+            const outputType = isPng ? 'image/png' : 'image/jpeg';
+            const quality = isPng ? undefined : 0.88;
+            const optimizedDataUrl = canvas.toDataURL(outputType, quality);
+
+            if (callback) callback(optimizedDataUrl);
+        };
+        img.onerror = function() {
+            if (callback) callback(e.target.result);
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function(err) {
+        if (callback) callback(null, err);
+    };
+    reader.readAsDataURL(file);
+}
+window.optimizarImagenArchivo = optimizarImagenArchivo;
+
 function handleProductImageFileChange(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
@@ -2132,16 +2195,18 @@ function handleProductImageFileChange(event) {
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const dataUrl = e.target.result;
+    showToast('Adaptando y optimizando imagen...', 'info');
+    optimizarImagenArchivo(file, 800, 800, function(dataUrl, err) {
+        if (err || !dataUrl) {
+            showToast('Error al procesar la imagen', 'error');
+            return;
+        }
         _currentProductImageData = dataUrl;
         const imgInput = document.getElementById('editImageInput');
         if (imgInput) imgInput.value = '';
         actualizarPreviewImagen(dataUrl);
-        showToast('📷 Foto cargada desde tu dispositivo', 'success');
-    };
-    reader.readAsDataURL(file);
+        showToast('📷 Foto adaptada y cargada con éxito', 'success');
+    });
 }
 
 function actualizarPreviewImagen(src) {
@@ -2151,7 +2216,7 @@ function actualizarPreviewImagen(src) {
         const clean = src.trim();
         const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
         const realSrc = (clean.startsWith('http') || clean.startsWith('data:')) ? clean : basePath + clean.replace(/^\.\.\//, '');
-        wrapper.innerHTML = `<img id="editImagePreview" src="${realSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<i class=\\\'fas fa-exclamation-circle\\\' style=\\\'color:#ef4444;font-size:2rem;\\\'></i>'">`;
+        wrapper.innerHTML = `<img id="editImagePreview" src="${realSrc}" style="width:100%;height:100%;object-fit:contain;padding:4px;background:#fff;" onerror="this.outerHTML='<i class=\\\'fas fa-exclamation-circle\\\' style=\\\'color:#ef4444;font-size:2rem;\\\'></i>'">`;
         _currentProductImageData = clean;
     } else {
         wrapper.innerHTML = `<i id="editImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>`;
@@ -2461,16 +2526,18 @@ function handleNewProductImageFile(event) {
         showToast('Selecciona un archivo de imagen válido (JPG, PNG, WebP)', 'error');
         return;
     }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const dataUrl = e.target.result;
+    showToast('Adaptando y optimizando imagen...', 'info');
+    optimizarImagenArchivo(file, 800, 800, function(dataUrl, err) {
+        if (err || !dataUrl) {
+            showToast('Error al procesar la imagen', 'error');
+            return;
+        }
         _newProductImageData = dataUrl;
         const urlInput = document.getElementById('newProdUrlInput');
         if (urlInput) urlInput.value = '';
         actualizarPreviewNuevoProducto(dataUrl);
-        showToast('📷 Foto cargada con éxito', 'success');
-    };
-    reader.readAsDataURL(file);
+        showToast('📷 Foto adaptada y cargada con éxito', 'success');
+    });
 }
 window.handleNewProductImageFile = handleNewProductImageFile;
 
@@ -2481,7 +2548,7 @@ function actualizarPreviewNuevoProducto(src) {
         const clean = src.trim();
         const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
         const realSrc = (clean.startsWith('http') || clean.startsWith('data:')) ? clean : basePath + clean.replace(/^\.\.\//, '');
-        wrapper.innerHTML = `<img src="${realSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.outerHTML='<i class=\\\'fas fa-image\\\' style=\\\'color:#94a3b8;font-size:2rem;\\\'></i>'">`;
+        wrapper.innerHTML = `<img src="${realSrc}" style="width:100%;height:100%;object-fit:contain;padding:4px;background:#fff;" onerror="this.outerHTML='<i class=\\\'fas fa-image\\\' style=\\\'color:#94a3b8;font-size:2rem;\\\'></i>'">`;
         _newProductImageData = clean;
     } else {
         wrapper.innerHTML = `<i id="newProdImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>`;
