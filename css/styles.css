@@ -175,8 +175,133 @@ img { max-width:100%; }
 .about-list li:hover { transform:translateY(-2px); background:#ffffff; box-shadow:0 6px 16px rgba(0,0,0,0.08); border-color:#cbd5e1; border-left-color:#28a745; }
 .about-list li i { color:#28a745; font-size:1.15rem; flex-shrink:0; }
 
-/* Misión Visión Valores */
-.mision-vision-valores { grid-template-columns:repeat(3,1fr) !important; }
+/* Misión Visión Valores - Tarjetas con contorno distintivo premium */
+.mision-vision-valores {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 28px !important;
+}
+
+.mision-vision-valores .pilar-card {
+    background: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 36px 26px 32px !important;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1.5px solid #e2e8f0 !important;
+    box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04) !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.pilar-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 12px;
+    border-radius: 50px;
+    margin-bottom: 16px;
+}
+
+.mision-vision-valores .service-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 16px;
+    transition: transform 0.3s ease;
+}
+
+.mision-vision-valores .pilar-card:hover .service-icon {
+    transform: scale(1.08) rotate(4deg);
+}
+
+.mision-vision-valores .pilar-card h3 {
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin-bottom: 12px !important;
+    letter-spacing: -0.02em;
+}
+
+.mision-vision-valores .pilar-card p {
+    color: #475569 !important;
+    font-size: 0.94rem !important;
+    line-height: 1.68 !important;
+    margin-bottom: 0 !important;
+}
+
+/* 1. Misión (Naranja Marca Duri) */
+.mision-vision-valores .pilar-mision {
+    border-top: 5px solid #E85D26 !important;
+}
+.mision-vision-valores .pilar-mision:hover {
+    transform: translateY(-8px) !important;
+    border-color: #E85D26 !important;
+    box-shadow: 0 20px 40px -10px rgba(232, 93, 38, 0.28), 0 0 0 1px #E85D26 !important;
+}
+.mision-vision-valores .pilar-mision .pilar-tag {
+    background: rgba(232, 93, 38, 0.1);
+    color: #E85D26;
+    border: 1px solid rgba(232, 93, 38, 0.2);
+}
+.mision-vision-valores .pilar-mision .service-icon {
+    background: linear-gradient(135deg, rgba(232, 93, 38, 0.15), rgba(232, 93, 38, 0.05));
+    color: #E85D26;
+    border: 2px solid rgba(232, 93, 38, 0.25);
+    box-shadow: 0 8px 18px rgba(232, 93, 38, 0.18);
+}
+
+/* 2. Visión (Dorado / Ámbar Futuro) */
+.mision-vision-valores .pilar-vision {
+    border-top: 5px solid #d97706 !important;
+}
+.mision-vision-valores .pilar-vision:hover {
+    transform: translateY(-8px) !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 20px 40px -10px rgba(217, 119, 6, 0.28), 0 0 0 1px #d97706 !important;
+}
+.mision-vision-valores .pilar-vision .pilar-tag {
+    background: rgba(217, 119, 6, 0.1);
+    color: #b45309;
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+.mision-vision-valores .pilar-vision .service-icon {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.06));
+    color: #d97706;
+    border: 2px solid rgba(245, 158, 11, 0.3);
+    box-shadow: 0 8px 18px rgba(217, 119, 6, 0.18);
+}
+
+/* 3. Valores (Verde Esmeralda Principios) */
+.mision-vision-valores .pilar-valores {
+    border-top: 5px solid #16a34a !important;
+}
+.mision-vision-valores .pilar-valores:hover {
+    transform: translateY(-8px) !important;
+    border-color: #16a34a !important;
+    box-shadow: 0 20px 40px -10px rgba(22, 163, 74, 0.28), 0 0 0 1px #16a34a !important;
+}
+.mision-vision-valores .pilar-valores .pilar-tag {
+    background: rgba(22, 163, 74, 0.1);
+    color: #15803d;
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+.mision-vision-valores .pilar-valores .service-icon {
+    background: linear-gradient(135deg, rgba(22, 163, 74, 0.16), rgba(22, 163, 74, 0.05));
+    color: #16a34a;
+    border: 2px solid rgba(22, 163, 74, 0.28);
+    box-shadow: 0 8px 18px rgba(22, 163, 74, 0.18);
+}
 
 /* ============================================
    PROCESS STEPS (like ABDO77)
