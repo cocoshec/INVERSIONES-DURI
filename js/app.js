@@ -3528,7 +3528,8 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
             const cli = (p.cliente_nombre || '').toLowerCase();
             const ci = (p.cliente_ci || '').toLowerCase();
             const tel = (p.cliente_telefono || '').toLowerCase();
-            return cod.includes(q) || cli.includes(q) || ci.includes(q) || tel.includes(q);
+            const email = (p.cliente_email || '').toLowerCase();
+            return cod.includes(q) || cli.includes(q) || ci.includes(q) || tel.includes(q) || email.includes(q);
         });
     }
 
@@ -3577,7 +3578,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     const searchBarHtml = `
         <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; padding:8px 14px; margin-bottom:12px; display:flex; align-items:center; gap:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
             <i class="fas fa-search" style="color:#64748b; font-size:0.95rem;"></i>
-            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), factura (ej: FACT-0001), cliente, Cédula o teléfono..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
+            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), factura (ej: FACT-0001), cliente, Cédula, teléfono o Gmail..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
             ${window._adminOrderSearchQuery ? `
                 <button type="button" onclick="filterAdminOrdersSearch('')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.9rem;" title="Limpiar búsqueda">
                     <i class="fas fa-times-circle"></i>
@@ -3607,6 +3608,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         const safeTotal = parseFloat(p.total || 0).toFixed(2);
         const safePhone = (p.cliente_telefono || '').replace(/'/g, "\\'");
         const safeCi = (p.cliente_ci || '').replace(/'/g, "\\'");
+        const safeEmail = (p.cliente_email || '').replace(/'/g, "\\'");
         const cleanNum = (p.codigo || String(p.id)).replace(/[^0-9]/g, '') || String(p.id);
         const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
 
@@ -3615,7 +3617,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
             let statusBtn = '';
             if (p.estado === 'pendiente') {
                 statusBtn = `
-                    <button type="button" class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(40,167,69,0.35);" onclick="abrirModalValidarPago(${p.id}, '${safeCode}', ${safeTotal}, '${safeName}', '${safePay}', '${safePhone}', '${safeCi}')">
+                    <button type="button" class="btn btn-sm" style="background:#28a745;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(40,167,69,0.35);" onclick="abrirModalValidarPago(${p.id}, '${safeCode}', ${safeTotal}, '${safeName}', '${safePay}', '${safePhone}', '${safeCi}', '${safeEmail}')">
                         <i class="fas fa-check-circle"></i> Aprobar Pago
                     </button>
                     <button type="button" class="btn btn-sm" style="background:#e0a800;color:#212529;font-weight:600;padding:8px 12px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="confirmarCancelarPedido(${p.id}, '${safeCode}')">
@@ -3702,6 +3704,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                         ${p.cliente_ci ? '<i class="fas fa-id-card" style="color:var(--accent,#FF6600);"></i> <strong>' + p.cliente_ci + '</strong> · ' : ''}
                         ${p.cliente_telefono ? '<i class="fas fa-phone" style="color:#666;"></i> <strong>' + p.cliente_telefono + '</strong>' : ''}
                         ${phoneWaUrl ? ` <a href="${phoneWaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:4px; background:#e8f7ee; color:#128c7e; border:1px solid #c3e6cb; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; text-decoration:none; margin-left:4px;" title="Chatear con el cliente (${p.cliente_telefono})"><i class="fab fa-whatsapp" style="color:#25d366; font-size:0.85rem;"></i> Chat</a>` : ''}
+                        ${p.cliente_email ? ` · <a href="mailto:${p.cliente_email}" style="display:inline-flex; align-items:center; gap:4px; background:#f0f7ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; text-decoration:none;" title="Enviar correo a ${p.cliente_email}"><i class="fas fa-envelope" style="color:#ea4335;"></i> ${p.cliente_email}</a>` : ''}
                         · <strong>Pago:</strong> ${formaPagoDisplay}
                     </span>
                     ${p.direccion_entrega ? `<span style="font-size:0.76rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
@@ -3979,6 +3982,7 @@ function abrirModalFactura(pedidoOrCode) {
                             <p><strong>Nombre / Razón Social:</strong> ${p.cliente_nombre || 'Cliente General'}</p>
                             <p><strong>Cédula / RIF:</strong> ${p.cliente_ci || 'No registrada'}</p>
                             <p><strong>Teléfono de Contacto:</strong> ${p.cliente_telefono || 'No registrado'}</p>
+                            <p><strong>Correo / Gmail:</strong> ${p.cliente_email ? `<a href="mailto:${p.cliente_email}" style="color:#1d4ed8; text-decoration:none;">${p.cliente_email}</a>` : 'No registrado'}</p>
                         </div>
                         <div class="factura-info-col">
                             <h4><i class="fas fa-shipping-fast"></i> Despacho y Pago</h4>
@@ -4262,7 +4266,7 @@ function cerrarModalValidacionPago() {
 }
 window.cerrarModalValidacionPago = cerrarModalValidacionPago;
 
-function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'pago_movil', clienteTelefono = '', clienteCi = '') {
+function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago = 'pago_movil', clienteTelefono = '', clienteCi = '', clienteEmail = '') {
     cerrarModalValidacionPago();
 
     const formaPagoLabels = {
@@ -4287,6 +4291,7 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
     }
 
     const orderObj = (window._allAdminPedidos || []).find(p => String(p.id) === String(id) || p.codigo === codigo) || {};
+    const finalEmail = clienteEmail || orderObj.cliente_email || '';
     const orderProds = (orderObj.productos && orderObj.productos.length) ? orderObj.productos : (orderObj.detalles || []);
     let prodsModalHtml = '';
     if (orderProds.length > 0) {
@@ -4360,6 +4365,17 @@ function abrirModalValidarPago(id, codigo, total, clienteNombre = '', formaPago 
                                     <i class="fab fa-whatsapp"></i> Chat Cliente
                                 </a>
                             ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${finalEmail ? `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;gap:6px;">
+                        <span style="color:#64748b;font-size:0.83rem;"><i class="fas fa-envelope"></i> Correo / Gmail:</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                            <strong style="color:#1e293b;font-size:0.86rem;">${finalEmail}</strong>
+                            <a href="mailto:${finalEmail}" style="background:#f0f7ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:2px 8px;border-radius:10px;font-size:0.72rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Enviar correo a ${finalEmail}">
+                                <i class="fas fa-paper-plane" style="color:#ea4335;"></i> Escribir
+                            </a>
                         </div>
                     </div>
                     ` : ''}
