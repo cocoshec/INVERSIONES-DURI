@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css?v=32.0">
+    <link rel="stylesheet" href="../css/styles.css?v=33.0">
 </head>
 <body>
     <!-- Top Bar -->
@@ -71,29 +71,101 @@
                 </div>
             </div>
 
-            <div style="margin-top:60px">
-                <div class="section-header">
-                    <span class="section-tag"><i class="fas fa-bullseye"></i> Nuestros Pilares</span>
-                    <h2>Misión, Visión y Valores</h2>
+            <div class="pilares-section-wrap" style="margin-top:60px">
+                <div class="section-header text-center" style="margin-bottom:34px;">
+                    <span class="pilar-hero-badge"><i class="fas fa-gem"></i> Identidad Corporativa</span>
+                    <h2 style="font-size:2.15rem; font-weight:800; color:#0f172a; margin:12px 0 8px; letter-spacing:-0.03em;">Misión, Visión y Valores</h2>
+                    <p style="color:#64748b; font-size:1rem; max-width:620px; margin:0 auto; line-height:1.6;">Los principios estratégicos que impulsan nuestro estándar de servicio, calidad e innovación en toda Venezuela.</p>
                 </div>
-                <div class="services-grid mision-vision-valores">
-                    <div class="service-card pilar-card pilar-mision">
-                        <span class="pilar-tag"><i class="fas fa-bullseye"></i> Propósito</span>
-                        <div class="service-icon orange"><i class="fas fa-bullseye"></i></div>
-                        <h3>Misión</h3>
-                        <p>Proveer soluciones integrales en papelería y útiles escolares con la más alta calidad, contribuyendo al desarrollo educativo y empresarial de la región.</p>
+
+                <div class="pilares-bento-grid">
+                    <!-- Fila Superior: Misión y Visión en Dual-Column Simétrica -->
+                    <div class="pilar-bento-card pilar-card-mision">
+                        <div class="pilar-watermark">01</div>
+                        <div class="pilar-card-header">
+                            <div class="pilar-icon-bubble bubble-orange">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div>
+                                <span class="pilar-mini-label label-orange">Nuestro Propósito</span>
+                                <h3>Misión</h3>
+                            </div>
+                        </div>
+                        <p class="pilar-desc">Proveer <strong>soluciones integrales en papelería, útiles escolares y suministros de oficina</strong> con el más estricto estándar de calidad, contribuyendo de forma activa al desarrollo educativo, comercial y empresarial de nuestra región.</p>
+                        <div class="pilar-footer-pill">
+                            <i class="fas fa-check-circle" style="color:#E85D26;"></i> Compromiso con la Calidad Diaria
+                        </div>
                     </div>
-                    <div class="service-card pilar-card pilar-vision">
-                        <span class="pilar-tag"><i class="fas fa-eye"></i> Dirección</span>
-                        <div class="service-icon yellow"><i class="fas fa-eye"></i></div>
-                        <h3>Visión</h3>
-                        <p>Ser la empresa líder en distribución de papelería y artículos de oficina en el centro del país, reconocida por nuestra calidad y servicio al cliente.</p>
+
+                    <div class="pilar-bento-card pilar-card-vision">
+                        <div class="pilar-watermark">02</div>
+                        <div class="pilar-card-header">
+                            <div class="pilar-icon-bubble bubble-amber">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <div>
+                                <span class="pilar-mini-label label-amber">Nuestra Meta</span>
+                                <h3>Visión</h3>
+                            </div>
+                        </div>
+                        <p class="pilar-desc">Consolidarnos como la <strong>empresa líder en distribución y comercialización de artículos de oficina y escolares</strong> en el centro del país, siendo reconocidos por la rapidez de entrega, precios competitivos y un servicio al cliente insuperable.</p>
+                        <div class="pilar-footer-pill">
+                            <i class="fas fa-chart-line" style="color:#d97706;"></i> Liderazgo y Expansión Continua
+                        </div>
                     </div>
-                    <div class="service-card pilar-card pilar-valores">
-                        <span class="pilar-tag"><i class="fas fa-heart"></i> Principios</span>
-                        <div class="service-icon green"><i class="fas fa-heart"></i></div>
-                        <h3>Valores</h3>
-                        <p>Calidad, honestidad, compromiso, innovación y servicio al cliente son los pilares que guían cada una de nuestras acciones.</p>
+
+                    <!-- Fila Inferior: Valores Fundamentales (Bento Ancho con Vitrina de 5 Pilares) -->
+                    <div class="pilar-bento-card pilar-card-valores">
+                        <div class="pilar-card-header-wide">
+                            <div style="display:flex; align-items:center; gap:14px;">
+                                <div class="pilar-icon-bubble bubble-green">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div>
+                                    <span class="pilar-mini-label label-green">Pilares Éticos</span>
+                                    <h3 style="margin:0;">Nuestros Valores Fundamentales</h3>
+                                </div>
+                            </div>
+                            <p style="color:#64748b; font-size:0.9rem; margin:0; max-width:540px;">Las convicciones humanas y profesionales que rigen cada producto, entrega y relación de confianza:</p>
+                        </div>
+
+                        <div class="pilar-valores-chips-grid">
+                            <div class="valor-chip-item">
+                                <div class="valor-chip-icon"><i class="fas fa-award"></i></div>
+                                <div class="valor-chip-content">
+                                    <h4>Calidad Superior</h4>
+                                    <p>Marcas líderes y materiales duraderos certificados.</p>
+                                </div>
+                            </div>
+                            <div class="valor-chip-item">
+                                <div class="valor-chip-icon"><i class="fas fa-handshake"></i></div>
+                                <div class="valor-chip-content">
+                                    <h4>Honestidad</h4>
+                                    <p>Transparencia total en precios, stock y facturación legal.</p>
+                                </div>
+                            </div>
+                            <div class="valor-chip-item">
+                                <div class="valor-chip-icon"><i class="fas fa-bolt"></i></div>
+                                <div class="valor-chip-content">
+                                    <h4>Compromiso</h4>
+                                    <p>Puntualidad rigurosa en cada despacho y atención.</p>
+                                </div>
+                            </div>
+                            <div class="valor-chip-item">
+                                <div class="valor-chip-icon"><i class="fas fa-lightbulb"></i></div>
+                                <div class="valor-chip-content">
+                                    <h4>Innovación</h4>
+                                    <p>Herramientas digitales modernas y catálogo ágil.</p>
+                                </div>
+                            </div>
+                            <div class="valor-chip-item">
+                                <div class="valor-chip-icon"><i class="fas fa-users"></i></div>
+                                <div class="valor-chip-content">
+                                    <h4>Servicio Cercano</h4>
+                                    <p>Atención personalizada centrada en tus necesidades.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
