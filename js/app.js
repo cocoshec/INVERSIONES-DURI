@@ -295,6 +295,7 @@ function bootApp() {
     try { initFloatingCart(); } catch(e) {}
     try { initWhatsApp(); } catch(e) {}
     try { initDuriChatbot(); } catch(e) { console.error('initDuriChatbot error:', e); }
+    try { initNumericInputs(); } catch(e) {}
 }
 
 if (document.readyState === 'loading') {
@@ -5171,6 +5172,76 @@ function updateCart() {
     try { sincronizarMontosUbicacion(); } catch(e) {}
 }
 
+// ============================================
+// VALIDACIÓN ESTRICTA DE ENTRADAS NUMÉRICAS (Cédula y Teléfono)
+// ============================================
+function setupNumericInputValidation(input, errorNoticeId, fieldName) {
+    if (!input) return;
+    const errorNotice = errorNoticeId ? document.getElementById(errorNoticeId) : null;
+    let errorTimeout = null;
+
+    const triggerNumericError = (msg) => {
+        showToast(msg || `⚠️ En ${fieldName} solo se permiten números, nada de letras.`, 'error');
+        if (errorNotice) {
+            errorNotice.style.display = 'block';
+        }
+        input.classList.remove('shake-input-error');
+        void input.offsetWidth; // Forzar reflujo para reiniciar la animación
+        input.classList.add('shake-input-error');
+
+        if (errorTimeout) clearTimeout(errorTimeout);
+        errorTimeout = setTimeout(() => {
+            if (errorNotice) errorNotice.style.display = 'none';
+            input.classList.remove('shake-input-error');
+        }, 3500);
+    };
+
+    // Bloqueo y aviso inmediato en keydown para teclado físico
+    input.addEventListener('keydown', function(e) {
+        const allowedKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Home', 'End'];
+        if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) {
+            return;
+        }
+        if (e.key && e.key.length === 1 && !/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+            triggerNumericError(`⚠️ En ${fieldName} solo se permiten números, nada de letras.`);
+        }
+    });
+
+    // Filtro y aviso inmediato en input (teclados móviles, predicción, portapapeles)
+    input.addEventListener('input', function() {
+        if (/[^0-9]/.test(this.value)) {
+            triggerNumericError(`⚠️ En ${fieldName} solo se permiten números (se eliminaron letras o símbolos).`);
+            this.value = this.value.replace(/[^0-9]/g, '');
+        } else if (this.value.length > 0) {
+            if (errorNotice) errorNotice.style.display = 'none';
+            input.classList.remove('shake-input-error');
+        }
+    });
+
+    // Manejo de pegado (paste)
+    input.addEventListener('paste', function(e) {
+        const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+        if (/[^0-9]/.test(pasteData)) {
+            triggerNumericError(`⚠️ En ${fieldName} solo se permiten números (se removieron letras/símbolos).`);
+        }
+    });
+}
+
+function initNumericInputs() {
+    const ciInput = document.getElementById('newClientCi');
+    if (ciInput && !ciInput._numericBound) {
+        ciInput._numericBound = true;
+        setupNumericInputValidation(ciInput, 'ciErrorNotice', 'la Cédula');
+    }
+    const phoneInput = document.getElementById('newClientPhone');
+    if (phoneInput && !phoneInput._numericBound) {
+        phoneInput._numericBound = true;
+        setupNumericInputValidation(phoneInput, 'phoneErrorNotice', 'el Teléfono');
+    }
+}
+window.initNumericInputs = initNumericInputs;
+
 async function submitOrder() {
     const clientSelect = document.getElementById('clientSelect');
     const address = document.getElementById('deliveryAddress');
@@ -5196,10 +5267,24 @@ async function submitOrder() {
     }
     
     if (!newName || !newName.value.trim()) { showToast('Por favor escribe tu nombre completo', 'error'); return; }
+    
     if (!newCi || !newCi.value.trim()) { showToast('Por favor ingresa tu número de Cédula', 'error'); return; }
+    if (/[^0-9]/.test(newCi.value)) {
+        showToast('⚠️ La Cédula solo debe tener números, nada de letras ni símbolos', 'error');
+        newCi.focus();
+        return;
+    }
     const clientCi = newCi.value.replace(/[^0-9]/g, '');
     if (clientCi.length < 6) { showToast('La Cédula debe contener solo números (mínimo 6 dígitos)', 'error'); return; }
+    
     if (!newPhone || !newPhone.value.trim()) { showToast('Por favor ingresa tu número de teléfono', 'error'); return; }
+    if (/[^0-9]/.test(newPhone.value)) {
+        showToast('⚠️ El Teléfono solo debe tener números, nada de letras ni símbolos', 'error');
+        newPhone.focus();
+        return;
+    }
+    const clientPhone = newPhone.value.replace(/[^0-9]/g, '');
+    if (clientPhone.length < 10) { showToast('El Teléfono debe contener al menos 10 dígitos numéricos (ej: 04121234567)', 'error'); return; }
     
     const clientName = newName.value.trim();
     const clientEmail = (newEmail && newEmail.value) ? newEmail.value.trim().toLowerCase() : '';

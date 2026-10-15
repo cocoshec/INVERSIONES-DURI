@@ -2869,5 +2869,14 @@ img { max-width:100%; }
     }
 }
 
-
-
+/* Alerta y animación para inputs numéricos con error */
+@keyframes inputShakeError {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+.shake-input-error {
+    animation: inputShakeError 0.35s ease-in-out !important;
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important;
+}
