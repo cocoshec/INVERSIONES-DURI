@@ -140,7 +140,7 @@
                                     <option value="limon" data-costo="3">📍 El Limón / Mario B. Iragorry (El Paseo, Arsenal, La Candelaria, Base Sucre, Arias Blanco, Valle Verde) — +$3.00 USD</option>
                                     <option value="turmero" data-costo="5">📍 Turmero / Palo Negro / Santa Rita / La Morita / Coropo / Samán de Güere / Santa Cruz — +$5.00 USD</option>
                                     <option value="cagua" data-costo="6">📍 Cagua / La Encrucijada / San Mateo / Bella Vista / Corinsa — +$6.00 USD</option>
-                                    <option value="lejana" data-costo="8">📍 Zonas Lejanas / Foráneas (Magdaleno, Villa de Cura, Tocorón, La Victoria, San Sebastián, Zuata) — +$8.00 USD</option>
+                                    <option value="lejana" data-costo="8">📍 Zonas Lejanas / Foráneas (Mariara, Magdaleno, Villa de Cura, Tocorón, La Victoria, San Sebastián, Zuata, Carabobo) — +$8.00 USD</option>
                                     <option value="otra" data-costo="3">📍 Otra Zona / Sector no listado (Tarifa estimada: $3.00 USD / Calculada con tu GPS)</option>
                                 </select>
                                 <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
@@ -282,7 +282,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=37.0"></script>
+    <script src="../js/app.js?v=38.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
@@ -511,6 +511,11 @@
             'tejerias': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
             'tejerías': { nombre: 'Las Tejerías, Aragua', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 8 },
             'valencia': { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zona: 'lejana', tarifa: 8 },
+            'mariara': { nombre: 'Mariara (Municipio Diego Ibarra, Carabobo)', coords: [10.2893, -67.7033], zona: 'lejana', tarifa: 8 },
+            'diego ibarra': { nombre: 'Municipio Diego Ibarra (Mariara / Aguas Calientes)', coords: [10.2893, -67.7033], zona: 'lejana', tarifa: 8 },
+            'san joaquin': { nombre: 'San Joaquín, Carabobo', coords: [10.2600, -67.7850], zona: 'lejana', tarifa: 8 },
+            'san joaquín': { nombre: 'San Joaquín, Carabobo', coords: [10.2600, -67.7850], zona: 'lejana', tarifa: 8 },
+            'aguas calientes': { nombre: 'Aguas Calientes, Mariara', coords: [10.2980, -67.7120], zona: 'lejana', tarifa: 8 },
             'caracas': { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zona: 'lejana', tarifa: 8 }
         };
         const CIUDADES_VE = {
@@ -524,6 +529,7 @@
             turmero: { nombre: 'Turmero / Palo Negro', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
             cagua: { nombre: 'Cagua / La Encrucijada', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
             magdaleno: { nombre: 'Magdaleno (Municipio Zamora)', coords: [10.1020, -67.6250], zoom: 15, zona: 'lejana', tarifa: 8 },
+            mariara: { nombre: 'Mariara (Municipio Diego Ibarra, Carabobo)', coords: [10.2893, -67.7033], zoom: 15, zona: 'lejana', tarifa: 8 },
             victoria: { nombre: 'La Victoria / Zonas Lejanas', coords: [10.2268, -67.3323], zoom: 13, zona: 'lejana', tarifa: 8 },
             valencia: { nombre: 'Valencia, Carabobo', coords: [10.1700, -68.0004], zoom: 14, zona: 'lejana', tarifa: 8 },
             caracas: { nombre: 'Caracas, Dto. Capital', coords: [10.4806, -66.9036], zoom: 13, zona: 'lejana', tarifa: 8 }
@@ -702,7 +708,8 @@
                 let matchedByText = false;
 
                 // 1. Detección inteligente por nombre de sector, parroquia o municipio
-                if (t.includes('magdaleno') || t.includes('zamora') || t.includes('tocoron') || t.includes('tocorón') || 
+                if (t.includes('mariara') || t.includes('diego ibarra') || t.includes('san joaquin') || t.includes('san joaquín') || 
+                    t.includes('aguas calientes') || t.includes('magdaleno') || t.includes('zamora') || t.includes('tocoron') || t.includes('tocorón') || 
                     t.includes('villa de cura') || t.includes('san sebastian') || t.includes('san sebastián') || 
                     t.includes('san casimiro') || t.includes('san francisco de asis') || t.includes('san francisco de asís') ||
                     t.includes('victoria') || t.includes('tejerias') || t.includes('tejerías') || t.includes('zuata') || 
@@ -741,9 +748,11 @@
                     const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], latNum, lonNum);
 
                     // Zona Sur del Lago / Zamora (Magdaleno, Tocorón, Villa de Cura):
-                    // Latitud menor o igual a 10.135 es geográficamente Sur del Lago / Municipio Zamora
                     if (latNum <= 10.135) {
                         zonaDetectada = 'lejana'; // Magdaleno / Tocorón / Villa de Cura: +$8.00
+                    } else if (lonNum <= -67.665) {
+                        // Al OESTE de -67.665 ya es Carabobo (Mariara / San Joaquín / Valencia)
+                        zonaDetectada = 'lejana'; // Mariara / Diego Ibarra / Carabobo: +$8.00
                     } else if (dKm <= 2.2) {
                         zonaDetectada = 'centro'; // Centro Maracay: GRATIS ($0.00)
                     } else if (dKm <= 6.0) {
@@ -751,7 +760,12 @@
                     } else if (dKm <= 10.5 && (lonNum < -67.61 || latNum > 10.27)) {
                         zonaDetectada = 'limon'; // El Limón / MBI: +$3.00
                     } else if (dKm <= 16.5) {
-                        zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
+                        // Turmero / Palo Negro está al ESTE o SUR (Lon >= -67.58 o Lat < 10.22)
+                        if (lonNum >= -67.58 || latNum < 10.22) {
+                            zonaDetectada = 'turmero'; // Turmero / Palo Negro: +$5.00
+                        } else {
+                            zonaDetectada = 'lejana';
+                        }
                     } else if (dKm <= 24.0) {
                         // Cagua / Encrucijada está al Este (Lon > -67.49 y Lat >= 10.14)
                         if (lonNum >= -67.49 && lonNum <= -67.38 && latNum >= 10.14) {
@@ -1453,6 +1467,9 @@
                     </button>
                     <button type="button" onclick="centrarEnCiudad('magdaleno')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
                         📍 Magdaleno / Zamora (+$8.00)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('mariara')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Mariara / Carabobo (+$8.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('victoria')" style="white-space:nowrap; flex-shrink:0; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
                         📍 La Victoria / Lejanas (+$8.00)

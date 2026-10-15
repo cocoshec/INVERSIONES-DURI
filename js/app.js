@@ -4961,7 +4961,11 @@ function sincronizarMontosUbicacion() {
     // Refinar nombre de sector si se detectó una zona específica en el texto o mapa
     let nombrePersonalizado = zonaNombre;
     const currentAddr = (typeof selectedAddressText === 'string' ? selectedAddressText : (document.getElementById('deliveryAddress')?.value || '')).toLowerCase();
-    if (currentAddr.includes('magdaleno')) {
+    if (currentAddr.includes('mariara') || currentAddr.includes('diego ibarra')) {
+        nombrePersonalizado = 'Mariara (Municipio Diego Ibarra, Carabobo)';
+    } else if (currentAddr.includes('san joaquin') || currentAddr.includes('san joaquín')) {
+        nombrePersonalizado = 'San Joaquín (Carabobo)';
+    } else if (currentAddr.includes('magdaleno')) {
         nombrePersonalizado = 'Magdaleno (Zona Lejana / Municipio Zamora)';
     } else if (currentAddr.includes('tocoron') || currentAddr.includes('tocorón')) {
         nombrePersonalizado = 'Tocorón (Zona Lejana / Municipio Zamora)';
