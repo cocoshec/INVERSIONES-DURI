@@ -38,6 +38,9 @@ switch ($method) {
             $stmt = $db->query("SELECT SUM(stock_actual * precio_venta) as valor FROM productos WHERE activo = 1");
             $stats['valor_inventario'] = $stmt->fetch()['valor'] ?? 0;
 
+            $stmt = $db->query("SELECT COUNT(DISTINCT categoria_id) as total FROM productos WHERE activo = 1");
+            $stats['total_categorias'] = $stmt->fetch()['total'] ?? 4;
+
             echo json_encode(["status" => "success", "data" => $stats]);
 
         } elseif (isset($_GET['movimientos'])) {

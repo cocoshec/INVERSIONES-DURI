@@ -1958,6 +1958,7 @@ async function loadInventario() {
                 en_stock: productos.filter(p => Number(p.stock_actual) > Number(p.stock_minimo)).length,
                 stock_bajo: productos.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo) && Number(p.stock_actual) > 0).length,
                 agotados: productos.filter(p => Number(p.stock_actual) <= 0).length,
+                total_categorias: new Set(productos.map(p => p.categoria_nombre || p.categoria_id).filter(Boolean)).size || 4,
                 valor_inventario: productos.reduce((sum, p) => sum + (Number(p.stock_actual) * Number(p.precio_venta || 0)), 0)
             };
         }
@@ -1999,15 +2000,21 @@ function renderInventarioStats(stats) {
     const el = document.getElementById('invStats');
     if (!el) return;
 
-    const valorUsd = parseFloat(stats.valor_inventario || 0);
-    const valorBs = BcvManager.toBs(valorUsd);
+    let numCategorias = stats.total_categorias;
+    if (!numCategorias) {
+        if (Array.isArray(_cachedInventory) && _cachedInventory.length) {
+            numCategorias = new Set(_cachedInventory.map(p => p.categoria_nombre || p.categoria_id).filter(Boolean)).size;
+        } else {
+            numCategorias = 4;
+        }
+    }
 
     el.innerHTML = `
         <div class="stat-card"><div class="stat-card-icon orange"><i class="fas fa-box"></i></div><div><div class="stat-card-value">${stats.total_productos}</div><div class="stat-card-label">Total Productos</div></div></div>
         <div class="stat-card green"><div class="stat-card-icon green"><i class="fas fa-check-circle"></i></div><div><div class="stat-card-value">${stats.en_stock}</div><div class="stat-card-label">En Stock</div></div></div>
         <div class="stat-card yellow"><div class="stat-card-icon yellow"><i class="fas fa-exclamation-triangle"></i></div><div><div class="stat-card-value">${stats.stock_bajo}</div><div class="stat-card-label">Stock Bajo</div></div></div>
         <div class="stat-card red"><div class="stat-card-icon red"><i class="fas fa-times-circle"></i></div><div><div class="stat-card-value">${stats.agotados}</div><div class="stat-card-label">Agotados</div></div></div>
-        <div class="stat-card" style="border-left:4px solid var(--accent);"><div class="stat-card-icon orange"><i class="fas fa-coins"></i></div><div><div class="stat-card-value" style="font-size:1.15rem;">$${valorUsd.toFixed(2)}</div><div class="stat-card-label" style="font-size:0.75rem;">Valor Total (≈ ${BcvManager.formatBs(valorBs)})</div></div></div>
+        <div class="stat-card purple"><div class="stat-card-icon purple"><i class="fas fa-tags"></i></div><div><div class="stat-card-value">${numCategorias}</div><div class="stat-card-label">Categorías Activas</div></div></div>
     `;
 
     // Actualizar números de los filtros rápidos (chips)
