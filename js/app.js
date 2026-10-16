@@ -2090,47 +2090,92 @@ function renderInventarioTable(productos) {
     const canEdit = user && (user.rol === 'super_usuario' || user.rol === 'operador');
     const canOrder = user && user.rol !== 'super_usuario';
     
+    if (!productos || !productos.length) {
+        tbody.innerHTML = `<tr>
+            <td colspan="8" style="text-align:center;padding:40px;color:var(--gray)">
+                <i class="fas fa-box-open" style="font-size:2rem;color:#cbd5e1;display:block;margin-bottom:10px;"></i>
+                No se encontraron productos en el inventario
+            </td>
+        </tr>`;
+        return;
+    }
+    
     tbody.innerHTML = productos.map(p => {
-        const stockClass = p.stock_actual <= 0 ? 'out-stock' : (p.stock_actual <= p.stock_minimo ? 'low-stock' : '');
+        const stockActual = Number(p.stock_actual || 0);
+        const stockMin = Number(p.stock_minimo || 0);
+        const stockClass = stockActual <= 0 ? 'out-stock' : (stockActual <= stockMin ? 'low-stock' : '');
+        const rowAlertClass = stockActual <= 0 ? 'row-out' : (stockActual <= stockMin ? 'row-low' : '');
         let statusClass = 'available', statusText = 'Disponible';
-        if (p.stock_actual <= 0) { statusClass = 'out'; statusText = 'Agotado'; }
-        else if (p.stock_actual <= p.stock_minimo) { statusClass = 'low'; statusText = 'Stock Bajo'; }
+        if (stockActual <= 0) { statusClass = 'out'; statusText = 'Agotado'; }
+        else if (stockActual <= stockMin) { statusClass = 'low'; statusText = 'Stock Bajo'; }
         
         let actionBtn = '';
         if (canEdit) {
-            actionBtn = '<div style="display:flex;gap:4px"><button type="button" onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button><button type="button" onclick="event.stopPropagation(); deleteProduct(\'' + p.id + '\', event)" class="btn btn-sm" style="background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3);cursor:pointer;" title="Eliminar"><i class="fas fa-trash" style="pointer-events:none;"></i></button></div>';
-        } else if (canOrder && p.stock_actual > 0) {
-            actionBtn = '<a href="' + getPedidosUrl() + '" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
-        } else if (p.stock_actual <= 0) {
-            actionBtn = '<button class="btn btn-sm" disabled><i class="fas fa-ban"></i></button>';
+            actionBtn = `<div class="inv-row-actions">
+                <button type="button" onclick="editProduct('${p.id}')" class="btn btn-sm btn-outline-primary inv-btn-edit" title="Editar Producto">
+                    <i class="fas fa-edit"></i> <span class="inv-btn-label">Editar</span>
+                </button>
+                <button type="button" onclick="event.stopPropagation(); deleteProduct('${p.id}', event)" class="btn btn-sm inv-btn-delete" title="Eliminar Producto">
+                    <i class="fas fa-trash" style="pointer-events:none;"></i> <span class="inv-btn-label">Eliminar</span>
+                </button>
+            </div>`;
+        } else if (canOrder && stockActual > 0) {
+            actionBtn = `<div class="inv-row-actions">
+                <a href="${getPedidosUrl()}" class="btn btn-sm btn-primary inv-btn-order"><i class="fas fa-cart-plus"></i> <span class="inv-btn-label">Ordenar</span></a>
+            </div>`;
+        } else if (stockActual <= 0) {
+            actionBtn = `<div class="inv-row-actions">
+                <button class="btn btn-sm inv-btn-disabled" disabled style="opacity:0.6;"><i class="fas fa-ban"></i> <span class="inv-btn-label">Agotado</span></button>
+            </div>`;
         } else {
-            actionBtn = '<a href="' + getPedidosUrl() + '" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
+            actionBtn = `<div class="inv-row-actions">
+                <a href="${getPedidosUrl()}" class="btn btn-sm btn-primary inv-btn-order"><i class="fas fa-cart-plus"></i> <span class="inv-btn-label">Ordenar</span></a>
+            </div>`;
         }
         
         const thumbSrc = getProductImageUrl(p);
         const thumbHtml = thumbSrc 
-            ? `<img src="${thumbSrc}" style="width:34px;height:34px;border-radius:6px;object-fit:contain;background:#fff;padding:2px;border:1px solid #cbd5e1;flex-shrink:0;" onerror="this.style.display='none'">` 
-            : `<div style="width:34px;height:34px;border-radius:6px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;"><i class="fas fa-box" style="font-size:0.9rem;"></i></div>`;
+            ? `<img src="${thumbSrc}" class="inv-thumb-img" alt="${p.nombre}" onerror="this.style.display='none'">` 
+            : `<div class="inv-thumb-fallback"><i class="fas fa-box"></i></div>`;
 
         const priceUsd = parseFloat(p.precio_venta || 0).toFixed(2);
         const priceBs = BcvManager.formatBs(BcvManager.toBs(p.precio_venta));
 
-        return `<tr>
-            <td><strong>${p.codigo}</strong></td>
-            <td>
-                <div style="display:flex;align-items:center;gap:10px;">
+        return `<tr class="inv-product-row ${rowAlertClass}">
+            <td class="inv-cell-code" data-label="Código"><strong>${p.codigo}</strong></td>
+            <td class="inv-cell-product" data-label="Producto">
+                <div class="inv-product-info">
                     ${thumbHtml}
-                    <span>${p.nombre}</span>
+                    <div class="inv-product-details">
+                        <span class="inv-product-name">${p.nombre}</span>
+                        <div class="inv-mobile-meta">
+                            <span class="inv-meta-badge code"><i class="fas fa-barcode"></i> ${p.codigo}</span>
+                            <span class="inv-meta-badge cat"><i class="fas fa-tag"></i> ${p.categoria_nombre || 'General'}</span>
+                        </div>
+                    </div>
                 </div>
             </td>
-            <td>${p.categoria_nombre}</td>
-            <td>
-                <strong>$${priceUsd}</strong>
-                <span style="display:block;font-size:0.72rem;color:#64748b;">${priceBs}</span>
+            <td class="inv-cell-category" data-label="Categoría">${p.categoria_nombre || 'General'}</td>
+            <td class="inv-cell-price" data-label="Precio">
+                <span class="inv-cell-label">Precio</span>
+                <div class="inv-price-wrap">
+                    <strong>$${priceUsd}</strong>
+                    <span class="inv-price-bs">${priceBs}</span>
+                </div>
             </td>
-            <td class="${stockClass}">${p.stock_actual}</td><td>${p.stock_minimo}</td>
-            <td><span class="status ${statusClass}">${statusText}</span></td>
-            <td>${actionBtn}</td>
+            <td class="inv-cell-stock ${stockClass}" data-label="Stock">
+                <span class="inv-cell-label">Stock Actual</span>
+                <strong class="inv-stock-val">${p.stock_actual} <span class="inv-unit-label">unid.</span></strong>
+            </td>
+            <td class="inv-cell-min" data-label="Mínimo">
+                <span class="inv-cell-label">Stock Mínimo</span>
+                <span class="inv-min-val">${p.stock_minimo} <span class="inv-unit-label">unid.</span></span>
+            </td>
+            <td class="inv-cell-status" data-label="Estado">
+                <span class="inv-cell-label">Estado</span>
+                <span class="status ${statusClass}">${statusText}</span>
+            </td>
+            <td class="inv-cell-actions" data-label="Acciones">${actionBtn}</td>
         </tr>`;
     }).join('');
 }
