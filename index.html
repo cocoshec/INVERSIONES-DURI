@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <link rel="stylesheet" href="css/styles.css?v=39.0">
+    <link rel="stylesheet" href="css/styles.css?v=40.0">
     <style>
         /* Alineación vertical permanente para DuriBot y Carrito */
         .floating-actions-stack {
@@ -156,17 +156,12 @@
             }
         }
 
-        /* Texto del Hero Justificado */
-        .hero p {
-            text-align: justify !important;
-            text-justify: inter-word !important;
-        }
-        @media (max-width: 768px) {
+        /* Texto del Hero Centrado y Alineado Derecho en Mobile */
+        @media (max-width: 1024px) {
             .hero p {
                 max-width: 340px !important;
                 margin: 0 auto 26px !important;
-                text-align: justify !important;
-                text-justify: inter-word !important;
+                text-align: center !important;
                 line-height: 1.6 !important;
             }
         }
