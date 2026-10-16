@@ -2583,8 +2583,91 @@ async function saveEditProduct() {
     }
 }
 
+// ============================================
+// MODAL DE CONFIRMACIÓN CORPORATIVO PERSONALIZADO
+// ============================================
+function showConfirmModal({
+    title = '¿Estás seguro?',
+    message = 'Esta acción no se puede deshacer.',
+    itemDetails = null,
+    confirmText = 'Eliminar',
+    confirmIcon = 'fa-trash-alt',
+    confirmType = 'danger',
+    cancelText = 'Cancelar',
+    onConfirm = null
+}) {
+    const old = document.getElementById('duriConfirmModalOverlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-modal-overlay';
+    overlay.id = 'duriConfirmModalOverlay';
+    overlay.innerHTML = `
+        <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+            <button type="button" class="confirm-modal-close" onclick="closeConfirmModal()" aria-label="Cerrar">&times;</button>
+            <div class="confirm-modal-icon ${confirmType}">
+                <i class="fas ${confirmIcon}"></i>
+            </div>
+            <h3 class="confirm-modal-title">${escapeHtml(title)}</h3>
+            <p class="confirm-modal-msg">${escapeHtml(message)}</p>
+            ${itemDetails ? `<div class="confirm-modal-item"><i class="fas fa-box-open" style="color:var(--accent);"></i> <span>${escapeHtml(itemDetails)}</span></div>` : ''}
+            <div class="confirm-modal-actions">
+                <button type="button" class="confirm-modal-btn-cancel" onclick="closeConfirmModal()">
+                    ${escapeHtml(cancelText)}
+                </button>
+                <button type="button" class="confirm-modal-btn-action btn-danger" id="confirmModalBtnAction">
+                    <i class="fas ${confirmIcon}"></i> ${escapeHtml(confirmText)}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    function close() {
+        overlay.classList.add('closing');
+        setTimeout(() => { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 180);
+    }
+    window.closeConfirmModal = close;
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+    });
+
+    const actionBtn = overlay.querySelector('#confirmModalBtnAction');
+    if (actionBtn) {
+        actionBtn.addEventListener('click', () => {
+            close();
+            if (typeof onConfirm === 'function') onConfirm();
+        });
+    }
+}
+window.showConfirmModal = showConfirmModal;
+
 async function deleteProduct(id) {
-    if (!confirm('¿Seguro que quieres eliminar este producto?')) return;
+    let prodName = '';
+    if (window._allCatalogProducts && window._allCatalogProducts.length) {
+        const found = window._allCatalogProducts.find(p => String(p.id) === String(id));
+        if (found) prodName = found.nombre;
+    } else if (Array.isArray(_cachedInventory)) {
+        const found = _cachedInventory.find(p => String(p.id) === String(id));
+        if (found) prodName = found.nombre;
+    }
+
+    showConfirmModal({
+        title: '¿Eliminar este producto?',
+        message: 'Esta acción retirará el producto del catálogo y del inventario de forma permanente.',
+        itemDetails: prodName || null,
+        confirmText: 'Sí, eliminar',
+        confirmIcon: 'fa-trash-alt',
+        confirmType: 'danger',
+        onConfirm: async () => {
+            await ejecutarEliminacionProducto(id);
+        }
+    });
+}
+
+async function ejecutarEliminacionProducto(id) {
     const isGH = window.location.hostname.includes('github.io');
     let deleted = false;
 
@@ -2607,9 +2690,9 @@ async function deleteProduct(id) {
     }
 
     if (deleted) {
-        showToast('Producto eliminado');
-        loadInventario();
-        if (document.body.dataset.page === 'productos') loadProductos();
+        showToast('Producto eliminado exitosamente');
+        if (typeof loadInventario === 'function') loadInventario();
+        if (document.body.dataset.page === 'productos' && typeof loadProductos === 'function') loadProductos();
     } else {
         showToast('Error al eliminar producto', 'error');
     }
@@ -5761,39 +5844,45 @@ async function eliminarPedidoHistorial(id, codigo) {
         return;
     }
 
-    if (!confirm(`¿Deseas eliminar permanentemente el pedido ${codigo || ''} del historial?`)) {
-        return;
-    }
+    showConfirmModal({
+        title: '¿Eliminar este pedido?',
+        message: 'Esta orden y su registro contable se borrarán de forma definitiva del historial.',
+        itemDetails: codigo ? `📄 Pedido N° ${codigo}` : null,
+        confirmText: 'Sí, eliminar',
+        confirmIcon: 'fa-trash-alt',
+        confirmType: 'danger',
+        onConfirm: async () => {
+            try {
+                const isGH = window.location.hostname.includes('github.io');
+                if (!isGH) {
+                    const currentUser = getUser();
+                    const usuarioParam = currentUser ? `&usuario_id=${currentUser.id}` : '';
+                    await fetch(`${API_BASE}/pedidos.php?id=${id}${usuarioParam}`, {
+                        method: 'DELETE'
+                    });
+                }
+            } catch (err) {
+                console.warn('API pedidos no disponible al eliminar:', err);
+            }
 
-    try {
-        const isGH = window.location.hostname.includes('github.io');
-        if (!isGH) {
-            const currentUser = getUser();
-            const usuarioParam = currentUser ? `&usuario_id=${currentUser.id}` : '';
-            await fetch(`${API_BASE}/pedidos.php?id=${id}${usuarioParam}`, {
-                method: 'DELETE'
-            });
+            const localOrders = getLocalOrders();
+            const filtered = localOrders.filter(o => String(o.id) !== String(id) && (!codigo || o.codigo !== codigo));
+            saveLocalOrders(filtered);
+
+            try {
+                localStorage.setItem('duri_last_order_event', JSON.stringify({
+                    action: 'delete',
+                    id,
+                    codigo,
+                    timestamp: Date.now()
+                }));
+            } catch(e) {}
+
+            showToast(`Pedido ${codigo || ''} eliminado del historial`);
+            loadPedidosRecientes();
+            updateSuperAdminNotifBadge(false);
         }
-    } catch (err) {
-        console.warn('API pedidos no disponible al eliminar:', err);
-    }
-
-    const localOrders = getLocalOrders();
-    const filtered = localOrders.filter(o => String(o.id) !== String(id) && (!codigo || o.codigo !== codigo));
-    saveLocalOrders(filtered);
-
-    try {
-        localStorage.setItem('duri_last_order_event', JSON.stringify({
-            action: 'delete',
-            id,
-            codigo,
-            timestamp: Date.now()
-        }));
-    } catch(e) {}
-
-    showToast(`Pedido ${codigo || ''} eliminado del historial`);
-    loadPedidosRecientes();
-    updateSuperAdminNotifBadge(false);
+    });
 }
 
 function addProductToCart() {
