@@ -2584,9 +2584,9 @@ async function saveEditProduct() {
 }
 
 // ============================================
-// MODAL DE CONFIRMACIÓN CORPORATIVO PERSONALIZADO
+// MODAL DE CONFIRMACIÓN CORPORATIVO PERSONALIZADO (REMODELADO)
 // ============================================
-function showConfirmModal({
+function showDuriConfirmModal({
     title = '¿Estás seguro?',
     message = 'Esta acción no se puede deshacer.',
     itemDetails = null,
@@ -2596,77 +2596,94 @@ function showConfirmModal({
     cancelText = 'Cancelar',
     onConfirm = null
 }) {
-    try {
-        const old = document.getElementById('duriConfirmModalOverlay');
-        if (old && old.parentNode) old.parentNode.removeChild(old);
+    const old = document.getElementById('duriConfirmModalOverlay');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
 
-        const safeTitle = (typeof escapeHtml === 'function') ? escapeHtml(title) : (title || '');
-        const safeMsg = (typeof escapeHtml === 'function') ? escapeHtml(message) : (message || '');
-        const safeItem = itemDetails && (typeof escapeHtml === 'function') ? escapeHtml(itemDetails) : (itemDetails || '');
-        const safeCancel = (typeof escapeHtml === 'function') ? escapeHtml(cancelText) : (cancelText || 'Cancelar');
-        const safeConfirm = (typeof escapeHtml === 'function') ? escapeHtml(confirmText) : (confirmText || 'Aceptar');
+    const safeTitle = (typeof escapeHtml === 'function') ? escapeHtml(title) : (title || '');
+    const safeMsg = (typeof escapeHtml === 'function') ? escapeHtml(message) : (message || '');
+    const safeItem = itemDetails && (typeof escapeHtml === 'function') ? escapeHtml(itemDetails) : (itemDetails || '');
+    const safeCancel = (typeof escapeHtml === 'function') ? escapeHtml(cancelText) : (cancelText || 'Cancelar');
+    const safeConfirm = (typeof escapeHtml === 'function') ? escapeHtml(confirmText) : (confirmText || 'Aceptar');
 
-        const overlay = document.createElement('div');
-        overlay.className = 'confirm-modal-overlay';
-        overlay.id = 'duriConfirmModalOverlay';
-        overlay.style.zIndex = '999999';
-        overlay.innerHTML = `
-            <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-label="${safeTitle}">
-                <button type="button" class="confirm-modal-close" onclick="closeConfirmModal()" aria-label="Cerrar">&times;</button>
-                <div class="confirm-modal-icon ${confirmType}">
-                    <i class="fas ${confirmIcon}"></i>
-                </div>
-                <h3 class="confirm-modal-title">${safeTitle}</h3>
-                <p class="confirm-modal-msg">${safeMsg}</p>
-                ${safeItem ? `<div class="confirm-modal-item"><i class="fas fa-box-open" style="color:var(--accent);"></i> <span>${safeItem}</span></div>` : ''}
-                <div class="confirm-modal-actions">
-                    <button type="button" class="confirm-modal-btn-cancel" onclick="closeConfirmModal()">
-                        ${safeCancel}
-                    </button>
-                    <button type="button" class="confirm-modal-btn-action btn-danger" id="confirmModalBtnAction">
-                        <i class="fas ${confirmIcon}"></i> ${safeConfirm}
-                    </button>
-                </div>
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-modal-overlay';
+    overlay.id = 'duriConfirmModalOverlay';
+    overlay.style.zIndex = '999999';
+    overlay.innerHTML = `
+        <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-label="${safeTitle}">
+            <button type="button" class="confirm-modal-close" onclick="closeDuriConfirmModal()" aria-label="Cerrar">&times;</button>
+            <div class="confirm-modal-icon ${confirmType}">
+                <i class="fas ${confirmIcon}"></i>
             </div>
-        `;
+            <div class="confirm-modal-badge">
+                <i class="fas fa-shield-alt"></i> Panel de Administración
+            </div>
+            <h3 class="confirm-modal-title">${safeTitle}</h3>
+            <p class="confirm-modal-msg">${safeMsg}</p>
+            ${safeItem ? `
+                <div class="confirm-modal-item">
+                    <i class="fas fa-box-open" style="color:#ef4444;font-size:1.15rem;"></i>
+                    <span>${safeItem}</span>
+                </div>` : ''}
+            <div class="confirm-modal-actions">
+                <button type="button" class="confirm-modal-btn-cancel" onclick="closeDuriConfirmModal()">
+                    <i class="fas fa-times"></i> ${safeCancel}
+                </button>
+                <button type="button" class="confirm-modal-btn-action btn-${confirmType}" id="duriConfirmModalBtnAction">
+                    <i class="fas ${confirmIcon}"></i> ${safeConfirm}
+                </button>
+            </div>
+        </div>
+    `;
 
-        document.body.appendChild(overlay);
+    document.body.appendChild(overlay);
 
-        function close() {
-            if (!overlay) return;
-            overlay.classList.add('closing');
-            setTimeout(() => {
-                if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-            }, 180);
-        }
-        window.closeConfirmModal = close;
-
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) close();
-        });
-
-        const actionBtn = overlay.querySelector('#confirmModalBtnAction');
-        if (actionBtn) {
-            actionBtn.addEventListener('click', async (e) => {
-                if (e && e.stopPropagation) e.stopPropagation();
-                close();
-                if (typeof onConfirm === 'function') {
-                    try {
-                        await onConfirm();
-                    } catch (err) {
-                        console.error('Error al ejecutar onConfirm:', err);
-                    }
-                }
-            });
-        }
-    } catch (errModal) {
-        console.error('Error en showConfirmModal:', errModal);
-        if (confirm(`${title}\n\n${message}`)) {
-            if (typeof onConfirm === 'function') onConfirm();
-        }
+    function close() {
+        if (!overlay) return;
+        overlay.classList.add('closing');
+        setTimeout(() => {
+            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 180);
     }
+    window.closeDuriConfirmModal = close;
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) close();
+    });
+
+    const actionBtn = overlay.querySelector('#duriConfirmModalBtnAction');
+    if (actionBtn) {
+        actionBtn.addEventListener('click', async (e) => {
+            if (e && e.stopPropagation) e.stopPropagation();
+            close();
+            if (typeof onConfirm === 'function') {
+                try {
+                    await onConfirm();
+                } catch (err) {
+                    console.error('Error al ejecutar confirmación:', err);
+                }
+            }
+        });
+    }
+
+    const onKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            close();
+            document.removeEventListener('keydown', onKeyDown);
+        }
+    };
+    document.addEventListener('keydown', onKeyDown);
 }
-window.showConfirmModal = showConfirmModal;
+window.showDuriConfirmModal = showDuriConfirmModal;
+window.closeDuriConfirmModal = function() {
+    const overlay = document.getElementById('duriConfirmModalOverlay');
+    if (overlay) {
+        overlay.classList.add('closing');
+        setTimeout(() => {
+            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 180);
+    }
+};
 
 async function deleteProduct(id, e) {
     if (e) {
@@ -2699,27 +2716,17 @@ async function deleteProduct(id, e) {
         console.warn('Error al resolver nombre del producto:', err);
     }
 
-    try {
-        showConfirmModal({
-            title: '¿Eliminar este producto?',
-            message: 'Esta acción retirará el producto del catálogo y del inventario de forma permanente.',
-            itemDetails: prodName || null,
-            confirmText: 'Sí, eliminar',
-            confirmIcon: 'fa-trash-alt',
-            confirmType: 'danger',
-            onConfirm: async () => {
-                await ejecutarEliminacionProducto(id);
-            }
-        });
-    } catch (errModal) {
-        console.warn('Fallback a confirmación nativa:', errModal);
-        const confirmMsg = prodName 
-            ? `¿Estás seguro de que deseas eliminar permanentemente "${prodName}"?`
-            : '¿Estás seguro de que deseas eliminar este producto?';
-        if (confirm(confirmMsg)) {
+    showDuriConfirmModal({
+        title: '¿Eliminar este producto?',
+        message: 'Esta acción retirará el artículo del catálogo y del inventario de forma permanente.',
+        itemDetails: prodName || null,
+        confirmText: 'Sí, eliminar',
+        confirmIcon: 'fa-trash-alt',
+        confirmType: 'danger',
+        onConfirm: async () => {
             await ejecutarEliminacionProducto(id);
         }
-    }
+    });
 }
 window.deleteProduct = deleteProduct;
 
@@ -5920,7 +5927,7 @@ async function eliminarPedidoHistorial(id, codigo) {
         return;
     }
 
-    showConfirmModal({
+    showDuriConfirmModal({
         title: '¿Eliminar este pedido?',
         message: 'Esta orden y su registro contable se borrarán de forma definitiva del historial.',
         itemDetails: codigo ? `📄 Pedido N° ${codigo}` : null,
