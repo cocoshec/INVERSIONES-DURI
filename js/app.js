@@ -2959,23 +2959,23 @@ async function abrirModalPapelera() {
     modal.innerHTML = `
         <div class="papelera-modal-card">
             <div class="papelera-modal-header">
-                <div style="display:flex;align-items:center;gap:12px;">
+                <div class="papelera-modal-header-left">
                     <div class="papelera-modal-badge-icon"><i class="fas fa-trash-restore"></i></div>
-                    <div>
-                        <h3 style="margin:0;font-size:1.25rem;font-weight:800;color:#fff;">Papelera y Restauración de Productos</h3>
-                        <p style="margin:2px 0 0;font-size:0.82rem;color:#94a3b8;">Recupera artículos eliminados para que vuelvan a aparecer en el catálogo</p>
+                    <div class="papelera-modal-header-text">
+                        <h3>Papelera de Productos</h3>
+                        <p>Recupera artículos eliminados para que vuelvan al catálogo</p>
                     </div>
                 </div>
                 <button type="button" class="confirm-modal-close" onclick="cerrarModalPapelera()" style="position:static;background:rgba(255,255,255,0.15);color:#fff;" aria-label="Cerrar">&times;</button>
             </div>
 
             <div class="papelera-modal-toolbar">
-                <span id="papeleraCountLabel" style="font-size:0.88rem;color:#64748b;font-weight:600;">Cargando artículos...</span>
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                    <button type="button" id="btnVaciarPapelera" class="btn btn-sm" onclick="vaciarPapeleraDefinitiva()" style="display:none;background:rgba(220,38,38,0.1);color:#dc2626;border:1px solid rgba(220,38,38,0.3);padding:8px 14px;border-radius:10px;font-weight:700;gap:7px;cursor:pointer;" title="Eliminar definitivamente todos los productos de la papelera">
+                <span id="papeleraCountLabel" class="papelera-toolbar-count">Cargando artículos...</span>
+                <div class="papelera-toolbar-actions">
+                    <button type="button" id="btnVaciarPapelera" class="btn btn-sm btn-toolbar-vaciar" onclick="vaciarPapeleraDefinitiva()" style="display:none;" title="Eliminar definitivamente todos los productos de la papelera">
                         <i class="fas fa-trash"></i> Vaciar de por vida
                     </button>
-                    <button type="button" id="btnRestaurarTodos" class="btn btn-sm btn-primary" onclick="restaurarTodosLosProductos()" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border:none;padding:8px 16px;border-radius:10px;font-weight:700;gap:7px;cursor:pointer;box-shadow:0 3px 10px rgba(22,163,74,0.35);">
+                    <button type="button" id="btnRestaurarTodos" class="btn btn-sm btn-toolbar-restaurar" onclick="restaurarTodosLosProductos()" style="display:none;" title="Restaurar todos los productos eliminados">
                         <i class="fas fa-history"></i> Restaurar Todos
                     </button>
                 </div>
@@ -3084,22 +3084,22 @@ async function cargarContenidoPapelera() {
                 const safeNameJs = safeName.replace(/'/g, "\\'");
                 return `
                     <div class="papelera-item-row" id="trashRow_${p.id}">
-                        <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
-                            <img src="${img}" alt="${safeName}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0;background:#f8fafc;" onerror="this.src='${logoFallback}'">
-                            <div style="min-width:0;">
-                                <h4 style="margin:0 0 3px;font-size:0.95rem;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${safeName}</h4>
-                                <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;">
-                                    <span style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-weight:600;">${escapeHtml(p.categoria_nombre || 'General')}</span>
-                                    <span><strong>$${precio}</strong> (${precioBs})</span>
-                                    <span>Stock: <strong>${p.stock_actual || 0} u</strong></span>
+                        <div class="trash-item-main">
+                            <img src="${img}" alt="${safeName}" class="trash-item-img" onerror="this.src='${logoFallback}'">
+                            <div class="trash-item-info">
+                                <h4 class="trash-item-title">${safeName}</h4>
+                                <div class="trash-item-meta">
+                                    <span class="trash-item-badge">${escapeHtml(p.categoria_nombre || 'General')}</span>
+                                    <span class="trash-item-price"><strong>$${precio}</strong> <small>(${precioBs})</small></span>
+                                    <span class="trash-item-stock">Stock: <strong>${p.stock_actual || 0} u</strong></span>
                                 </div>
                             </div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                            <button type="button" class="btn btn-sm" onclick="restaurarProducto('${p.id}')" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 3px 8px rgba(22,163,74,0.3);" title="Devolver producto al catálogo activo">
+                        <div class="trash-item-actions">
+                            <button type="button" class="btn-trash-restore" onclick="restaurarProducto('${p.id}')" title="Devolver producto al catálogo activo">
                                 <i class="fas fa-undo"></i> Restaurar
                             </button>
-                            <button type="button" class="btn btn-sm" onclick="eliminarProductoDefinitivo('${p.id}', '${safeNameJs}')" style="background:rgba(220,38,38,0.1);color:#dc2626;border:1px solid rgba(220,38,38,0.3);border-radius:10px;padding:8px 12px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="Eliminar de forma irreversible de por vida">
+                            <button type="button" class="btn-trash-delete" onclick="eliminarProductoDefinitivo('${p.id}', '${safeNameJs}')" title="Eliminar de forma irreversible de por vida">
                                 <i class="fas fa-trash-alt"></i> Borrar de por vida
                             </button>
                         </div>

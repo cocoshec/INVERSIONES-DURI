@@ -4782,6 +4782,7 @@ img { max-width:100%; height:auto; }
     margin: auto;
     animation: confirmPopIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
 .papelera-modal-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
@@ -4789,7 +4790,17 @@ img { max-width:100%; height:auto; }
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
+
+.papelera-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex: 1;
+}
+
 .papelera-modal-badge-icon {
     width: 44px;
     height: 44px;
@@ -4803,6 +4814,26 @@ img { max-width:100%; height:auto; }
     border: 1px solid rgba(245, 158, 11, 0.35);
     flex-shrink: 0;
 }
+
+.papelera-modal-header-text {
+    min-width: 0;
+}
+
+.papelera-modal-header-text h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+}
+
+.papelera-modal-header-text p {
+    margin: 4px 0 0;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+
 .papelera-modal-toolbar {
     padding: 14px 24px;
     background: #f8fafc;
@@ -4813,31 +4844,219 @@ img { max-width:100%; height:auto; }
     gap: 12px;
     flex-wrap: wrap;
 }
+
+.papelera-toolbar-count {
+    font-size: 0.9rem;
+    color: #475569;
+    font-weight: 700;
+}
+
+.papelera-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-toolbar-vaciar {
+    background: rgba(220, 38, 38, 0.08) !important;
+    color: #dc2626 !important;
+    border: 1px solid rgba(220, 38, 38, 0.25) !important;
+    padding: 8px 14px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    transition: all 0.2s;
+}
+
+.btn-toolbar-vaciar:hover {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+}
+
+.btn-toolbar-restaurar {
+    background: linear-gradient(135deg, #16a34a, #15803d) !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35) !important;
+    transition: all 0.2s;
+}
+
+.btn-toolbar-restaurar:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(22, 163, 74, 0.45) !important;
+}
+
 .papelera-modal-body {
     padding: 20px 24px;
     overflow-y: auto;
     flex: 1;
 }
+
 .papelera-items-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
+
 .papelera-item-row {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 12px 16px;
+    border-radius: 16px;
+    padding: 14px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: 16px;
     transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
+
 .papelera-item-row:hover {
     border-color: #cbd5e1;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
+
+.trash-item-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex: 1;
+}
+
+.trash-item-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    flex-shrink: 0;
+}
+
+.trash-item-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.trash-item-title {
+    margin: 0 0 6px 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.trash-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+
+.trash-item-badge {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.76rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trash-item-price {
+    color: #0f172a;
+}
+
+.trash-item-price strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.trash-item-price small {
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.trash-item-stock {
+    color: #64748b;
+}
+
+.trash-item-stock strong {
+    color: #0f172a;
+}
+
+.trash-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-trash-restore {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 9px 15px !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    box-shadow: 0 3px 8px rgba(22, 163, 74, 0.3) !important;
+    white-space: nowrap !important;
+    transition: all 0.2s;
+}
+
+.btn-trash-restore:hover {
+    background: #15803d !important;
+    box-shadow: 0 5px 12px rgba(22, 163, 74, 0.45) !important;
+    transform: translateY(-1px);
+}
+
+.btn-trash-delete {
+    background: rgba(220, 38, 38, 0.08) !important;
+    color: #dc2626 !important;
+    border: 1px solid rgba(220, 38, 38, 0.25) !important;
+    border-radius: 10px !important;
+    padding: 9px 13px !important;
+    font-weight: 700 !important;
+    font-size: 0.84rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    transition: all 0.2s;
+}
+
+.btn-trash-delete:hover {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+}
+
 .papelera-modal-footer {
     padding: 14px 24px;
     background: #f8fafc;
@@ -4847,5 +5066,130 @@ img { max-width:100%; height:auto; }
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+/* ============================================
+   RESPONSIVE MOBILE DESIGN: PAPELERA MODAL
+   ============================================ */
+@media (max-width: 640px) {
+    .papelera-modal-card {
+        width: 94%;
+        max-height: 90vh;
+        border-radius: 18px;
+    }
+
+    .papelera-modal-header {
+        padding: 14px 16px;
+    }
+
+    .papelera-modal-badge-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+        border-radius: 10px;
+    }
+
+    .papelera-modal-header-text h3 {
+        font-size: 1.05rem;
+    }
+
+    .papelera-modal-header-text p {
+        font-size: 0.76rem;
+    }
+
+    .papelera-modal-toolbar {
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .papelera-toolbar-count {
+        text-align: center;
+        font-size: 0.86rem;
+    }
+
+    .papelera-toolbar-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .btn-toolbar-vaciar,
+    .btn-toolbar-restaurar {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 9px 8px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .papelera-modal-body {
+        padding: 14px 14px;
+    }
+
+    .papelera-item-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .trash-item-main {
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .trash-item-img {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+    }
+
+    .trash-item-title {
+        font-size: 0.92rem;
+        margin-bottom: 5px;
+    }
+
+    .trash-item-meta {
+        gap: 6px 10px;
+        font-size: 0.78rem;
+    }
+
+    .trash-item-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+        margin-top: 2px;
+    }
+
+    .btn-trash-restore,
+    .btn-trash-delete {
+        width: 100% !important;
+        padding: 10px 8px !important;
+        font-size: 0.82rem !important;
+        justify-content: center !important;
+    }
+
+    .papelera-modal-footer {
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .papelera-modal-footer span {
+        text-align: center;
+        justify-content: center;
+        font-size: 0.75rem !important;
+    }
+
+    .papelera-modal-footer .btn {
+        width: 100%;
+        text-align: center;
+    }
 }
 
