@@ -1,7 +1,7 @@
 {
   "name": "Inversiones Duri C.A - Papelería & Catálogo",
   "short_name": "Inversiones Duri",
-  "description": "Control de Inventario, Catálogo de Productos y Pedidos de Inversiones Duri C.A - Maracay",
+  "description": "Sistema oficial de control de inventario, catálogo interactivo de papelería y gestión de pedidos de Inversiones Duri C.A - Maracay, Estado Aragua.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -27,6 +27,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "img/screenshot-desktop.png",
+      "sizes": "1920x912",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Pantalla Principal y Catálogo de Inversiones Duri"
+    },
+    {
+      "src": "img/screenshot-mobile.png",
+      "sizes": "627x938",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Control de Inventario adaptado para Móviles"
     }
   ],
   "shortcuts": [
