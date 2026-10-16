@@ -380,6 +380,9 @@ function initFloatingCart() {
     if (document.querySelector('.floating-cart-btn')) return;
 
     const pedidosUrl = getPedidosUrl();
+    const productosUrl = getProductosUrl();
+    const safeCart = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : [];
+    const isEmpty = safeCart.length === 0;
 
     // Cart Panel (Drawer modal independiente)
     const panelHtml = `
@@ -389,11 +392,19 @@ function initFloatingCart() {
             <button type="button" onclick="toggleCartPanel()">&times;</button>
         </div>
         <div class="cart-panel-body" id="cartPanelBody">
-            <div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>
+            <div class="cart-empty">
+                <i class="fas fa-shopping-basket"></i>
+                <p>Tu carrito está vacío</p>
+                <a href="${productosUrl}" class="btn btn-sm btn-outline-primary" style="margin-top:12px; border-radius:100px; padding:7px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fas fa-store"></i> Explorar Catálogo
+                </a>
+            </div>
         </div>
         <div class="cart-panel-footer">
             <div class="cart-panel-total"><span>Total:</span><strong id="cartPanelTotal">$0.00</strong></div>
-            <a href="${pedidosUrl}" id="cartPanelActionBtn" class="btn btn-primary btn-block" onclick="return handleCartPanelCheckout(event)"><i class="fas fa-paper-plane"></i> Ver Pedido</a>
+            <a href="${isEmpty ? productosUrl : pedidosUrl}" id="cartPanelActionBtn" class="btn ${isEmpty ? 'btn-outline' : 'btn-primary'} btn-block" ${isEmpty ? '' : 'onclick="return handleCartPanelCheckout(event)"'}>
+                <i class="fas ${isEmpty ? 'fa-box-open' : 'fa-paper-plane'}"></i> ${isEmpty ? 'Explorar Productos' : 'Tramitar Pedido'}
+            </a>
         </div>
     </div>`;
     document.body.insertAdjacentHTML('beforeend', panelHtml);
@@ -5956,7 +5967,16 @@ function updateCart() {
     
     if (!items) return;
     if (!cart.length) {
-        items.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-basket"></i><p>Tu pedido está vacío</p></div>';
+        const prodUrl = getProductosUrl();
+        items.innerHTML = `
+            <div class="empty-cart" style="text-align:center; padding:32px 16px;">
+                <i class="fas fa-shopping-basket" style="font-size:2.4rem; color:#cbd5e1; margin-bottom:12px; display:block;"></i>
+                <p style="font-weight:600; font-size:1.05rem; margin-bottom:6px; color:#475569;">Tu pedido está vacío</p>
+                <span style="display:block; margin-bottom:16px; font-size:0.88rem; color:#94a3b8;">Aún no has agregado productos a tu orden</span>
+                <a href="${prodUrl}" class="btn btn-primary" style="border-radius:100px; padding:10px 22px; font-size:0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
+                    <i class="fas fa-store"></i> Explorar Catálogo de Productos
+                </a>
+            </div>`;
         if (total) total.textContent = '$0.00';
         if (elSubtotal) elSubtotal.textContent = '$0.00';
         if (elIva) elIva.textContent = '$0.00';

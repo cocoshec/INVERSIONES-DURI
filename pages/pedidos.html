@@ -240,10 +240,13 @@
                 <div class="order-card">
                     <h3><i class="fas fa-shopping-cart"></i> Tu Pedido</h3>
                     <div class="order-items" id="orderItems">
-                        <div class="empty-cart">
-                            <i class="fas fa-shopping-basket"></i>
-                            <p>Tu pedido está vacío</p>
-                            <span>Selecciona un producto para agregar</span>
+                        <div class="empty-cart" style="text-align:center; padding:32px 16px;">
+                            <i class="fas fa-shopping-basket" style="font-size:2.4rem; color:#cbd5e1; margin-bottom:12px; display:block;"></i>
+                            <p style="font-weight:600; font-size:1.05rem; margin-bottom:6px; color:#475569;">Tu pedido está vacío</p>
+                            <span style="display:block; margin-bottom:16px; font-size:0.88rem; color:#94a3b8;">Aún no has agregado productos a tu orden</span>
+                            <a href="productos.html" class="btn btn-primary" style="border-radius:100px; padding:10px 22px; font-size:0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
+                                <i class="fas fa-store"></i> Explorar Catálogo de Productos
+                            </a>
                         </div>
                     </div>
                     
@@ -293,7 +296,7 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=46.0"></script>
+    <script src="../js/app.js?v=50.0"></script>
     <script>
         // Habilitar contexto seguro para que el navegador active el GPS sin bloqueos
         if (!window.isSecureContext && location.hostname.endsWith('.test')) {
