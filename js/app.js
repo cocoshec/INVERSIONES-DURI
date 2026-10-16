@@ -337,6 +337,84 @@ function fallbackCopyText(text, btnElement) {
 window.copyTextToClipboard = copyTextToClipboard;
 
 // ============================================
+// PWA (PROGRESSIVE WEB APP - INSTALABLE EN PC Y MÓVIL)
+// ============================================
+let _deferredPwaPrompt = null;
+
+function initPwa() {
+    // 1. Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+        const swPath = window.location.pathname.includes('/pages/') ? '../sw.js' : './sw.js';
+        navigator.serviceWorker.register(swPath).then((reg) => {
+            console.log('[PWA] Service Worker activo en scope:', reg.scope);
+        }).catch((err) => {
+            console.warn('[PWA] Error registrando Service Worker:', err);
+        });
+    }
+
+    // 2. Capturar evento de instalación en PC (Chrome, Edge, Opera, etc.)
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _deferredPwaPrompt = e;
+        mostrarBotonInstalarPwa();
+    });
+
+    // 3. Confirmación cuando la app ya fue instalada
+    window.addEventListener('appinstalled', () => {
+        console.log('[PWA] Inversiones Duri fue instalada en el sistema');
+        _deferredPwaPrompt = null;
+        ocultarBotonInstalarPwa();
+        showToast('🎉 ¡Inversiones Duri se instaló con éxito en tu PC!', 'success');
+    });
+
+    // 4. Si ya está corriendo como PWA independiente (standalone)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+        document.body.classList.add('is-pwa-standalone');
+        ocultarBotonInstalarPwa();
+    }
+}
+
+function mostrarBotonInstalarPwa() {
+    if (document.getElementById('pwaInstallBtnTop')) return;
+    
+    const btn = document.createElement('button');
+    btn.id = 'pwaInstallBtnTop';
+    btn.type = 'button';
+    btn.className = 'btn-pwa-install';
+    btn.innerHTML = '<i class="fas fa-download"></i> <span>Instalar en PC</span>';
+    btn.title = 'Instalar Inversiones Duri en tu PC o teléfono con acceso directo en el escritorio';
+    btn.onclick = instalarPwaApp;
+
+    const topBarRight = document.querySelector('.top-bar-right');
+    if (topBarRight) {
+        topBarRight.prepend(btn);
+    } else {
+        const stack = getOrCreateFloatingStack();
+        if (stack) stack.prepend(btn);
+    }
+}
+
+function ocultarBotonInstalarPwa() {
+    const btn = document.getElementById('pwaInstallBtnTop');
+    if (btn) btn.remove();
+}
+
+async function instalarPwaApp() {
+    if (!_deferredPwaPrompt) {
+        showToast('ℹ️ Para instalar en tu PC, haz clic en el ícono de instalar (+) en la barra de direcciones de tu navegador', 'info');
+        return;
+    }
+    _deferredPwaPrompt.prompt();
+    const { outcome } = await _deferredPwaPrompt.userChoice;
+    console.log('[PWA] Elección del usuario:', outcome);
+    if (outcome === 'accepted') {
+        _deferredPwaPrompt = null;
+        ocultarBotonInstalarPwa();
+    }
+}
+window.instalarPwaApp = instalarPwaApp;
+
+// ============================================
 // NAVBAR
 function bootApp() {
     try { initNav(); } catch(e) { console.error('initNav error:', e); }
@@ -351,6 +429,7 @@ function bootApp() {
     try { initDuriChatbot(); } catch(e) { console.error('initDuriChatbot error:', e); }
     try { initNumericInputs(); } catch(e) {}
     try { updateTrashBadges(); } catch(e) {}
+    try { initPwa(); } catch(e) {}
 }
 
 if (document.readyState === 'loading') {

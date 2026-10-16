@@ -1,0 +1,56 @@
+{
+  "name": "Inversiones Duri C.A - Papelería & Catálogo",
+  "short_name": "Inversiones Duri",
+  "description": "Control de Inventario, Catálogo de Productos y Pedidos de Inversiones Duri C.A - Maracay",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#190c2e",
+  "theme_color": "#e85d26",
+  "lang": "es-VE",
+  "icons": [
+    {
+      "src": "img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Control de Inventario",
+      "short_name": "Inventario",
+      "description": "Consultar stock en tiempo real",
+      "url": "./pages/inventario.html",
+      "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Catálogo de Productos",
+      "short_name": "Productos",
+      "description": "Ver lista de productos",
+      "url": "./pages/productos.html",
+      "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Realizar Pedido",
+      "short_name": "Pedidos",
+      "description": "Crear y enviar pedidos",
+      "url": "./pages/pedidos.html",
+      "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["business", "shopping", "productivity"]
+}

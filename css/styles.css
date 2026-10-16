@@ -4849,3 +4849,41 @@ img { max-width:100%; height:auto; }
     flex-wrap: wrap;
 }
 
+/* ============================================
+   PWA INSTALL BUTTON (PC Y MÓVIL)
+   ============================================ */
+.btn-pwa-install {
+    background: linear-gradient(135deg, #e85d26, #c2410c);
+    color: #ffffff !important;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: var(--transition);
+    box-shadow: 0 2px 10px rgba(232, 93, 38, 0.4);
+    margin-right: 10px;
+    vertical-align: middle;
+}
+.btn-pwa-install:hover {
+    background: linear-gradient(135deg, #ea580c, #9a3412);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(232, 93, 38, 0.6);
+    color: #ffffff !important;
+}
+.btn-pwa-install i {
+    font-size: 0.85rem;
+}
+@media (max-width: 768px) {
+    .btn-pwa-install {
+        padding: 5px 10px;
+        font-size: 0.74rem;
+    }
+}
+body.is-pwa-standalone .btn-pwa-install {
+    display: none !important;
+}
