@@ -3077,18 +3077,31 @@ img { max-width:100%; height:auto; }
     border-bottom: 2px solid #cbd5e1;
 }
 
+.factura-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 10px;
+    margin-bottom: 12px;
+}
+
 .factura-totals-wrap {
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
+    width: 100%;
 }
 
 .factura-totals-box {
     width: 320px;
+    max-width: 100%;
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
     border-radius: 12px;
     padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 .factura-total-row {
@@ -3250,23 +3263,34 @@ img { max-width:100%; height:auto; }
         visibility: hidden !important;
     }
 
-    /* Mostrar únicamente el área de impresión de la factura */
+    /* Mostrar únicamente el área de impresión activa (factura individual, reporte o lote) */
     #facturaPrintArea,
-    #facturaPrintArea * {
+    #facturaPrintArea *,
+    #reportePrintArea,
+    #reportePrintArea *,
+    #batchFacturasPrintArea,
+    #batchFacturasPrintArea * {
         visibility: visible !important;
     }
 
-    #facturaPrintArea {
+    #facturaPrintArea,
+    #reportePrintArea,
+    #batchFacturasPrintArea {
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 15mm !important;
+        padding: 10mm !important;
         background: #ffffff !important;
         box-shadow: none !important;
         border: none !important;
+    }
+
+    .factura-page-break {
+        page-break-after: always !important;
+        break-after: page !important;
     }
 
     .no-print,
@@ -3337,22 +3361,146 @@ img { max-width:100%; height:auto; }
 
 /* Responsive para pantallas pequeñas */
 @media (max-width: 640px) {
+    .modal-factura-overlay {
+        padding: 8px 6px;
+    }
+    .factura-modal-container {
+        max-height: 96vh;
+        border-radius: 16px;
+        width: 100%;
+    }
+    .factura-actions-bar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "title close"
+            "buttons buttons";
+        gap: 10px;
+        padding: 12px 14px;
+    }
+    .factura-actions-left {
+        grid-area: title;
+        font-size: 0.9rem;
+    }
+    .factura-actions-left strong {
+        font-size: 0.95rem;
+    }
+    .btn-factura-close {
+        grid-area: close;
+        margin: 0;
+    }
+    .factura-actions-right {
+        grid-area: buttons;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+    .btn-factura-act {
+        width: 100%;
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: 0.76rem;
+    }
+    .factura-scroll-wrap {
+        padding: 10px 8px;
+    }
     .factura-paper {
-        padding: 20px 16px;
+        padding: 16px 12px;
+        border-radius: 10px;
     }
     .factura-header-grid {
         flex-direction: column;
         align-items: stretch;
+        gap: 12px;
+        padding-bottom: 12px;
+    }
+    .factura-brand {
+        gap: 10px;
+    }
+    .factura-logo-img {
+        width: 48px;
+        height: 48px;
+    }
+    .factura-company-info h2 {
+        font-size: 1.1rem;
+    }
+    .factura-company-info p {
+        font-size: 0.72rem;
+        line-height: 1.35;
     }
     .factura-doc-box {
         text-align: left;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 12px;
+    }
+    .factura-doc-title {
+        font-size: 0.7rem;
+    }
+    .factura-doc-num {
+        font-size: 1.25rem;
     }
     .factura-info-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
+        padding: 10px 0;
+    }
+    .factura-table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 10px 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+    .factura-table {
+        min-width: 480px;
+        font-size: 0.78rem;
+    }
+    .factura-table th, 
+    .factura-table td {
+        padding: 7px 8px;
+    }
+    .factura-totals-wrap {
+        width: 100%;
+        margin-top: 12px;
+        display: flex;
+        justify-content: stretch;
     }
     .factura-totals-box {
         width: 100%;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+    .factura-total-row {
+        font-size: 0.8rem;
+        padding: 5px 0;
+    }
+    .factura-total-row.grand-total {
+        font-size: 1.05rem;
+        padding-top: 8px;
+    }
+    .factura-total-bs-row {
+        font-size: 0.82rem;
+        padding: 8px 10px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .factura-footer-notice {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-top: 18px;
+    }
+    .factura-seal-box {
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
     }
 }
 
@@ -3366,4 +3514,227 @@ img { max-width:100%; height:auto; }
     animation: inputShakeError 0.35s ease-in-out !important;
     border-color: #dc2626 !important;
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important;
+}
+
+/* ============================================
+   MODAL DE ENVÍO DE FACTURA POR CORREO
+   ============================================ */
+.mail-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000000;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: mailFadeIn 0.2s ease-out;
+}
+.mail-modal-overlay.closing { animation: mailFadeOut 0.18s ease-in forwards; }
+.mail-modal-overlay.closing .mail-modal-card { animation: mailPopOut 0.18s ease-in forwards; }
+
+@keyframes mailFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mailFadeOut { to { opacity: 0; } }
+@keyframes mailPopIn { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes mailPopOut { to { opacity: 0; transform: translateY(10px) scale(0.97); } }
+
+.mail-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 30px 26px 24px;
+    box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.45);
+    border-top: 4px solid #ff6600;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    animation: mailPopIn 0.26s cubic-bezier(.2, .9, .3, 1.2);
+}
+.mail-modal-x {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mail-modal-x:hover { background: #fee2e2; color: #dc2626; transform: rotate(90deg); }
+
+.mail-modal-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: #fff;
+    background: linear-gradient(135deg, #1e1b4b, #0f172a);
+    box-shadow: 0 0 0 7px rgba(30, 27, 75, 0.09), 0 8px 20px rgba(15, 23, 42, 0.3);
+}
+.mail-modal-icon i { color: #ff9f1c; }
+.mail-modal-icon.success { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.13), 0 8px 20px rgba(5, 150, 105, 0.35); animation: mailPopIn 0.35s cubic-bezier(.2, .9, .3, 1.4); }
+.mail-modal-icon.error { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 0 0 7px rgba(239, 68, 68, 0.13), 0 8px 20px rgba(220, 38, 38, 0.35); }
+.mail-modal-icon.success i, .mail-modal-icon.error i { color: #fff; }
+
+.mail-modal-card h3 {
+    margin: 0 0 6px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+.mail-modal-sub {
+    margin: 0 0 18px;
+    font-size: 0.86rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.mail-modal-summary {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 0.9fr;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 18px;
+    text-align: left;
+}
+.mail-modal-summary span {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.mail-modal-summary strong {
+    display: block;
+    font-size: 0.84rem;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mail-modal-summary .mail-total { color: #16a34a; }
+
+.mail-modal-label {
+    display: block;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+}
+.mail-modal-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0 14px;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.mail-modal-input-wrap i { color: #94a3b8; transition: color 0.2s; }
+.mail-modal-input-wrap:focus-within { border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12); }
+.mail-modal-input-wrap:focus-within i { color: #4f46e5; }
+.mail-modal-input-wrap.invalid { border-color: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12); animation: inputShakeError 0.35s; }
+.mail-modal-input-wrap.invalid i { color: #dc2626; }
+.mail-modal-input-wrap input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 13px 0;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #0f172a;
+    background: transparent;
+    min-width: 0;
+}
+.mail-modal-input-wrap input:disabled { color: #94a3b8; }
+
+.mail-modal-error {
+    min-height: 20px;
+    margin-top: 6px;
+    text-align: left;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #dc2626;
+}
+
+.mail-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 10px;
+    margin-top: 8px;
+}
+.mail-modal-actions.single { grid-template-columns: 1fr; }
+
+.mail-btn {
+    min-height: 46px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.mail-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+.mail-btn-ghost { background: #f8fafc; color: #475569; border: 1.5px solid #cbd5e1; }
+.mail-btn-ghost:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; }
+.mail-btn-primary {
+    border: none;
+    color: #fff;
+    background: linear-gradient(135deg, #ff7a1a, #ea580c);
+    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.35);
+}
+.mail-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(234, 88, 12, 0.45); }
+
+.mail-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: mailSpin 0.7s linear infinite;
+}
+@keyframes mailSpin { to { transform: rotate(360deg); } }
+
+.mail-sent-to {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 10px 16px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    word-break: break-all;
+}
+
+@media (max-width: 480px) {
+    .mail-modal-card { padding: 26px 18px 18px; }
+    .mail-modal-summary { grid-template-columns: 1fr 1fr; }
+    .mail-modal-summary > div:nth-child(2) { grid-column: 1 / -1; order: -1; }
 }

@@ -3608,9 +3608,15 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     const adminNotice = `
         <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:8px 14px; margin-bottom:12px; font-size:0.78rem; color:#475569; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Facturación y verificación de compras en tiempo real.</span>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                 <button type="button" onclick="abrirArchivoGeneralFacturas()" style="background:#1e1b4b; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(30,27,75,0.25);" title="Ver libro de todas las facturas y ventas pasadas">
                     <i class="fas fa-archive" style="color:#f59e0b;"></i> Libro de Facturas
+                </button>
+                <button type="button" onclick="descargarFacturasRapidas('semana')" style="background:#059669; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(5,150,105,0.25);" title="Descargar en Excel/CSV todas las facturas de esta semana">
+                    <i class="fas fa-file-excel"></i> Facturas Semana
+                </button>
+                <button type="button" onclick="descargarFacturasRapidas('mes')" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(37,99,235,0.25);" title="Descargar en Excel/CSV todas las facturas de este mes">
+                    <i class="fas fa-calendar-alt"></i> Facturas Mes
                 </button>
                 <button type="button" onclick="logout()" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:4px; padding:4px 8px; font-size:0.72rem; cursor:pointer;" title="Cerrar sesión de administrador"><i class="fas fa-sign-out-alt"></i> Salir de Admin</button>
             </div>
@@ -3867,46 +3873,37 @@ function cerrarModalFactura() {
 }
 window.cerrarModalFactura = cerrarModalFactura;
 
-function abrirModalFactura(pedidoOrCode) {
-    cerrarModalFactura();
+function parseFechaPedido(p) {
+    if (!p) return new Date();
+    const raw = p.created_at || p.fecha_pedido || p.fecha;
+    if (!raw) return new Date();
+    if (raw instanceof Date) return raw;
+    const clean = String(raw).replace(/-/g, '/').replace('T', ' ');
+    const d = new Date(clean);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+window.parseFechaPedido = parseFechaPedido;
 
-    let p = null;
-    if (typeof pedidoOrCode === 'object' && pedidoOrCode !== null) {
-        p = pedidoOrCode;
-    } else {
-        p = findOrderData(pedidoOrCode);
+function generarHTMLFacturaPaper(p, logoSrc = null, idAttr = 'facturaPrintArea') {
+    if (!p) return '';
+    if (!logoSrc) {
+        logoSrc = window.location.pathname.includes('/pages/') ? '../img/logo-duri.png' : 'img/logo-duri.png';
     }
-
-    if (!p) {
-        showToast('No se encontró el registro del pedido para generar la factura', 'error');
-        return;
-    }
-
-    // Seguridad: la factura oficial no se muestra al cliente si el pago no ha sido validado
-    if (!isSuperUsuario() && (p.estado === 'pendiente' || !p.estado)) {
-        showToast('El pedido aún está en espera de validación de pago. La Factura Oficial se emitirá al ser aprobado.', 'warning');
-        return;
-    }
-
-    // Datos corporativos y correlativo
     const codigo = p.codigo || `PED-${p.id || '001'}`;
     const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '101');
     const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
-    const logoSrc = window.location.pathname.includes('/pages/') ? '../img/logo-duri.png' : 'img/logo-duri.png';
 
-    // Fecha formateada
     let fechaStr = '';
     try {
-        const d = p.created_at ? new Date(p.created_at.replace(/-/g, '/')) : new Date();
+        const d = parseFechaPedido(p);
         fechaStr = d.toLocaleDateString('es-VE', { 
             year: 'numeric', month: 'long', day: 'numeric', 
             hour: '2-digit', minute: '2-digit', hour12: true 
         });
     } catch(e) {
-        fechaStr = new Date().toLocaleString('es-VE');
+        fechaStr = p.created_at || new Date().toLocaleString('es-VE');
     }
 
-    // Estado del pago
     const estado = p.estado || 'pendiente';
     let estadoLabel = '⏳ PENDIENTE DE VALIDACIÓN';
     let estadoTagClass = 'pendiente';
@@ -3921,7 +3918,6 @@ function abrirModalFactura(pedidoOrCode) {
         estadoTagClass = 'cancelado';
     }
 
-    // Forma de pago legible
     const formaPagoMap = {
         'pago_movil': 'Pago Móvil Interbancario',
         'transferencia': 'Transferencia Bancaria',
@@ -3930,7 +3926,6 @@ function abrirModalFactura(pedidoOrCode) {
     };
     const formaPagoTxt = formaPagoMap[p.forma_pago] || p.forma_pago || 'Pago Móvil';
 
-    // Cálculo y desglose monetario dual
     const totalVal = parseFloat(p.total || 0);
     let deliveryVal = p.delivery_cost ? parseFloat(p.delivery_cost) : (p.costo_delivery ? parseFloat(p.costo_delivery) : 0);
     if (deliveryVal === 0 && p.direccion_entrega && p.direccion_entrega.includes('Tarifa: $')) {
@@ -3952,7 +3947,6 @@ function abrirModalFactura(pedidoOrCode) {
     const ivaBsStr = BcvManager.formatBs(BcvManager.toBs(ivaVal));
     const deliveryBsStr = BcvManager.formatBs(BcvManager.toBs(deliveryVal));
 
-    // Tabla de productos
     const prods = (p.productos && p.productos.length) ? p.productos : (p.detalles || []);
     let rowsHtml = '';
     if (prods && prods.length) {
@@ -3986,6 +3980,144 @@ function abrirModalFactura(pedidoOrCode) {
         `;
     }
 
+    return `
+        <div id="${idAttr}" class="factura-paper">
+            <!-- Encabezado Membrete Oficial -->
+            <div class="factura-header-grid">
+                <div class="factura-brand">
+                    <img src="${logoSrc}" alt="Logo Inversiones Duri" class="factura-logo-img" onerror="this.style.display='none'">
+                    <div class="factura-company-info">
+                        <h2>Inversiones Duri C.A.</h2>
+                        <p><strong>RIF:</strong> J-50123456-7</p>
+                        <p><i class="fas fa-map-marker-alt" style="color:#ea4335;"></i> Sede Comercial: Av. Bolívar Oeste, Maracay, Edo. Aragua</p>
+                        <p><i class="fas fa-phone" style="color:#28a745;"></i> +58 412-1234567 | <i class="fas fa-envelope" style="color:#1a73e8;"></i> inversionesduri@gmail.com</p>
+                        <p><i class="fab fa-instagram" style="color:#e1306c;"></i> @inversionesdurica | <i class="fab fa-facebook-f" style="color:#1877f2;"></i> Inversiones Duri</p>
+                    </div>
+                </div>
+                <div class="factura-doc-box">
+                    <div class="factura-doc-title">NOTA DE ENTREGA / FACTURA</div>
+                    <div class="factura-doc-num">${facturaNum}</div>
+                    <div class="factura-doc-date"><strong>Pedido:</strong> ${codigo}</div>
+                    <div class="factura-doc-date">${fechaStr}</div>
+                    <div>
+                        <span class="factura-status-tag ${estadoTagClass}">
+                            ${estadoLabel}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datos del Cliente y Despacho -->
+            <div class="factura-info-grid">
+                <div class="factura-info-col">
+                    <h4><i class="fas fa-user-check"></i> Facturado a (Cliente)</h4>
+                    <p><strong>Nombre / Razón Social:</strong> ${p.cliente_nombre || 'Cliente General'}</p>
+                    <p><strong>Cédula / RIF:</strong> ${p.cliente_ci || 'No registrada'}</p>
+                    <p><strong>Teléfono de Contacto:</strong> ${p.cliente_telefono || 'No registrado'}</p>
+                    <p><strong>Correo / Gmail:</strong> ${p.cliente_email ? `<a href="mailto:${p.cliente_email}" style="color:#1d4ed8; text-decoration:none;">${p.cliente_email}</a>` : 'No registrado'}</p>
+                </div>
+                <div class="factura-info-col">
+                    <h4><i class="fas fa-shipping-fast"></i> Despacho y Pago</h4>
+                    <p><strong>Forma de Pago:</strong> ${formaPagoTxt}</p>
+                    <p><strong>Tasa Oficial BCV:</strong> ${rateBsStr} Bs / USD</p>
+                    <p><strong>Dirección de Entrega:</strong> ${p.direccion_entrega || 'Retiro en Sede Oficial'}</p>
+                    ${p.notas ? `<p><strong>Notas:</strong> ${p.notas}</p>` : ''}
+                </div>
+            </div>
+
+            <!-- Tabla de Productos -->
+            <div class="factura-table-responsive">
+                <table class="factura-table">
+                    <thead>
+                        <tr>
+                            <th class="th-center" style="width: 40px;">#</th>
+                            <th>Descripción del Producto</th>
+                            <th class="th-center" style="width: 65px;">Cant.</th>
+                            <th class="th-right" style="width: 100px;">P. Unit ($)</th>
+                            <th class="th-right" style="width: 105px;">Subtotal ($)</th>
+                            <th class="th-right" style="width: 115px;">Equiv. (Bs.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Caja de Totales y Moneda Dual -->
+            <div class="factura-totals-wrap">
+                <div class="factura-totals-box">
+                    <div class="factura-total-row">
+                        <span>Subtotal Base:</span>
+                        <strong>$${subtotalVal.toFixed(2)} <small style="color:#64748b;">(${subtotalBsStr})</small></strong>
+                    </div>
+                    <div class="factura-total-row">
+                        <span>IVA (16%):</span>
+                        <strong>$${ivaVal.toFixed(2)} <small style="color:#64748b;">(${ivaBsStr})</small></strong>
+                    </div>
+                    <div class="factura-total-row" style="color:${hasDelivery && deliveryVal > 0 ? '#0284c7' : '#059669'};">
+                        <span>${hasDelivery ? 'Servicio de Delivery:' : 'Modalidad de Entrega:'}</span>
+                        <strong>${hasDelivery ? (deliveryVal > 0 ? `+$${deliveryVal.toFixed(2)}` : '¡GRATIS ($0.00)!') : 'Retiro en Local'} <small style="color:#64748b;">(${hasDelivery ? (deliveryVal > 0 ? deliveryBsStr : 'Bs. 0,00') : 'Gratis'})</small></strong>
+                    </div>
+                    <div class="factura-total-row grand-total">
+                        <span>TOTAL A PAGAR:</span>
+                        <span>$${totalVal.toFixed(2)} USD</span>
+                    </div>
+                    <div class="factura-total-bs-row">
+                        <span>Total en Bolívares (BCV):</span>
+                        <span>${totalBsStr}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie de Página y Sello de Verificación -->
+            <div class="factura-footer-notice">
+                <div style="flex:1; min-width:240px;">
+                    <p style="margin:0 0 4px 0; font-weight:600; color:#334155;">
+                        <i class="fas fa-shield-alt" style="color:#059669;"></i> Comprobante Electrónico y Registro de Compra Oficial
+                    </p>
+                    <p style="margin:0; font-size:0.71rem; line-height:1.4;">
+                        Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como soporte fiscal y nota de entrega.
+                    </p>
+                </div>
+                <div class="factura-seal-box">
+                    <i class="fas fa-stamp"></i>
+                    <div class="factura-seal-text">
+                        <strong>Inversiones Duri C.A.</strong>
+                        <span>${estado === 'procesando' || estado === 'completado' ? 'VALIDADO POR ADMINISTRACIÓN' : 'REGISTRO DE VENTA OFICIAL'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+window.generarHTMLFacturaPaper = generarHTMLFacturaPaper;
+
+function abrirModalFactura(pedidoOrCode) {
+    cerrarModalFactura();
+
+    let p = null;
+    if (typeof pedidoOrCode === 'object' && pedidoOrCode !== null) {
+        p = pedidoOrCode;
+    } else {
+        p = findOrderData(pedidoOrCode);
+    }
+
+    if (!p) {
+        showToast('No se encontró el registro del pedido para generar la factura', 'error');
+        return;
+    }
+
+    // Seguridad: la factura oficial no se muestra al cliente si el pago no ha sido validado
+    if (!isSuperUsuario() && (p.estado === 'pendiente' || !p.estado)) {
+        showToast('El pedido aún está en espera de validación de pago. La Factura Oficial se emitirá al ser aprobado.', 'warning');
+        return;
+    }
+
+    // Datos corporativos y correlativo
+    const codigo = p.codigo || `PED-${p.id || '001'}`;
+    const logoSrc = window.location.pathname.includes('/pages/') ? '../img/logo-duri.png' : 'img/logo-duri.png';
+
     const modal = document.createElement('div');
     modal.id = 'modalFacturaDuri';
     modal.className = 'modal-factura-overlay';
@@ -3995,8 +4127,9 @@ function abrirModalFactura(pedidoOrCode) {
             <div class="factura-actions-bar no-print">
                 <div class="factura-actions-left">
                     <i class="fas fa-file-invoice-dollar"></i>
-                    <strong>Factura / Comprobante Oficial &mdash; ${codigo}</strong>
+                    <strong>Factura Oficial &mdash; ${codigo}</strong>
                 </div>
+                <button type="button" class="btn-factura-close" onclick="cerrarModalFactura()" title="Cerrar modal">&times;</button>
                 <div class="factura-actions-right">
                     <button type="button" class="btn-factura-act btn-pdf" onclick="descargarFacturaPDF('${codigo}')" title="Descargar documento en formato PDF">
                         <i class="fas fa-download"></i> Descargar PDF
@@ -4005,122 +4138,17 @@ function abrirModalFactura(pedidoOrCode) {
                         <i class="fas fa-print"></i> Imprimir
                     </button>
                     <button type="button" class="btn-factura-act btn-wa" onclick="compartirFacturaWhatsApp('${codigo}')" title="Enviar copia o notificación al WhatsApp del cliente">
-                        <i class="fab fa-whatsapp"></i> Enviar WhatsApp
+                        <i class="fab fa-whatsapp"></i> WhatsApp
                     </button>
                     <button type="button" class="btn-factura-act btn-email" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" title="Enviar factura directamente al correo del cliente">
                         <i class="fas fa-envelope"></i> Enviar Correo
                     </button>
-                    <button type="button" class="btn-factura-close" onclick="cerrarModalFactura()" title="Cerrar modal">&times;</button>
                 </div>
             </div>
 
             <!-- Hoja Imprimible Oficial -->
             <div class="factura-scroll-wrap">
-                <div id="facturaPrintArea" class="factura-paper">
-                    <!-- Encabezado Membrete Oficial -->
-                    <div class="factura-header-grid">
-                        <div class="factura-brand">
-                            <img src="${logoSrc}" alt="Logo Inversiones Duri" class="factura-logo-img" onerror="this.style.display='none'">
-                            <div class="factura-company-info">
-                                <h2>Inversiones Duri C.A.</h2>
-                                <p><strong>RIF:</strong> J-50123456-7</p>
-                                <p><i class="fas fa-map-marker-alt" style="color:#ea4335;"></i> Sede Comercial: Av. Bolívar Oeste, Maracay, Edo. Aragua</p>
-                                <p><i class="fas fa-phone" style="color:#28a745;"></i> +58 412-1234567 | <i class="fas fa-envelope" style="color:#1a73e8;"></i> inversionesduri@gmail.com</p>
-                                <p><i class="fab fa-instagram" style="color:#e1306c;"></i> @inversionesdurica | <i class="fab fa-facebook-f" style="color:#1877f2;"></i> Inversiones Duri</p>
-                            </div>
-                        </div>
-                        <div class="factura-doc-box">
-                            <div class="factura-doc-title">NOTA DE ENTREGA / FACTURA</div>
-                            <div class="factura-doc-num">${facturaNum}</div>
-                            <div class="factura-doc-date"><strong>Pedido:</strong> ${codigo}</div>
-                            <div class="factura-doc-date">${fechaStr}</div>
-                            <div>
-                                <span class="factura-status-tag ${estadoTagClass}">
-                                    ${estadoLabel}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Datos del Cliente y Despacho -->
-                    <div class="factura-info-grid">
-                        <div class="factura-info-col">
-                            <h4><i class="fas fa-user-check"></i> Facturado a (Cliente)</h4>
-                            <p><strong>Nombre / Razón Social:</strong> ${p.cliente_nombre || 'Cliente General'}</p>
-                            <p><strong>Cédula / RIF:</strong> ${p.cliente_ci || 'No registrada'}</p>
-                            <p><strong>Teléfono de Contacto:</strong> ${p.cliente_telefono || 'No registrado'}</p>
-                            <p><strong>Correo / Gmail:</strong> ${p.cliente_email ? `<a href="mailto:${p.cliente_email}" style="color:#1d4ed8; text-decoration:none;">${p.cliente_email}</a>` : 'No registrado'}</p>
-                        </div>
-                        <div class="factura-info-col">
-                            <h4><i class="fas fa-shipping-fast"></i> Despacho y Pago</h4>
-                            <p><strong>Forma de Pago:</strong> ${formaPagoTxt}</p>
-                            <p><strong>Tasa Oficial BCV:</strong> ${rateBsStr} Bs / USD</p>
-                            <p><strong>Dirección de Entrega:</strong> ${p.direccion_entrega || 'Retiro en Sede Oficial'}</p>
-                            ${p.notas ? `<p><strong>Notas:</strong> ${p.notas}</p>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- Tabla de Productos -->
-                    <table class="factura-table">
-                        <thead>
-                            <tr>
-                                <th class="th-center" style="width: 40px;">#</th>
-                                <th>Descripción del Producto</th>
-                                <th class="th-center" style="width: 65px;">Cant.</th>
-                                <th class="th-right" style="width: 100px;">P. Unit ($)</th>
-                                <th class="th-right" style="width: 105px;">Subtotal ($)</th>
-                                <th class="th-right" style="width: 115px;">Equiv. (Bs.)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rowsHtml}
-                        </tbody>
-                    </table>
-
-                    <!-- Caja de Totales y Moneda Dual -->
-                    <div class="factura-totals-wrap">
-                            <div class="factura-total-row">
-                                <span>Subtotal Base:</span>
-                                <strong>$${subtotalVal.toFixed(2)} <small style="color:#64748b;">(${subtotalBsStr})</small></strong>
-                            </div>
-                            <div class="factura-total-row">
-                                <span>IVA (16%):</span>
-                                <strong>$${ivaVal.toFixed(2)} <small style="color:#64748b;">(${ivaBsStr})</small></strong>
-                            </div>
-                            <div class="factura-total-row" style="color:${hasDelivery && deliveryVal > 0 ? '#0284c7' : '#059669'};">
-                                <span>${hasDelivery ? 'Servicio de Delivery:' : 'Modalidad de Entrega:'}</span>
-                                <strong>${hasDelivery ? (deliveryVal > 0 ? `+$${deliveryVal.toFixed(2)}` : '¡GRATIS ($0.00)!') : 'Retiro en Local'} <small style="color:#64748b;">(${hasDelivery ? (deliveryVal > 0 ? deliveryBsStr : 'Bs. 0,00') : 'Gratis'})</small></strong>
-                            </div>
-                            <div class="factura-total-row grand-total">
-                                <span>TOTAL A PAGAR:</span>
-                                <span>$${totalVal.toFixed(2)} USD</span>
-                            </div>
-                            <div class="factura-total-bs-row">
-                                <span>Total en Bolívares (BCV):</span>
-                                <span>${totalBsStr}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pie de Página y Sello de Verificación -->
-                    <div class="factura-footer-notice">
-                        <div style="flex:1; min-width:240px;">
-                            <p style="margin:0 0 4px 0; font-weight:600; color:#334155;">
-                                <i class="fas fa-shield-alt" style="color:#059669;"></i> Comprobante Electrónico y Registro de Compra Oficial
-                            </p>
-                            <p style="margin:0; font-size:0.71rem; line-height:1.4;">
-                                Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como soporte fiscal y nota de entrega.
-                            </p>
-                        </div>
-                        <div class="factura-seal-box">
-                            <i class="fas fa-stamp"></i>
-                            <div class="factura-seal-text">
-                                <strong>Inversiones Duri C.A.</strong>
-                                <span>${estado === 'procesando' || estado === 'completado' ? 'VALIDADO POR ADMINISTRACIÓN' : 'REGISTRO DE VENTA OFICIAL'}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                ${generarHTMLFacturaPaper(p, logoSrc, 'facturaPrintArea')}
             </div>
         </div>
     `;
@@ -4612,87 +4640,398 @@ function cerrarModalPagoAprobado() {
 }
 window.cerrarModalPagoAprobado = cerrarModalPagoAprobado;
 
-// Archivo general y libro contable de facturas
-function abrirArchivoGeneralFacturas() {
-    cerrarArchivoGeneralFacturas();
+// ========================================================
+// MÓDULO DE LIBRO DE FACTURAS, REPORTES Y EXPORTACIÓN CONTABLE
+// Inversiones Duri C.A. - Control Fiscal y Administrativo
+// ========================================================
 
-    const pedidos = window._allAdminPedidos || (typeof getLocalOrders === 'function' ? getLocalOrders() : []) || [];
-    const totalFacturas = pedidos.length;
+function filtrarFacturasPorPeriodo(pedidos, config = {}) {
+    const list = Array.isArray(pedidos) ? pedidos : [];
+    const periodo = config.periodo || 'este_mes';
+    const estado = config.estado || 'todos';
+    const busqueda = (config.busqueda || '').toLowerCase().trim();
+    const ahora = new Date();
+
+    let dInicio = null;
+    let dFin = null;
+
+    if (periodo === 'hoy') {
+        dInicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0, 0);
+        dFin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59, 999);
+    } else if (periodo === 'esta_semana') {
+        const day = (ahora.getDay() + 6) % 7; // 0 = Lunes, 6 = Domingo
+        dInicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - day, 0, 0, 0, 0);
+        dFin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - day + 6, 23, 59, 59, 999);
+    } else if (periodo === 'semana_pasada') {
+        const day = (ahora.getDay() + 6) % 7;
+        dInicio = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - day - 7, 0, 0, 0, 0);
+        dFin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - day - 1, 23, 59, 59, 999);
+    } else if (periodo === 'este_mes') {
+        dInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0, 0);
+        dFin = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (periodo === 'mes_pasado') {
+        dInicio = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1, 0, 0, 0, 0);
+        dFin = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59, 999);
+    } else if (periodo === 'personalizado') {
+        if (config.fechaDesde) {
+            const parts = config.fechaDesde.split('-');
+            if (parts.length === 3) {
+                dInicio = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 0, 0, 0, 0);
+            }
+        }
+        if (config.fechaHasta) {
+            const parts = config.fechaHasta.split('-');
+            if (parts.length === 3) {
+                dFin = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 23, 59, 59, 999);
+            }
+        }
+    }
+
+    return list.filter(p => {
+        const f = parseFechaPedido(p);
+
+        if (dInicio && f < dInicio) return false;
+        if (dFin && f > dFin) return false;
+
+        const est = p.estado || 'pendiente';
+        if (estado === 'aprobadas' && est !== 'procesando' && est !== 'completado') return false;
+        if (estado === 'pendientes' && est !== 'pendiente') return false;
+        if (estado === 'canceladas' && est !== 'cancelado') return false;
+
+        if (busqueda) {
+            const codigo = (p.codigo || `PED-${p.id || ''}`).toLowerCase();
+            const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '');
+            const factNum = `fact-${cleanNum.padStart(4, '0')}`.toLowerCase();
+            const cliente = (p.cliente_nombre || '').toLowerCase();
+            const ci = (p.cliente_ci || '').toLowerCase();
+            const tel = (p.cliente_telefono || '').toLowerCase();
+            const email = (p.cliente_email || '').toLowerCase();
+
+            if (!codigo.includes(busqueda) && 
+                !factNum.includes(busqueda) && 
+                !cliente.includes(busqueda) && 
+                !ci.includes(busqueda) && 
+                !tel.includes(busqueda) && 
+                !email.includes(busqueda)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+}
+window.filtrarFacturasPorPeriodo = filtrarFacturasPorPeriodo;
+
+function obtenerEtiquetaPeriodo(periodo, desde = '', hasta = '') {
+    const ahora = new Date();
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    switch (periodo) {
+        case 'hoy': return `Hoy (${ahora.toLocaleDateString('es-VE')})`;
+        case 'esta_semana': return `Esta Semana`;
+        case 'semana_pasada': return `Semana Anterior`;
+        case 'este_mes': return `Este Mes (${meses[ahora.getMonth()]} ${ahora.getFullYear()})`;
+        case 'mes_pasado': {
+            const mIdx = ahora.getMonth() === 0 ? 11 : ahora.getMonth() - 1;
+            const a = ahora.getMonth() === 0 ? ahora.getFullYear() - 1 : ahora.getFullYear();
+            return `Mes Anterior (${meses[mIdx]} ${a})`;
+        }
+        case 'personalizado':
+            return (desde && hasta) ? `${desde} al ${hasta}` : (desde ? `Desde ${desde}` : (hasta ? `Hasta ${hasta}` : 'Rango Personalizado'));
+        case 'todas':
+        default:
+            return `Histórico Completo`;
+    }
+}
+window.obtenerEtiquetaPeriodo = obtenerEtiquetaPeriodo;
+
+function exportarFacturasCSV(pedidosFiltrados, etiquetaPeriodo = 'Reporte') {
+    if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
+        showToast('No hay facturas en el período seleccionado para exportar a Excel', 'warning');
+        return;
+    }
+
+    const headers = [
+        "N° Factura",
+        "Código Pedido",
+        "Fecha",
+        "Cliente",
+        "Cédula / RIF",
+        "Teléfono",
+        "Correo / Gmail",
+        "Forma de Pago",
+        "Referencia Pago",
+        "Estado",
+        "Subtotal USD ($)",
+        "IVA 16% USD ($)",
+        "Delivery USD ($)",
+        "Total USD ($)",
+        "Tasa Oficial BCV (Bs/$)",
+        "Total Bolívares (Bs)",
+        "Productos Detallados"
+    ];
+
+    const escapeCsv = (str) => {
+        if (str === null || str === undefined) return '""';
+        const s = String(str).replace(/"/g, '""').replace(/\r?\n/g, ' ');
+        return `"${s}"`;
+    };
+
+    const rateBs = BcvManager.rate || 45.00;
+
+    const rows = pedidosFiltrados.map(p => {
+        const codigo = p.codigo || `PED-${p.id}`;
+        const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
+        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+
+        let fechaStr = '';
+        try {
+            const d = parseFechaPedido(p);
+            fechaStr = d.toLocaleDateString('es-VE') + ' ' + d.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
+        } catch(e) { fechaStr = p.created_at || ''; }
+
+        const totalVal = parseFloat(p.total || 0);
+        let deliveryVal = p.delivery_cost ? parseFloat(p.delivery_cost) : (p.costo_delivery ? parseFloat(p.costo_delivery) : 0);
+        if (deliveryVal === 0 && p.direccion_entrega && p.direccion_entrega.includes('Tarifa: $')) {
+            const m = p.direccion_entrega.match(/Tarifa:\s*\$([0-9\.]+)/);
+            if (m) deliveryVal = parseFloat(m[1]);
+        }
+        let subtotalVal = p.subtotal ? parseFloat(p.subtotal) : ((totalVal - deliveryVal) / 1.16);
+        let ivaVal = p.impuesto ? parseFloat(p.impuesto) : ((totalVal - deliveryVal) - subtotalVal);
+        if (isNaN(subtotalVal) || subtotalVal <= 0) subtotalVal = (totalVal - deliveryVal) / 1.16;
+        if (isNaN(ivaVal) || ivaVal < 0) ivaVal = (totalVal - deliveryVal) - subtotalVal;
+
+        const totalBs = (totalVal * rateBs).toFixed(2);
+        const prods = (p.productos && p.productos.length) ? p.productos : (p.detalles || []);
+        const prodsTxt = prods.map(it => `${it.nombre || it.producto_nombre || 'Item'} (Cant: ${it.cantidad || 1}, $${parseFloat(it.precio_unitario||0).toFixed(2)})`).join(' | ');
+
+        let estadoTxt = 'Pendiente de Pago';
+        if (p.estado === 'procesando') estadoTxt = 'Pago Aprobado';
+        else if (p.estado === 'completado') estadoTxt = 'Completado / Entregado';
+        else if (p.estado === 'cancelado') estadoTxt = 'Cancelado';
+
+        return [
+            escapeCsv(factNum),
+            escapeCsv(codigo),
+            escapeCsv(fechaStr),
+            escapeCsv(p.cliente_nombre || 'Cliente General'),
+            escapeCsv(p.cliente_ci || 'N/A'),
+            escapeCsv(p.cliente_telefono || 'N/A'),
+            escapeCsv(p.cliente_email || 'N/A'),
+            escapeCsv(p.forma_pago || 'Pago Móvil'),
+            escapeCsv(p.referencia_pago || 'N/A'),
+            escapeCsv(estadoTxt),
+            escapeCsv(subtotalVal.toFixed(2)),
+            escapeCsv(ivaVal.toFixed(2)),
+            escapeCsv(deliveryVal.toFixed(2)),
+            escapeCsv(totalVal.toFixed(2)),
+            escapeCsv(rateBs.toFixed(2)),
+            escapeCsv(totalBs),
+            escapeCsv(prodsTxt)
+        ].join(';');
+    });
+
+    const csvContent = "\uFEFF" + headers.join(';') + "\r\n" + rows.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const cleanPeriodo = String(etiquetaPeriodo).replace(/[^a-zA-Z0-9_\-]/g, '_');
+    link.setAttribute('download', `Facturas_Duri_${cleanPeriodo}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`¡Reporte Excel (${pedidosFiltrados.length} facturas) descargado con éxito!`, 'success');
+}
+window.exportarFacturasCSV = exportarFacturasCSV;
+
+function imprimirReporteContablePDF(pedidosFiltrados, etiquetaPeriodo = 'Reporte') {
+    if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
+        showToast('No hay facturas para generar el reporte contable', 'warning');
+        return;
+    }
+
     let totalUsd = 0;
     let totalAprobadas = 0;
     let totalPendientes = 0;
-
-    pedidos.forEach(p => {
+    pedidosFiltrados.forEach(p => {
         totalUsd += parseFloat(p.total || 0);
         if (p.estado === 'procesando' || p.estado === 'completado') totalAprobadas++;
         else if (p.estado === 'pendiente') totalPendientes++;
     });
 
-    const totalBs = BcvManager.formatBs(BcvManager.toBs(totalUsd));
-    const rateBsStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
+    const rateBs = BcvManager.rate || 45.00;
+    const rateBsStr = BcvManager.formatBs(rateBs).replace('Bs. ', '');
+    const totalBsStr = BcvManager.formatBs(BcvManager.toBs(totalUsd));
+    const logoSrc = window.location.pathname.includes('/pages/') ? '../img/logo-duri.png' : 'img/logo-duri.png';
 
-    const rowsHtml = pedidos.length === 0 ? `
-        <tr><td colspan="7" style="text-align:center; padding:25px; color:#64748b;">No hay facturas registradas aún.</td></tr>
-    ` : pedidos.map(p => {
-        const codigo = p.codigo || `PED-${p.id}`;
-        const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
-        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
-        const total = parseFloat(p.total || 0).toFixed(2);
-        const montoBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total || 0)));
-        const estado = p.estado || 'pendiente';
-        let badgeColor = '#92400e; background:#fef3c7; border:1px solid #fde68a;';
-        let badgeText = 'Pendiente';
-        if (estado === 'procesando') {
-            badgeColor = '#166534; background:#dcfce7; border:1px solid #bbf7d0;';
-            badgeText = 'Aprobada';
-        } else if (estado === 'completado') {
-            badgeColor = '#075985; background:#e0f2fe; border:1px solid #bae6fd;';
-            badgeText = 'Entregada';
-        } else if (estado === 'cancelado') {
-            badgeColor = '#991b1b; background:#fee2e2; border:1px solid #fecaca;';
-            badgeText = 'Cancelada';
-        }
+    const prev = document.getElementById('tempReportePrintContainer');
+    if (prev) prev.remove();
 
-        let fechaCorta = '';
-        try {
-            const d = p.created_at ? new Date(p.created_at.replace(/-/g, '/')) : new Date();
-            fechaCorta = d.toLocaleDateString('es-VE');
-        } catch(e) {
-            fechaCorta = 'Reciente';
-        }
+    const container = document.createElement('div');
+    container.id = 'tempReportePrintContainer';
+    container.innerHTML = `
+        <div id="reportePrintArea" style="background:#fff; color:#0f172a; font-family:sans-serif; padding:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <img src="${logoSrc}" alt="Logo Duri" style="height:52px; object-fit:contain;" onerror="this.style.display='none'">
+                    <div>
+                        <h2 style="margin:0; font-size:1.25rem; font-weight:800; color:#0f172a;">INVERSIONES DURI C.A.</h2>
+                        <p style="margin:2px 0 0; font-size:0.75rem; color:#475569;">RIF: J-50123456-7 · Sede Comercial Maracay, Edo. Aragua</p>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="display:inline-block; background:#0f172a; color:#fff; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:4px; text-transform:uppercase;">Libro General de Ventas y Facturación</span>
+                    <div style="font-size:0.85rem; font-weight:700; color:#1e1b4b; margin-top:4px;">${etiquetaPeriodo}</div>
+                    <div style="font-size:0.7rem; color:#64748b;">Emisión: ${new Date().toLocaleString('es-VE')}</div>
+                </div>
+            </div>
 
-        return `
-            <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:10px; font-weight:800; font-family:monospace; color:#1e1b4b;">${factNum}</td>
-                <td style="padding:10px; color:#475569; font-weight:600;">${codigo}</td>
-                <td style="padding:10px; color:#64748b; font-size:0.78rem;">${fechaCorta}</td>
-                <td style="padding:10px;">
-                    <strong style="color:#0f172a; display:block;">${p.cliente_nombre || 'Cliente'}</strong>
-                    <span style="font-size:0.75rem; color:#64748b;">${p.cliente_ci || 'C.I no reg.'}</span>
-                </td>
-                <td style="padding:10px; text-align:right;">
-                    <strong style="color:#16a34a; font-size:0.95rem;">$${total}</strong>
-                    <span style="display:block; font-size:0.72rem; color:#64748b;">${montoBs}</span>
-                </td>
-                <td style="padding:10px; text-align:center;">
-                    <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:12px; ${badgeColor}">
-                        ${badgeText}
-                    </span>
-                </td>
-                <td style="padding:10px; text-align:center;">
-                    <button type="button" onclick="cerrarArchivoGeneralFacturas(); abrirModalFactura('${codigo}')" style="background:#4f46e5; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(79,70,229,0.3);">
-                        <i class="fas fa-file-invoice"></i> Ver
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+            <!-- Resumen Financiero -->
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px; border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc;">
+                <div>
+                    <span style="font-size:0.68rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturas</span>
+                    <div style="font-size:1.2rem; font-weight:800; color:#0f172a;">${pedidosFiltrados.length}</div>
+                    <span style="font-size:0.68rem; color:#16a34a;">${totalAprobadas} aprobadas · ${totalPendientes} pend.</span>
+                </div>
+                <div>
+                    <span style="font-size:0.68rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Ventas (USD)</span>
+                    <div style="font-size:1.2rem; font-weight:800; color:#2563eb;">$${totalUsd.toFixed(2)}</div>
+                </div>
+                <div>
+                    <span style="font-size:0.68rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Ventas (Bs)</span>
+                    <div style="font-size:1.2rem; font-weight:800; color:#ea580c;">${totalBsStr}</div>
+                </div>
+                <div>
+                    <span style="font-size:0.68rem; color:#64748b; font-weight:700; text-transform:uppercase;">Tasa BCV Oficial</span>
+                    <div style="font-size:1.2rem; font-weight:800; color:#475569;">${rateBsStr} <small style="font-size:0.7rem;">Bs/$</small></div>
+                </div>
+            </div>
+
+            <!-- Tabla de Facturas -->
+            <table style="width:100%; border-collapse:collapse; font-size:0.76rem;">
+                <thead>
+                    <tr style="background:#0f172a; color:#fff; text-align:left;">
+                        <th style="padding:6px;">N° Factura</th>
+                        <th style="padding:6px;">Pedido</th>
+                        <th style="padding:6px;">Fecha</th>
+                        <th style="padding:6px;">Cliente</th>
+                        <th style="padding:6px;">C.I. / RIF</th>
+                        <th style="padding:6px;">Método</th>
+                        <th style="padding:6px; text-align:right;">Total ($)</th>
+                        <th style="padding:6px; text-align:right;">Total (Bs)</th>
+                        <th style="padding:6px; text-align:center;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${pedidosFiltrados.map((p, idx) => {
+                        const codigo = p.codigo || `PED-${p.id}`;
+                        const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
+                        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+                        const tUsd = parseFloat(p.total || 0).toFixed(2);
+                        const tBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total || 0)));
+                        const f = parseFechaPedido(p).toLocaleDateString('es-VE');
+                        const est = p.estado === 'procesando' ? 'Aprobada' : (p.estado === 'completado' ? 'Completada' : (p.estado === 'cancelado' ? 'Cancelada' : 'Pendiente'));
+                        return `
+                            <tr style="border-bottom:1px solid #e2e8f0; background:${idx % 2 === 0 ? '#fff' : '#f8fafc'};">
+                                <td style="padding:6px; font-weight:700; font-family:monospace;">${factNum}</td>
+                                <td style="padding:6px; color:#475569;">${codigo}</td>
+                                <td style="padding:6px; color:#64748b;">${f}</td>
+                                <td style="padding:6px; font-weight:600;">${p.cliente_nombre || 'Cliente General'}</td>
+                                <td style="padding:6px; color:#64748b;">${p.cliente_ci || 'N/A'}</td>
+                                <td style="padding:6px; color:#475569;">${p.forma_pago || 'Pago Móvil'}</td>
+                                <td style="padding:6px; text-align:right; font-weight:700; color:#16a34a;">$${tUsd}</td>
+                                <td style="padding:6px; text-align:right; color:#475569; font-size:0.72rem;">${tBs}</td>
+                                <td style="padding:6px; text-align:center; font-weight:600;">${est}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+
+            <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:flex-end; font-size:0.72rem; color:#64748b; border-top:1px solid #cbd5e1; padding-top:8px;">
+                <div>Documento Oficial emitido por el Sistema de Inversiones Duri C.A.</div>
+                <div style="text-align:center;">
+                    <div style="border-top:1px solid #94a3b8; width:150px; margin-bottom:4px;"></div>
+                    <span>Firma / Sello de Administración</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(container);
+    window.print();
+    setTimeout(() => { if (container) container.remove(); }, 3000);
+}
+window.imprimirReporteContablePDF = imprimirReporteContablePDF;
+
+function imprimirLoteFacturasPDF(pedidosFiltrados, etiquetaPeriodo = 'Lote') {
+    if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
+        showToast('No hay facturas en el período seleccionado para descargar en lote', 'warning');
+        return;
+    }
+
+    const prev = document.getElementById('tempBatchFacturasContainer');
+    if (prev) prev.remove();
+
+    const logoSrc = window.location.pathname.includes('/pages/') ? '../img/logo-duri.png' : 'img/logo-duri.png';
+
+    const container = document.createElement('div');
+    container.id = 'tempBatchFacturasContainer';
+    container.innerHTML = `
+        <div id="batchFacturasPrintArea">
+            ${pedidosFiltrados.map((p, idx) => `
+                <div class="${idx < pedidosFiltrados.length - 1 ? 'factura-page-break' : ''}">
+                    ${generarHTMLFacturaPaper(p, logoSrc, `facturaLote_${idx}`)}
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    document.body.appendChild(container);
+    showToast(`Preparando ${pedidosFiltrados.length} facturas para imprimir / guardar en PDF...`, 'info');
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => { if (container) container.remove(); }, 4000);
+    }, 450);
+}
+window.imprimirLoteFacturasPDF = imprimirLoteFacturasPDF;
+
+function descargarFacturasRapidas(tipo = 'mes') {
+    const pedidos = window._allAdminPedidos || (typeof getLocalOrders === 'function' ? getLocalOrders() : []) || [];
+    if (!pedidos || pedidos.length === 0) {
+        showToast('No hay pedidos registrados en el sistema aún.', 'warning');
+        return;
+    }
+    const periodo = tipo === 'semana' ? 'esta_semana' : 'este_mes';
+    const filtrados = filtrarFacturasPorPeriodo(pedidos, { periodo, estado: 'todos' });
+    const etiqueta = obtenerEtiquetaPeriodo(periodo);
+    exportarFacturasCSV(filtrados, etiqueta);
+}
+window.descargarFacturasRapidas = descargarFacturasRapidas;
+
+// Archivo general y libro contable de facturas
+function abrirArchivoGeneralFacturas() {
+    cerrarArchivoGeneralFacturas();
+
+    const todosPedidos = window._allAdminPedidos || (typeof getLocalOrders === 'function' ? getLocalOrders() : []) || [];
+
+    // Estado reactivo del filtro dentro del modal
+    const state = {
+        periodo: 'este_mes',
+        estado: 'todos',
+        busqueda: '',
+        fechaDesde: '',
+        fechaHasta: ''
+    };
 
     const modal = document.createElement('div');
     modal.id = 'modalArchivoGeneralFacturas';
     modal.className = 'modal-factura-overlay';
+
     modal.innerHTML = `
-        <div class="factura-modal-container" style="max-width:920px;">
+        <div class="factura-modal-container" style="max-width:1050px;">
+            <!-- Barra Superior del Modal -->
             <div class="factura-actions-bar no-print">
                 <div class="factura-actions-left">
                     <i class="fas fa-archive" style="color:#f59e0b;"></i>
@@ -4700,31 +5039,95 @@ function abrirArchivoGeneralFacturas() {
                 </div>
                 <button type="button" class="btn-factura-close" onclick="cerrarArchivoGeneralFacturas()" title="Cerrar">&times;</button>
             </div>
-            <div style="padding:20px; background:#f8fafc; overflow-y:auto; flex:1;">
-                <!-- Tarjetas de Resumen Contable -->
-                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
-                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
-                        <span style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase;">Facturas Emitidas</span>
-                        <div style="font-size:1.4rem; font-weight:800; color:#0f172a; margin-top:2px;">${totalFacturas}</div>
-                        <span style="font-size:0.72rem; color:#10b981;">${totalAprobadas} aprobadas · ${totalPendientes} pendientes</span>
+
+            <!-- Contenido Principal con Scroll -->
+            <div style="padding:18px 22px; background:#f8fafc; overflow-y:auto; flex:1;">
+                
+                <!-- Barra de Filtrado por Período y Estado -->
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.8rem; font-weight:800; color:#0f172a; text-transform:uppercase; letter-spacing:0.3px;">
+                                <i class="fas fa-calendar-alt" style="color:#2563eb;"></i> Período:
+                            </span>
+                            <div id="periodButtonsGroup" style="display:flex; flex-wrap:wrap; gap:6px;">
+                                <button type="button" class="btn-period-filter active" data-period="este_mes">Este Mes</button>
+                                <button type="button" class="btn-period-filter" data-period="esta_semana">Esta Semana</button>
+                                <button type="button" class="btn-period-filter" data-period="mes_pasado">Mes Anterior</button>
+                                <button type="button" class="btn-period-filter" data-period="semana_pasada">Semana Anterior</button>
+                                <button type="button" class="btn-period-filter" data-period="hoy">Hoy</button>
+                                <button type="button" class="btn-period-filter" data-period="todas">Todo el Historial</button>
+                                <button type="button" class="btn-period-filter" data-period="personalizado"><i class="fas fa-sliders-h"></i> Personalizado</button>
+                            </div>
+                        </div>
+
+                        <!-- Selector de Estado -->
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.8rem; font-weight:700; color:#475569;">Estado:</span>
+                            <select id="selectFiltroEstado" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:6px; padding:5px 10px; font-size:0.8rem; font-weight:600; color:#0f172a; cursor:pointer;">
+                                <option value="todos">Todos los Estados</option>
+                                <option value="aprobadas">✅ Pagadas / Aprobadas</option>
+                                <option value="pendientes">⏳ Pendientes de Pago</option>
+                                <option value="canceladas">❌ Canceladas</option>
+                            </select>
+                        </div>
                     </div>
-                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
-                        <span style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (USD)</span>
-                        <div style="font-size:1.4rem; font-weight:800; color:#2563eb; margin-top:2px;">$${totalUsd.toFixed(2)}</div>
-                        <span style="font-size:0.72rem; color:#64748b;">Monto bruto registrado</span>
+
+                    <!-- Fila de Rango de Fechas Personalizado (Se muestra solo si se selecciona) -->
+                    <div id="customDateRangeBox" style="display:none; padding:10px 12px; background:#f1f5f9; border-radius:8px; margin-bottom:12px; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <span style="font-size:0.78rem; font-weight:700; color:#334155;">Seleccionar Fechas:</span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <label style="font-size:0.75rem; color:#64748b;">Desde:</label>
+                            <input type="date" id="inputFechaDesde" style="border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:0.78rem;">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <label style="font-size:0.75rem; color:#64748b;">Hasta:</label>
+                            <input type="date" id="inputFechaHasta" style="border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:0.78rem;">
+                        </div>
+                        <button type="button" id="btnAplicarFechas" style="background:#0f172a; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                            Aplicar Rango
+                        </button>
                     </div>
-                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 16px;">
-                        <span style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (Bs.)</span>
-                        <div style="font-size:1.15rem; font-weight:800; color:#ea580c; margin-top:4px;">${totalBs}</div>
-                        <span style="font-size:0.72rem; color:#64748b;">Tasa BCV: ${rateBsStr} Bs/$</span>
+
+                    <!-- Barra de Búsqueda de Texto en Vivo -->
+                    <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:6px 12px;">
+                        <i class="fas fa-search" style="color:#64748b; font-size:0.85rem;"></i>
+                        <input type="text" id="inputBusquedaFacturas" placeholder="Buscar por cliente, cédula/RIF, N° de factura (ej: FACT-0001) o pedido..." style="border:none; outline:none; background:transparent; width:100%; font-size:0.83rem; color:#0f172a;">
+                    </div>
+                </div>
+
+                <!-- Tarjetas de Resumen Contable (Se actualizan en vivo) -->
+                <div id="kpiFacturasContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
+                    <!-- Se llena dinámicamente -->
+                </div>
+
+                <!-- Barra de Acciones de Descarga Masiva -->
+                <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:12px; padding:12px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; box-shadow:0 1px 4px rgba(0,0,0,0.02);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-file-download" style="color:#059669; font-size:1.1rem;"></i>
+                        <div>
+                            <strong style="font-size:0.88rem; color:#0f172a; display:block;">Descargar y Exportar Facturas</strong>
+                            <span id="labelPeriodoActivo" style="font-size:0.74rem; color:#64748b;">Período actual</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <button type="button" id="btnDescargarExcel" style="background:#059669; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(5,150,105,0.3); transition:transform 0.2s;" title="Descargar libro en formato Excel compatible (.csv)">
+                            <i class="fas fa-file-excel"></i> Descargar Excel (.csv)
+                        </button>
+                        <button type="button" id="btnImprimirReporte" style="background:#1e1b4b; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(30,27,75,0.3); transition:transform 0.2s;" title="Imprimir o guardar en PDF el libro contable de ventas">
+                            <i class="fas fa-file-invoice"></i> Imprimir Reporte PDF
+                        </button>
+                        <button type="button" id="btnDescargarLoteFacturas" style="background:#ea580c; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(234,88,12,0.3); transition:transform 0.2s;" title="Imprimir o guardar todas las facturas completas del período en un solo documento PDF">
+                            <i class="fas fa-copy"></i> Todas las Facturas en PDF
+                        </button>
                     </div>
                 </div>
 
                 <!-- Tabla del Libro de Facturas -->
                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
-                    <div style="padding:12px 16px; border-bottom:1px solid #e2e8f0; background:#ffffff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                        <span style="font-weight:700; font-size:0.9rem; color:#0f172a;"><i class="fas fa-list-alt" style="color:#4f46e5;"></i> Historial Completo de Facturas</span>
-                        <span style="font-size:0.78rem; color:#64748b;">Todas las compras y ventas quedan archivadas aquí</span>
+                    <div style="padding:10px 16px; border-bottom:1px solid #e2e8f0; background:#ffffff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span style="font-weight:700; font-size:0.86rem; color:#0f172a;"><i class="fas fa-list-alt" style="color:#4f46e5;"></i> Registros Encontrados (<span id="countFiltradas">0</span>)</span>
+                        <span style="font-size:0.74rem; color:#64748b;">Haz clic en "Ver Factura" para consultar o descargar cada documento individual</span>
                     </div>
                     <div style="overflow-x:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:0.83rem;">
@@ -4734,22 +5137,249 @@ function abrirArchivoGeneralFacturas() {
                                     <th style="padding:10px;">Pedido</th>
                                     <th style="padding:10px;">Fecha</th>
                                     <th style="padding:10px;">Cliente</th>
-                                    <th style="padding:10px; text-align:right;">Monto</th>
+                                    <th style="padding:10px; text-align:right;">Monto Total</th>
                                     <th style="padding:10px; text-align:center;">Estado</th>
                                     <th style="padding:10px; text-align:center;">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                ${rowsHtml}
+                            <tbody id="tbodyFacturasLibro">
+                                <!-- Se llena dinámicamente -->
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
     `;
 
     document.body.appendChild(modal);
+
+    // CSS específico para los botones de período activos
+    const styleEl = document.createElement('style');
+    styleEl.innerHTML = `
+        .btn-period-filter {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-period-filter:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .btn-period-filter.active {
+            background: #2563eb !important;
+            color: #ffffff !important;
+            border-color: #2563eb !important;
+            box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+        }
+    `;
+    modal.appendChild(styleEl);
+
+    // Función interna para refrescar datos según filtros
+    function actualizarVistaFacturas() {
+        const filtradas = filtrarFacturasPorPeriodo(todosPedidos, state);
+        const etiqueta = obtenerEtiquetaPeriodo(state.periodo, state.fechaDesde, state.fechaHasta);
+
+        // 1. Actualizar etiqueta de período
+        const labelEl = modal.querySelector('#labelPeriodoActivo');
+        if (labelEl) labelEl.textContent = `Facturas correspondientes a: ${etiqueta}`;
+        const countEl = modal.querySelector('#countFiltradas');
+        if (countEl) countEl.textContent = filtradas.length;
+
+        // 2. Calcular KPIs del período
+        let totalUsd = 0;
+        let totalAprobadas = 0;
+        let totalPendientes = 0;
+        filtradas.forEach(p => {
+            totalUsd += parseFloat(p.total || 0);
+            if (p.estado === 'procesando' || p.estado === 'completado') totalAprobadas++;
+            else if (p.estado === 'pendiente') totalPendientes++;
+        });
+
+        const rateBs = BcvManager.rate || 45.00;
+        const totalBs = BcvManager.formatBs(BcvManager.toBs(totalUsd));
+        const rateBsStr = BcvManager.formatBs(rateBs).replace('Bs. ', '');
+
+        // 3. Renderizar KPIs
+        const kpiBox = modal.querySelector('#kpiFacturasContainer');
+        if (kpiBox) {
+            kpiBox.innerHTML = `
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;">
+                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Facturas del Período</span>
+                    <div style="font-size:1.35rem; font-weight:800; color:#0f172a; margin-top:2px;">${filtradas.length}</div>
+                    <span style="font-size:0.7rem; color:#10b981;">${totalAprobadas} aprobadas · ${totalPendientes} pendientes</span>
+                </div>
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;">
+                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (USD)</span>
+                    <div style="font-size:1.35rem; font-weight:800; color:#2563eb; margin-top:2px;">$${totalUsd.toFixed(2)}</div>
+                    <span style="font-size:0.7rem; color:#64748b;">${etiqueta}</span>
+                </div>
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;">
+                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (Bs.)</span>
+                    <div style="font-size:1.15rem; font-weight:800; color:#ea580c; margin-top:4px;">${totalBs}</div>
+                    <span style="font-size:0.7rem; color:#64748b;">Tasa BCV: ${rateBsStr} Bs/$</span>
+                </div>
+            `;
+        }
+
+        // 4. Renderizar Filas de la Tabla
+        const tbody = modal.querySelector('#tbodyFacturasLibro');
+        if (tbody) {
+            if (filtradas.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No se encontraron facturas registradas para ${etiqueta}.</td></tr>
+                `;
+            } else {
+                tbody.innerHTML = filtradas.map(p => {
+                    const codigo = p.codigo || `PED-${p.id}`;
+                    const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
+                    const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+                    const total = parseFloat(p.total || 0).toFixed(2);
+                    const montoBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total || 0)));
+                    const estado = p.estado || 'pendiente';
+                    let badgeColor = '#92400e; background:#fef3c7; border:1px solid #fde68a;';
+                    let badgeText = 'Pendiente';
+                    if (estado === 'procesando') {
+                        badgeColor = '#166534; background:#dcfce7; border:1px solid #bbf7d0;';
+                        badgeText = 'Aprobada';
+                    } else if (estado === 'completado') {
+                        badgeColor = '#075985; background:#e0f2fe; border:1px solid #bae6fd;';
+                        badgeText = 'Entregada';
+                    } else if (estado === 'cancelado') {
+                        badgeColor = '#991b1b; background:#fee2e2; border:1px solid #fecaca;';
+                        badgeText = 'Cancelada';
+                    }
+
+                    let fechaCorta = '';
+                    try {
+                        const d = parseFechaPedido(p);
+                        fechaCorta = d.toLocaleDateString('es-VE');
+                    } catch(e) { fechaCorta = 'Reciente'; }
+
+                    return `
+                        <tr style="border-bottom:1px solid #e2e8f0;">
+                            <td style="padding:10px; font-weight:800; font-family:monospace; color:#1e1b4b;">${factNum}</td>
+                            <td style="padding:10px; color:#475569; font-weight:600;">${codigo}</td>
+                            <td style="padding:10px; color:#64748b; font-size:0.78rem;">${fechaCorta}</td>
+                            <td style="padding:10px;">
+                                <strong style="color:#0f172a; display:block;">${p.cliente_nombre || 'Cliente General'}</strong>
+                                <span style="font-size:0.75rem; color:#64748b;">${p.cliente_ci || 'C.I no reg.'}</span>
+                            </td>
+                            <td style="padding:10px; text-align:right;">
+                                <strong style="color:#16a34a; font-size:0.95rem;">$${total}</strong>
+                                <span style="display:block; font-size:0.72rem; color:#64748b;">${montoBs}</span>
+                            </td>
+                            <td style="padding:10px; text-align:center;">
+                                <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:12px; ${badgeColor}">
+                                    ${badgeText}
+                                </span>
+                            </td>
+                            <td style="padding:10px; text-align:center;">
+                                <button type="button" onclick="cerrarArchivoGeneralFacturas(); abrirModalFactura('${codigo}')" style="background:#4f46e5; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(79,70,229,0.3);">
+                                    <i class="fas fa-file-invoice"></i> Ver
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    }
+
+    // Inicializar primera vista
+    actualizarVistaFacturas();
+
+    // Eventos de selección de período
+    const periodButtons = modal.querySelectorAll('.btn-period-filter');
+    const customRangeBox = modal.querySelector('#customDateRangeBox');
+
+    periodButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            periodButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const p = btn.getAttribute('data-period');
+            state.periodo = p;
+
+            if (p === 'personalizado') {
+                if (customRangeBox) customRangeBox.style.display = 'flex';
+            } else {
+                if (customRangeBox) customRangeBox.style.display = 'none';
+                actualizarVistaFacturas();
+            }
+        });
+    });
+
+    // Eventos de fechas personalizadas
+    const btnAplicarFechas = modal.querySelector('#btnAplicarFechas');
+    if (btnAplicarFechas) {
+        btnAplicarFechas.addEventListener('click', () => {
+            const d = modal.querySelector('#inputFechaDesde');
+            const h = modal.querySelector('#inputFechaHasta');
+            state.fechaDesde = d ? d.value : '';
+            state.fechaHasta = h ? h.value : '';
+            if (!state.fechaDesde && !state.fechaHasta) {
+                showToast('Selecciona al menos una fecha de inicio o fin', 'warning');
+                return;
+            }
+            actualizarVistaFacturas();
+        });
+    }
+
+    // Evento de filtro por estado
+    const selEstado = modal.querySelector('#selectFiltroEstado');
+    if (selEstado) {
+        selEstado.addEventListener('change', (e) => {
+            state.estado = e.target.value;
+            actualizarVistaFacturas();
+        });
+    }
+
+    // Evento de búsqueda de texto
+    const inputSearch = modal.querySelector('#inputBusquedaFacturas');
+    if (inputSearch) {
+        inputSearch.addEventListener('input', (e) => {
+            state.busqueda = e.target.value;
+            actualizarVistaFacturas();
+        });
+    }
+
+    // Botón Descargar Excel (.csv)
+    const btnExcel = modal.querySelector('#btnDescargarExcel');
+    if (btnExcel) {
+        btnExcel.addEventListener('click', () => {
+            const filtradas = filtrarFacturasPorPeriodo(todosPedidos, state);
+            const etiqueta = obtenerEtiquetaPeriodo(state.periodo, state.fechaDesde, state.fechaHasta);
+            exportarFacturasCSV(filtradas, etiqueta);
+        });
+    }
+
+    // Botón Imprimir Reporte PDF
+    const btnReporte = modal.querySelector('#btnImprimirReporte');
+    if (btnReporte) {
+        btnReporte.addEventListener('click', () => {
+            const filtradas = filtrarFacturasPorPeriodo(todosPedidos, state);
+            const etiqueta = obtenerEtiquetaPeriodo(state.periodo, state.fechaDesde, state.fechaHasta);
+            imprimirReporteContablePDF(filtradas, etiqueta);
+        });
+    }
+
+    // Botón Descargar Lote de Facturas en PDF
+    const btnLote = modal.querySelector('#btnDescargarLoteFacturas');
+    if (btnLote) {
+        btnLote.addEventListener('click', () => {
+            const filtradas = filtrarFacturasPorPeriodo(todosPedidos, state);
+            const etiqueta = obtenerEtiquetaPeriodo(state.periodo, state.fechaDesde, state.fechaHasta);
+            imprimirLoteFacturasPDF(filtradas, etiqueta);
+        });
+    }
+
     modal.addEventListener('click', function(e) {
         if (e.target === modal) cerrarArchivoGeneralFacturas();
     });
@@ -5879,20 +6509,154 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
         showToast('No se encontró el registro del pedido para enviar la factura', 'error');
         return;
     }
+    abrirModalEnvioCorreo(p);
+}
+window.enviarFacturaPorCorreoPrompt = enviarFacturaPorCorreoPrompt;
 
-    const defaultEmail = p.cliente_email || '';
-    const emailPrompt = prompt('Ingresa el correo electrónico del cliente para enviarle su Factura Oficial:', defaultEmail);
-    if (!emailPrompt) return; // Usuario canceló
-
-    const email = emailPrompt.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showToast('Por favor ingresa un correo electrónico válido (ej: cliente@gmail.com)', 'error');
-        return;
+function cerrarModalEnvioCorreo() {
+    const m = document.getElementById('modalEnvioCorreoFactura');
+    if (m) {
+        m.classList.add('closing');
+        setTimeout(() => m.remove(), 180);
     }
+    document.removeEventListener('keydown', _escEnvioCorreoHandler);
+}
+window.cerrarModalEnvioCorreo = cerrarModalEnvioCorreo;
 
-    showToast('Generando documento PDF y preparando envío por correo...', 'info');
+function _escEnvioCorreoHandler(e) {
+    const m = document.getElementById('modalEnvioCorreoFactura');
+    if (e.key === 'Escape' && m && !m.dataset.sending) cerrarModalEnvioCorreo();
+}
 
+function abrirModalEnvioCorreo(p) {
+    const prev = document.getElementById('modalEnvioCorreoFactura');
+    if (prev) prev.remove();
+
+    const codigo = p.codigo || `PED-${p.id || '001'}`;
+    const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '101');
+    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const total = parseFloat(p.total || 0).toFixed(2);
+    const yaEnviado = !!p.cliente_email;
+    const safeEmail = String(p.cliente_email || '').replace(/"/g, '&quot;');
+
+    const modal = document.createElement('div');
+    modal.id = 'modalEnvioCorreoFactura';
+    modal.className = 'mail-modal-overlay';
+    modal.innerHTML = `
+        <div class="mail-modal-card" role="dialog" aria-modal="true" aria-labelledby="mailModalTitle">
+            <button type="button" class="mail-modal-x" id="mailModalCloseX" aria-label="Cerrar">&times;</button>
+
+            <div class="mail-modal-view" id="mailViewForm">
+                <div class="mail-modal-icon"><i class="fas fa-paper-plane"></i></div>
+                <h3 id="mailModalTitle">${yaEnviado ? 'Reenviar Factura' : 'Enviar Factura'} por Correo</h3>
+                <p class="mail-modal-sub">El cliente recibirá su factura oficial en PDF adjunta.</p>
+
+                <div class="mail-modal-summary">
+                    <div>
+                        <span>Factura</span>
+                        <strong>${facturaNum}</strong>
+                    </div>
+                    <div>
+                        <span>Cliente</span>
+                        <strong>${p.cliente_nombre || 'Cliente General'}</strong>
+                    </div>
+                    <div>
+                        <span>Total</span>
+                        <strong class="mail-total">$${total}</strong>
+                    </div>
+                </div>
+
+                <label for="mailModalInput" class="mail-modal-label">Correo electrónico del cliente</label>
+                <div class="mail-modal-input-wrap" id="mailInputWrap">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="mailModalInput" value="${safeEmail}" placeholder="cliente@gmail.com" autocomplete="email" spellcheck="false">
+                </div>
+                <div class="mail-modal-error" id="mailModalError"></div>
+
+                <div class="mail-modal-actions">
+                    <button type="button" class="mail-btn mail-btn-ghost" id="mailBtnCancel">Cancelar</button>
+                    <button type="button" class="mail-btn mail-btn-primary" id="mailBtnSend">
+                        <i class="fas fa-paper-plane"></i> <span>${yaEnviado ? 'Reenviar' : 'Enviar'} Factura</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mail-modal-view" id="mailViewResult" style="display:none;"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const input = modal.querySelector('#mailModalInput');
+    const wrap = modal.querySelector('#mailInputWrap');
+    const errEl = modal.querySelector('#mailModalError');
+    const btnSend = modal.querySelector('#mailBtnSend');
+
+    setTimeout(() => { input.focus(); input.select(); }, 60);
+
+    const closeIfIdle = () => { if (!modal.dataset.sending) cerrarModalEnvioCorreo(); };
+    modal.querySelector('#mailBtnCancel').addEventListener('click', closeIfIdle);
+    modal.querySelector('#mailModalCloseX').addEventListener('click', closeIfIdle);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeIfIdle(); });
+    document.addEventListener('keydown', _escEnvioCorreoHandler);
+
+    input.addEventListener('input', () => {
+        wrap.classList.remove('invalid');
+        errEl.textContent = '';
+    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnSend.click(); });
+
+    btnSend.addEventListener('click', async () => {
+        const email = input.value.trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            wrap.classList.add('invalid');
+            errEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ingresa un correo válido (ej: cliente@gmail.com)';
+            input.focus();
+            return;
+        }
+
+        modal.dataset.sending = '1';
+        btnSend.disabled = true;
+        input.disabled = true;
+        modal.querySelector('#mailBtnCancel').disabled = true;
+        btnSend.innerHTML = '<span class="mail-spinner"></span> <span>Enviando...</span>';
+
+        const result = await _procesarEnvioFacturaCorreo(p, email);
+        delete modal.dataset.sending;
+
+        const view = modal.querySelector('#mailViewResult');
+        modal.querySelector('#mailViewForm').style.display = 'none';
+        view.style.display = 'block';
+
+        if (result.ok) {
+            view.innerHTML = `
+                <div class="mail-modal-icon success"><i class="fas fa-check"></i></div>
+                <h3>¡Factura enviada!</h3>
+                <p class="mail-modal-sub">La factura <strong>${facturaNum}</strong> fue enviada correctamente a:</p>
+                <div class="mail-sent-to"><i class="fas fa-envelope-open-text"></i> ${email}</div>
+                <div class="mail-modal-actions single">
+                    <button type="button" class="mail-btn mail-btn-primary" id="mailBtnDone">Listo</button>
+                </div>
+            `;
+            view.querySelector('#mailBtnDone').addEventListener('click', cerrarModalEnvioCorreo);
+            setTimeout(() => { const b = view.querySelector('#mailBtnDone'); if (b) b.focus(); }, 50);
+        } else {
+            view.innerHTML = `
+                <div class="mail-modal-icon error"><i class="fas fa-times"></i></div>
+                <h3>No se pudo enviar</h3>
+                <p class="mail-modal-sub">${result.message || 'Ocurrió un error al enviar el correo.'}</p>
+                <div class="mail-modal-actions">
+                    <button type="button" class="mail-btn mail-btn-ghost" id="mailBtnClose2">Cerrar</button>
+                    <button type="button" class="mail-btn mail-btn-primary" id="mailBtnRetry"><i class="fas fa-redo"></i> Reintentar</button>
+                </div>
+            `;
+            view.querySelector('#mailBtnClose2').addEventListener('click', cerrarModalEnvioCorreo);
+            view.querySelector('#mailBtnRetry').addEventListener('click', () => abrirModalEnvioCorreo(p));
+        }
+    });
+}
+window.abrirModalEnvioCorreo = abrirModalEnvioCorreo;
+
+async function _procesarEnvioFacturaCorreo(p, email) {
     // Actualizar correo localmente de inmediato
     p.cliente_email = email;
     const localOrders = getLocalOrders();
@@ -5970,8 +6734,7 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
     try {
         const isGH = window.location.hostname.includes('github.io');
         if (isGH) {
-            showToast(`Simulación demo: Factura idéntica oficial enviada a ${email}`, 'success');
-            return;
+            return { ok: true };
         }
 
         const res = await fetch(`${API_BASE}/pedidos.php?action=enviar_factura`, {
@@ -5991,14 +6754,12 @@ async function enviarFacturaPorCorreoPrompt(codigoOrId) {
 
         const data = await res.json();
         if (res.ok && data.status === 'success') {
-            showToast(`¡Factura oficial idéntica enviada con éxito a ${email}!`, 'success');
-        } else {
-            showToast(data.message || 'No se pudo enviar el correo', 'error');
+            return { ok: true };
         }
+        return { ok: false, message: data.message || 'No se pudo enviar el correo.' };
     } catch(err) {
         console.error('Error enviando factura por correo:', err);
-        showToast('Error de conexión al enviar el correo', 'error');
+        return { ok: false, message: 'Error de conexión con el servidor. Verifica tu internet e inténtalo de nuevo.' };
     }
 }
-window.enviarFacturaPorCorreoPrompt = enviarFacturaPorCorreoPrompt;
 
