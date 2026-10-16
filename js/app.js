@@ -361,7 +361,7 @@ if (document.readyState === 'loading') {
 function initWhatsApp() {
     const div = document.createElement('div');
     div.className = 'whatsapp-float';
-    div.innerHTML = '<a href="https://wa.me/584121234567?text=Hola%2C%20me%20interesa%20hacer%20un%20pedido%20en%20Inversiones%20Duri" target="_blank"><i class="fab fa-whatsapp"></i> Escríbenos</a><div class="wa-tooltip">¿Necesitas ayuda? Chatea con nosotros</div>';
+    div.innerHTML = '<a href="https://wa.me/584243657447?text=Hola%2C%20me%20interesa%20hacer%20un%20pedido%20en%20Inversiones%20Duri" target="_blank"><i class="fab fa-whatsapp"></i> Escríbenos</a><div class="wa-tooltip">¿Necesitas ayuda? Chatea con nosotros</div>';
     document.body.appendChild(div);
 }
 
@@ -674,10 +674,10 @@ async function processDuriQuery(rawQuery) {
     // 1. Asesor Humano / WhatsApp
     if (q.includes('asesor') || q.includes('humano') || q.includes('persona') || q.includes('whatsapp') || q.includes('telefono') || q.includes('llamar')) {
         const waText = encodeURIComponent(`Hola Inversiones Duri, necesito atención personalizada con un asesor. Estaba preguntando: "${rawQuery}"`);
-        const waUrl = `https://wa.me/584121234567?text=${waText}`;
+        const waUrl = `https://wa.me/584243657447?text=${waText}`;
         const html = `
             ¡Con gusto! Puedes comunicarte de inmediato con uno de nuestros ejecutivos de atención:<br><br>
-            📞 <strong>Teléfono:</strong> +58 412-1234567<br>
+            📞 <strong>Teléfono:</strong> +58 424-3657447<br>
             🟢 <strong>WhatsApp Directo:</strong><br>
             <a href="${waUrl}" target="_blank" class="btn btn-sm" style="display:inline-flex; align-items:center; gap:6px; background:#25D366; color:#ffffff; padding:8px 14px; border-radius:100px; text-decoration:none; font-weight:700; margin-top:8px; box-shadow:0 3px 10px rgba(37,211,102,0.3);">
                 <i class="fab fa-whatsapp" style="font-size:1.1rem;"></i> Chatear con Asesor
@@ -734,12 +734,12 @@ async function processDuriQuery(rawQuery) {
             <div class="pago-movil-card" style="margin:6px 0;padding:12px;background:#fff8f5;border:1px solid #fed7aa;border-radius:10px;">
                 <div style="font-size:0.82rem;line-height:1.7;">
                     • 🏦 <strong>Banco:</strong> Banco de Venezuela (0102)<br>
-                    • 📱 <strong>Teléfono:</strong> 0412-1234567<br>
+                    • 📱 <strong>Teléfono:</strong> 0424-3657447<br>
                     • 🪪 <strong>RIF:</strong> J-50123456-7<br>
                     • 🇻🇪 <strong>Tasa BCV del día:</strong> ${rateStr} Bs/$<br>
                 </div>
                 <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-                    <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('04121234567', this)">📋 Copiar Teléfono</button>
+                    <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('04243657447', this)">📋 Copiar Teléfono</button>
                     <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('J501234567', this)">📋 Copiar RIF</button>
                 </div>
             </div>
@@ -795,7 +795,7 @@ async function processDuriQuery(rawQuery) {
             🏢 <strong>Sede:</strong> Feria Escolar Inversiones Duri, Maracay, Edo. Aragua.<br>
             ⏰ <strong>Horario:</strong> Lunes a Sábado de <strong>8:00 AM a 6:00 PM</strong>.<br>
             📩 <strong>Correo Oficial:</strong> <a href="mailto:inversionesduri@gmail.com" style="color:#e85d26; font-weight:700;">inversionesduri@gmail.com</a><br>
-            📞 <strong>Teléfono:</strong> +58 412-1234567<br>
+            📞 <strong>Teléfono:</strong> +58 424-3657447<br>
             <div class="duribot-chips" style="margin-top:8px;">
                 <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" class="duribot-chip" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:600;">📍 Abrir en Google Maps</a>
                 <button type="button" class="duribot-chip" onclick="window.location.href='${contactoUrl}'">📞 Ir a Contacto</button>
@@ -897,7 +897,7 @@ async function processDuriQuery(rawQuery) {
 
     // 7. Respuesta por defecto
     const productosUrlDefault = isInPages ? 'productos.html' : 'pages/productos.html';
-    const waUrlDefault = `https://wa.me/584121234567?text=${encodeURIComponent(`Hola Inversiones Duri, tengo una consulta: "${rawQuery}"`)}`;
+    const waUrlDefault = `https://wa.me/584243657447?text=${encodeURIComponent(`Hola Inversiones Duri, tengo una consulta: "${rawQuery}"`)}`;
     const html = `
         Entiendo tu consulta sobre <em>"${escapeHtml(rawQuery)}"</em>. 😊<br><br>
         ¿Te gustaría revisar nuestro catálogo de artículos escolares y de oficina, o prefieres que un asesor te responda directamente por WhatsApp?<br><br>
@@ -3597,7 +3597,7 @@ async function loadPedidosRecientes() {
         const cods = new Set(pedidos.map(p => String(p.codigo)));
         localOrders.forEach(lo => {
             // Reemplazar número de demostración de la empresa si quedó guardado en pedidos locales
-            if (lo.cliente_telefono === '+58 412-1234567' || lo.cliente_telefono === '584121234567') {
+            if (lo.cliente_telefono === '+58 424-3657447' || lo.cliente_telefono === '584243657447') {
                 lo.cliente_telefono = '0414-5559876';
             }
             if (!ids.has(String(lo.id)) && !cods.has(String(lo.codigo))) {
@@ -3609,7 +3609,7 @@ async function loadPedidosRecientes() {
             const m = localOrders.find(l => String(l.id) === String(p.id) || l.codigo === p.codigo);
             if (m) {
                 if (m.estado !== p.estado) m.estado = p.estado;
-                if (m.cliente_telefono && (!p.cliente_telefono || p.cliente_telefono.includes('412-1234567'))) {
+                if (m.cliente_telefono && (!p.cliente_telefono || p.cliente_telefono.includes('412-1234567') || p.cliente_telefono.includes('424-3657447'))) {
                     p.cliente_telefono = m.cliente_telefono;
                 }
                 if (m.cliente_ci && !p.cliente_ci) {
@@ -4056,7 +4056,7 @@ function generarHTMLFacturaPaper(p, logoSrc = null, idAttr = 'facturaPrintArea')
                         <h2>Inversiones Duri C.A.</h2>
                         <p><strong>RIF:</strong> J-50123456-7</p>
                         <p><i class="fas fa-map-marker-alt" style="color:#ea4335;"></i> Sede Comercial: Av. Bolívar Oeste, Maracay, Edo. Aragua</p>
-                        <p><i class="fas fa-phone" style="color:#28a745;"></i> +58 412-1234567 | <i class="fas fa-envelope" style="color:#1a73e8;"></i> inversionesduri@gmail.com</p>
+                        <p><i class="fas fa-phone" style="color:#28a745;"></i> +58 424-3657447 | <i class="fas fa-envelope" style="color:#1a73e8;"></i> inversionesduri@gmail.com</p>
                         <p><i class="fab fa-instagram" style="color:#e1306c;"></i> @inversionesdurica | <i class="fab fa-facebook-f" style="color:#1877f2;"></i> Inversiones Duri</p>
                     </div>
                 </div>
@@ -6181,7 +6181,7 @@ async function submitOrder() {
         return;
     }
     const clientPhone = newPhone.value.replace(/[^0-9]/g, '');
-    if (clientPhone.length < 10) { showToast('El Teléfono debe contener al menos 10 dígitos numéricos (ej: 04121234567)', 'error'); return; }
+    if (clientPhone.length < 10) { showToast('El Teléfono debe contener al menos 10 dígitos numéricos (ej: 04243657447)', 'error'); return; }
     
     const clientName = newName.value.trim();
     const clientEmail = (newEmail && newEmail.value) ? newEmail.value.trim().toLowerCase() : '';
@@ -6310,8 +6310,8 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
                 <div class="pago-movil-row">
                     <span class="pago-movil-label">Teléfono:</span>
                     <div class="pago-movil-val-wrap">
-                        <span class="pago-movil-val">0412-1234567</span>
-                        <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('04121234567', this)">
+                        <span class="pago-movil-val">0424-3657447</span>
+                        <button type="button" class="btn-copy-mini" onclick="copyTextToClipboard('04243657447', this)">
                             <i class="fas fa-copy"></i> Copiar
                         </button>
                     </div>
@@ -6520,7 +6520,7 @@ async function confirmAndSend() {
     notifySuperAdminNewOrder(localOrder);
 
     // Abrir WhatsApp con el pedido
-    const waUrl = 'https://wa.me/584121234567?text=' + encodeURIComponent(data.msg);
+    const waUrl = 'https://wa.me/584243657447?text=' + encodeURIComponent(data.msg);
     window.open(waUrl, '_blank');
 
     showToast(`¡Pedido ${orderCode} creado con éxito! Total: $${localOrder.total}`);
