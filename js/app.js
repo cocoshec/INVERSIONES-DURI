@@ -350,6 +350,7 @@ function bootApp() {
     try { initWhatsApp(); } catch(e) {}
     try { initDuriChatbot(); } catch(e) { console.error('initDuriChatbot error:', e); }
     try { initNumericInputs(); } catch(e) {}
+    try { updateTrashBadges(); } catch(e) {}
 }
 
 if (document.readyState === 'loading') {
@@ -2734,6 +2735,20 @@ async function ejecutarEliminacionProducto(id) {
     const isGH = window.location.hostname.includes('github.io');
     let deleted = false;
 
+    // Obtener información completa del producto antes de removerlo
+    let targetProd = null;
+    try {
+        const cat = (window._allCatalogProducts && window._allCatalogProducts.length) ? window._allCatalogProducts : (window._catalogProducts || []);
+        targetProd = cat.find(p => p && String(p.id) === String(id));
+        if (!targetProd && typeof _cachedInventory !== 'undefined' && Array.isArray(_cachedInventory)) {
+            targetProd = _cachedInventory.find(p => p && String(p.id) === String(id));
+        }
+        if (!targetProd) {
+            const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            targetProd = customProds.find(p => p && String(p.id) === String(id));
+        }
+    } catch (e) {}
+
     if (!isGH) {
         try {
             const res = await fetch(`${API_BASE}/productos.php?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -2746,7 +2761,18 @@ async function ejecutarEliminacionProducto(id) {
         }
     }
 
-    // 1. Remover de duri_products_custom en localStorage
+    // 1. Guardar en papelera de reciclaje local para deshacer inmediato
+    if (targetProd) {
+        try {
+            let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+            trash = trash.filter(item => String(item.id) !== String(id));
+            trash.unshift({ ...targetProd, deleted_at: new Date().toISOString() });
+            localStorage.setItem('duri_papelera', JSON.stringify(trash.slice(0, 50)));
+            updateTrashBadges();
+        } catch (e) {}
+    }
+
+    // 2. Remover de duri_products_custom en localStorage
     try {
         let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
         if (Array.isArray(customProds)) {
@@ -2759,7 +2785,7 @@ async function ejecutarEliminacionProducto(id) {
         }
     } catch (e) {}
 
-    // 2. Remover de catalogos en memoria
+    // 3. Remover de catalogos en memoria
     if (Array.isArray(window._allCatalogProducts)) {
         window._allCatalogProducts = window._allCatalogProducts.filter(item => item && String(item.id) !== String(id));
     }
@@ -2770,8 +2796,11 @@ async function ejecutarEliminacionProducto(id) {
         _cachedInventory = _cachedInventory.filter(item => item && String(item.id) !== String(id));
     }
 
-    // 3. Notificar y actualizar UI
-    showToast('✅ Producto retirado exitosamente', 'success');
+    // 4. Mostrar Toast interactivo con botón DESHACER
+    const prodTitle = targetProd ? targetProd.nombre : 'Producto';
+    showToastUndo(`Se eliminó "${prodTitle}"`, id, prodTitle);
+
+    // 5. Refrescar vistas
     if (typeof loadInventario === 'function') loadInventario();
     if (typeof loadProductos === 'function') {
         loadProductos();
@@ -2780,6 +2809,324 @@ async function ejecutarEliminacionProducto(id) {
     }
 }
 window.ejecutarEliminacionProducto = ejecutarEliminacionProducto;
+
+// ============================================
+// TOAST INTERACTIVO CON BOTÓN DE DESHACER
+// ============================================
+function showToastUndo(message, id, prodTitle) {
+    const old = document.getElementById('duriToastUndo');
+    if (old) old.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'duriToastUndo';
+    toast.className = 'duri-toast-undo';
+    toast.innerHTML = `
+        <div class="duri-toast-undo-content">
+            <div class="duri-toast-undo-icon"><i class="fas fa-trash-alt"></i></div>
+            <div class="duri-toast-undo-text">
+                <strong>${escapeHtml(message)}</strong>
+                <span>¿Borrado sin querer? Recupéralo de inmediato</span>
+            </div>
+        </div>
+        <button type="button" class="btn-duri-undo" onclick="restaurarProducto('${id}'); document.getElementById('duriToastUndo')?.remove();">
+            <i class="fas fa-undo"></i> Deshacer
+        </button>
+        <button type="button" class="duri-toast-undo-close" onclick="document.getElementById('duriToastUndo')?.remove()">&times;</button>
+        <div class="duri-toast-undo-progress"></div>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.classList.add('fade-out');
+            setTimeout(() => { if (toast && toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+        }
+    }, 9000);
+}
+window.showToastUndo = showToastUndo;
+
+// ============================================
+// PAPELERA DE RECICLAJE Y RESTAURACIÓN DE PRODUCTOS
+// ============================================
+async function abrirModalPapelera() {
+    const user = getUser();
+    if (!user || (user.rol !== 'super_usuario' && user.rol !== 'operador')) {
+        showToast('Acceso exclusivo para administradores y operadores', 'error');
+        return;
+    }
+
+    cerrarModalPapelera();
+
+    const modal = document.createElement('div');
+    modal.id = 'modalPapeleraProductos';
+    modal.className = 'modal show';
+    modal.style.zIndex = '99999';
+    modal.innerHTML = `
+        <div class="papelera-modal-card">
+            <div class="papelera-modal-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="papelera-modal-badge-icon"><i class="fas fa-trash-restore"></i></div>
+                    <div>
+                        <h3 style="margin:0;font-size:1.25rem;font-weight:800;color:#fff;">Papelera y Restauración de Productos</h3>
+                        <p style="margin:2px 0 0;font-size:0.82rem;color:#94a3b8;">Recupera artículos eliminados para que vuelvan a aparecer en el catálogo</p>
+                    </div>
+                </div>
+                <button type="button" class="confirm-modal-close" onclick="cerrarModalPapelera()" style="position:static;background:rgba(255,255,255,0.15);color:#fff;" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <div class="papelera-modal-toolbar">
+                <span id="papeleraCountLabel" style="font-size:0.88rem;color:#64748b;font-weight:600;">Cargando artículos...</span>
+                <button type="button" id="btnRestaurarTodos" class="btn btn-sm btn-primary" onclick="restaurarTodosLosProductos()" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border:none;padding:8px 16px;border-radius:10px;font-weight:700;gap:7px;cursor:pointer;box-shadow:0 3px 10px rgba(22,163,74,0.35);">
+                    <i class="fas fa-history"></i> Restaurar Todos los Productos
+                </button>
+            </div>
+
+            <div class="papelera-modal-body" id="papeleraListContainer">
+                <div style="text-align:center;padding:40px;color:#64748b;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent);margin-bottom:12px;display:block;"></i>
+                    Buscando productos eliminados...
+                </div>
+            </div>
+
+            <div class="papelera-modal-footer">
+                <span style="font-size:0.8rem;color:#64748b;display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-info-circle" style="color:var(--accent);"></i> Al restaurar, el producto recuperará su stock, precio y visibilidad en el catálogo.
+                </span>
+                <button type="button" class="btn btn-outline" onclick="cerrarModalPapelera()" style="border-radius:10px;padding:8px 18px;font-weight:600;cursor:pointer;">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModalPapelera();
+    });
+
+    await cargarContenidoPapelera();
+}
+window.abrirModalPapelera = abrirModalPapelera;
+
+function cerrarModalPapelera() {
+    const m = document.getElementById('modalPapeleraProductos');
+    if (m) m.remove();
+}
+window.cerrarModalPapelera = cerrarModalPapelera;
+
+async function cargarContenidoPapelera() {
+    const container = document.getElementById('papeleraListContainer');
+    const countLabel = document.getElementById('papeleraCountLabel');
+    const btnAll = document.getElementById('btnRestaurarTodos');
+    if (!container) return;
+
+    let eliminados = [];
+    const isGH = window.location.hostname.includes('github.io');
+
+    // 1. Consultar a la API PHP si no estamos exclusivamente en GH Pages
+    if (!isGH) {
+        try {
+            const res = await fetch(`${API_BASE}/productos.php?papelera=1`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.status === 'success' && Array.isArray(data.data)) {
+                    eliminados = data.data;
+                }
+            }
+        } catch (e) {
+            console.warn('API papelera no disponible:', e);
+        }
+    }
+
+    // 2. Fusionar con papelera local (localStorage)
+    try {
+        const localTrash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        if (Array.isArray(localTrash) && localTrash.length) {
+            const ids = new Set(eliminados.map(p => String(p.id)));
+            localTrash.forEach(item => {
+                if (!ids.has(String(item.id))) {
+                    eliminados.push(item);
+                }
+            });
+        }
+    } catch (e) {}
+
+    // 3. Si no hay registros de API ni duri_papelera pero faltan productos del fallback respecto al catálogo
+    if (!eliminados.length) {
+        try {
+            const fallback = await getFallbackProducts();
+            const currentCat = window._allCatalogProducts || [];
+            const currentIds = new Set(currentCat.map(p => String(p.id)));
+            const missing = fallback.filter(p => !currentIds.has(String(p.id)));
+            if (missing.length) {
+                eliminados = missing;
+            }
+        } catch(e) {}
+    }
+
+    if (!eliminados.length) {
+        if (countLabel) countLabel.textContent = '0 artículos en papelera';
+        if (btnAll) btnAll.style.display = 'none';
+        container.innerHTML = `
+            <div style="text-align:center;padding:50px 20px;color:#64748b;">
+                <i class="fas fa-check-circle" style="font-size:3.2rem;color:#10b981;margin-bottom:14px;display:block;"></i>
+                <h4 style="color:#0f172a;font-weight:700;margin-bottom:6px;">La papelera está limpia</h4>
+                <p style="font-size:0.9rem;max-width:380px;margin:0 auto;">Todos los productos están activos en el catálogo. Si borras un producto en el futuro, podrás restaurarlo aquí en un solo clic.</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (countLabel) countLabel.innerHTML = `<strong>${eliminados.length}</strong> producto(s) listo(s) para restaurar`;
+    if (btnAll) btnAll.style.display = 'inline-flex';
+
+    const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
+    const logoFallback = `${basePath}img/logo-duri.png`;
+
+    container.innerHTML = `
+        <div class="papelera-items-list">
+            ${eliminados.map(p => {
+                const img = getProductImageUrl(p) || logoFallback;
+                const precio = parseFloat(p.precio_venta || 0).toFixed(2);
+                const precioBs = BcvManager.formatBs(BcvManager.toBs(p.precio_venta || 0));
+                return `
+                    <div class="papelera-item-row" id="trashRow_${p.id}">
+                        <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                            <img src="${img}" alt="${escapeHtml(p.nombre)}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0;background:#f8fafc;" onerror="this.src='${logoFallback}'">
+                            <div style="min-width:0;">
+                                <h4 style="margin:0 0 3px;font-size:0.95rem;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre)}</h4>
+                                <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;">
+                                    <span style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-weight:600;">${escapeHtml(p.categoria_nombre || 'General')}</span>
+                                    <span><strong>$${precio}</strong> (${precioBs})</span>
+                                    <span>Stock: <strong>${p.stock_actual || 0} u</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm" onclick="restaurarProducto('${p.id}')" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;box-shadow:0 3px 8px rgba(22,163,74,0.3);">
+                            <i class="fas fa-undo"></i> Restaurar
+                        </button>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+async function restaurarProducto(id) {
+    const isGH = window.location.hostname.includes('github.io');
+    let restored = false;
+
+    if (!isGH) {
+        try {
+            const res = await fetch(`${API_BASE}/productos.php?restore=${encodeURIComponent(id)}`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.status === 'success') restored = true;
+            }
+        } catch (e) {
+            console.warn('Error en API restore:', e);
+        }
+    }
+
+    // Buscar en papelera local para recuperarlo
+    try {
+        let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        const foundInTrash = trash.find(item => String(item.id) === String(id));
+        trash = trash.filter(item => String(item.id) !== String(id));
+        localStorage.setItem('duri_papelera', JSON.stringify(trash));
+
+        if (foundInTrash) {
+            let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            const exists = customProds.some(p => String(p.id) === String(id));
+            if (!exists) {
+                customProds.push(foundInTrash);
+                localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+            }
+            restored = true;
+        }
+    } catch (e) {}
+
+    // Remover fila visual si el modal está abierto
+    const row = document.getElementById(`trashRow_${id}`);
+    if (row) {
+        row.style.transition = 'all 0.3s';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(20px)';
+        setTimeout(() => row.remove(), 300);
+    }
+
+    showToast('✅ Producto restaurado con éxito al catálogo', 'success');
+
+    // Recargar vistas
+    if (typeof loadProductos === 'function') loadProductos();
+    if (typeof loadInventario === 'function') loadInventario();
+    updateTrashBadges();
+
+    // Actualizar conteo en modal si sigue abierto
+    setTimeout(() => {
+        const remaining = document.querySelectorAll('.papelera-item-row');
+        if (remaining.length === 0) {
+            cargarContenidoPapelera();
+        } else {
+            const countLabel = document.getElementById('papeleraCountLabel');
+            if (countLabel) countLabel.innerHTML = `<strong>${remaining.length}</strong> producto(s) listo(s) para restaurar`;
+        }
+    }, 350);
+}
+window.restaurarProducto = restaurarProducto;
+
+async function restaurarTodosLosProductos() {
+    const isGH = window.location.hostname.includes('github.io');
+
+    if (!isGH) {
+        try {
+            await fetch(`${API_BASE}/productos.php?restore=all`, { method: 'POST' });
+        } catch (e) {}
+    }
+
+    try {
+        let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        if (trash.length) {
+            let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            const existingIds = new Set(customProds.map(p => String(p.id)));
+            trash.forEach(t => {
+                if (!existingIds.has(String(t.id))) {
+                    customProds.push(t);
+                }
+            });
+            localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+            localStorage.removeItem('duri_papelera');
+        }
+    } catch (e) {}
+
+    showToast('✅ Todos los productos eliminados han sido restaurados', 'success');
+    cerrarModalPapelera();
+
+    if (typeof loadProductos === 'function') loadProductos();
+    if (typeof loadInventario === 'function') loadInventario();
+    updateTrashBadges();
+}
+window.restaurarTodosLosProductos = restaurarTodosLosProductos;
+
+function updateTrashBadges() {
+    try {
+        const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        const count = trash.length;
+        const b1 = document.getElementById('trashBadgeProductos');
+        const b2 = document.getElementById('trashBadgeInventario');
+        if (b1) {
+            b1.textContent = count;
+            b1.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        if (b2) {
+            b2.textContent = count;
+            b2.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    } catch(e) {}
+}
+window.updateTrashBadges = updateTrashBadges;
 
 // ============================================
 // AGREGAR NUEVO PRODUCTO (SUPER USUARIO Y OPERADOR)

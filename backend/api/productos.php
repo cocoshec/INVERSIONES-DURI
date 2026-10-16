@@ -19,6 +19,14 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 switch ($method) {
     case 'GET':
+        if (isset($_GET['eliminados']) || isset($_GET['papelera'])) {
+            // Obtener productos eliminados (papelera de reciclaje)
+            $stmt = $db->query("SELECT p.*, c.nombre as categoria_nombre FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.activo = 0 ORDER BY p.id DESC");
+            $productos = $stmt->fetchAll();
+            echo json_encode(["status" => "success", "data" => $productos]);
+            break;
+        }
+
         if (isset($_GET['id'])) {
             // Obtener un producto
             $stmt = $db->prepare("SELECT p.*, c.nombre as categoria_nombre FROM productos p JOIN categorias c ON p.categoria_id = c.id WHERE p.id = ?");
@@ -52,6 +60,23 @@ switch ($method) {
 
     case 'POST':
         $data = json_decode(file_get_contents("php://input"), true);
+
+        // Restaurar productos de la papelera
+        if (isset($_GET['restore']) || (isset($data['action']) && $data['action'] === 'restore')) {
+            $restoreId = $_GET['restore'] ?? ($data['id'] ?? null);
+            if ($restoreId === 'all' || !empty($data['all'])) {
+                $db->query("UPDATE productos SET activo = 1 WHERE activo = 0");
+                echo json_encode(["status" => "success", "message" => "Todos los productos han sido restaurados"]);
+            } elseif ($restoreId) {
+                $stmt = $db->prepare("UPDATE productos SET activo = 1 WHERE id = ?");
+                $stmt->execute([$restoreId]);
+                echo json_encode(["status" => "success", "message" => "Producto restaurado con éxito"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "message" => "ID no especificado"]);
+            }
+            break;
+        }
 
         // Importación masiva (Bulk Import desde Excel o CSV)
         if (!empty($data['bulk']) && !empty($data['productos']) && is_array($data['productos'])) {

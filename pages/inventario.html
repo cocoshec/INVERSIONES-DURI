@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css?v=56.0">
+    <link rel="stylesheet" href="../css/styles.css?v=57.0">
 </head>
 <body data-page="inventario">
     <script>
@@ -80,6 +80,9 @@
                 </div>
 
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-warning" onclick="abrirModalPapelera()" style="background:linear-gradient(135deg, #d97706, #b45309); color:#fff; border:none; padding:9px 16px; border-radius:10px; font-weight:700; font-size:0.85rem; display:inline-flex; align-items:center; gap:7px; cursor:pointer; box-shadow:0 3px 10px rgba(217,119,6,0.35);" title="Papelera de reciclaje: ver y restaurar productos eliminados">
+                        <i class="fas fa-trash-restore"></i> Papelera / Deshacer <span id="trashBadgeInventario" style="background:#fff; color:#b45309; padding:2px 7px; border-radius:100px; font-size:0.75rem; font-weight:800; display:none;">0</span>
+                    </button>
                     <button type="button" class="btn btn-primary" onclick="abrirModalCrearProducto()" style="background:linear-gradient(135deg, #16a34a, #15803d); color:#fff; border:none; padding:9px 16px; border-radius:10px; font-weight:700; font-size:0.85rem; display:inline-flex; align-items:center; gap:7px; cursor:pointer; box-shadow:0 3px 10px rgba(22,163,74,0.35);">
                         <i class="fas fa-plus-circle"></i> Nuevo Producto
                     </button>
@@ -130,6 +133,6 @@
             <div class="footer-bottom"><p>&copy; 2026 Inversiones Duri C.A. Maracay, Estado Aragua.</p></div>
         </div>
     </footer>
-    <script src="../js/app.js?v=56.0"></script>
+    <script src="../js/app.js?v=57.0"></script>
 </body>
 </html>

@@ -4201,3 +4201,192 @@ img { max-width:100%; height:auto; }
     }
 }
 
+/* ============================================
+   TOAST INTERACTIVO CON BOTÓN DE DESHACER
+   ============================================ */
+.duri-toast-undo {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: #ffffff;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 14px 20px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+    z-index: 9999999;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    max-width: 92%;
+    overflow: hidden;
+}
+.duri-toast-undo.fade-out {
+    animation: toastSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes toastSlideUp {
+    from { transform: translate(-50%, 40px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+@keyframes toastSlideDown {
+    from { transform: translate(-50%, 0); opacity: 1; }
+    to { transform: translate(-50%, 40px); opacity: 0; }
+}
+.duri-toast-undo-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.duri-toast-undo-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.duri-toast-undo-text {
+    display: flex;
+    flex-direction: column;
+}
+.duri-toast-undo-text strong {
+    font-size: 0.94rem;
+    color: #fff;
+    font-weight: 700;
+}
+.duri-toast-undo-text span {
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+.btn-duri-undo {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-duri-undo:hover {
+    transform: scale(1.04);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+}
+.duri-toast-undo-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+.duri-toast-undo-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #10b981, #3b82f6);
+    width: 100%;
+    animation: toastTimer 9s linear forwards;
+}
+@keyframes toastTimer {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* ============================================
+   MODAL DE PAPELERA / RESTAURAR PRODUCTOS
+   ============================================ */
+.papelera-modal-card {
+    background: #ffffff;
+    border-radius: 22px;
+    max-width: 680px;
+    width: 95%;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.45);
+    margin: auto;
+    animation: confirmPopIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.papelera-modal-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.papelera-modal-badge-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    flex-shrink: 0;
+}
+.papelera-modal-toolbar {
+    padding: 14px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.papelera-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+.papelera-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.papelera-item-row {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    transition: all 0.2s;
+}
+.papelera-item-row:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.papelera-modal-footer {
+    padding: 14px 24px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+

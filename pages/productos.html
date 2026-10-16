@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css?v=56.0">
+    <link rel="stylesheet" href="../css/styles.css?v=57.0">
 </head>
 <body data-page="productos">
     <!-- Top Bar -->
@@ -89,6 +89,9 @@
                     <i class="fas fa-shield-alt"></i> Modo Administrador: Publicación de Artículos
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-warning" onclick="abrirModalPapelera()" style="background:linear-gradient(135deg, #d97706, #b45309); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:0.88rem; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 3px 10px rgba(217,119,6,0.35);" title="Papelera de reciclaje: ver y restaurar productos eliminados">
+                        <i class="fas fa-trash-restore"></i> Papelera / Deshacer <span id="trashBadgeProductos" style="background:#fff; color:#b45309; padding:2px 7px; border-radius:100px; font-size:0.75rem; font-weight:800; display:none;">0</span>
+                    </button>
                     <button type="button" class="btn btn-primary" onclick="abrirModalImportarExcel()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:0.88rem; display:inline-flex; align-items:center; gap:8px; cursor:pointer; box-shadow:0 3px 10px rgba(2,132,199,0.35);" title="Cargar lote masivo desde archivo Excel (.xlsx) o CSV">
                         <i class="fas fa-file-import"></i> Importar Excel / CSV
                     </button>
@@ -111,6 +114,6 @@
             </div>
         </div>
     </footer>
-    <script src="../js/app.js?v=56.0"></script>
+    <script src="../js/app.js?v=57.0"></script>
 </body>
 </html>
