@@ -2983,7 +2983,7 @@ async function cargarContenidoPapelera() {
     let eliminados = [];
     const isGH = window.location.hostname.includes('github.io');
 
-    // 1. Consultar a la API PHP si no estamos exclusivamente en GH Pages
+    // 1. Consultar a la API PHP si no estamos en GH Pages
     if (!isGH) {
         try {
             const res = await fetch(`${API_BASE}/productos.php?papelera=1`);
@@ -2991,36 +2991,23 @@ async function cargarContenidoPapelera() {
                 const data = await res.json();
                 if (data && data.status === 'success' && Array.isArray(data.data)) {
                     eliminados = data.data;
+                    // Sincronizar localStorage con el estado real de la base de datos
+                    if (eliminados.length === 0) {
+                        try { localStorage.removeItem('duri_papelera'); } catch(e) {}
+                    } else {
+                        try { localStorage.setItem('duri_papelera', JSON.stringify(eliminados)); } catch(e) {}
+                    }
                 }
             }
         } catch (e) {
             console.warn('API papelera no disponible:', e);
+            try {
+                eliminados = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+            } catch(e) {}
         }
-    }
-
-    // 2. Fusionar con papelera local (localStorage)
-    try {
-        const localTrash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-        if (Array.isArray(localTrash) && localTrash.length) {
-            const ids = new Set(eliminados.map(p => String(p.id)));
-            localTrash.forEach(item => {
-                if (!ids.has(String(item.id))) {
-                    eliminados.push(item);
-                }
-            });
-        }
-    } catch (e) {}
-
-    // 3. Si no hay registros de API ni duri_papelera pero faltan productos del fallback respecto al catálogo
-    if (!eliminados.length) {
+    } else {
         try {
-            const fallback = await getFallbackProducts();
-            const currentCat = window._allCatalogProducts || [];
-            const currentIds = new Set(currentCat.map(p => String(p.id)));
-            const missing = fallback.filter(p => !currentIds.has(String(p.id)));
-            if (missing.length) {
-                eliminados = missing;
-            }
+            eliminados = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
         } catch(e) {}
     }
 
@@ -3256,21 +3243,45 @@ async function vaciarPapeleraDefinitiva() {
 }
 window.vaciarPapeleraDefinitiva = vaciarPapeleraDefinitiva;
 
-function updateTrashBadges() {
-    try {
-        const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-        const count = trash.length;
-        const b1 = document.getElementById('trashBadgeProductos');
-        const b2 = document.getElementById('trashBadgeInventario');
-        if (b1) {
-            b1.textContent = count;
-            b1.style.display = count > 0 ? 'inline-block' : 'none';
+async function updateTrashBadges() {
+    const isGH = window.location.hostname.includes('github.io');
+    let count = 0;
+
+    if (!isGH) {
+        try {
+            const res = await fetch(`${API_BASE}/productos.php?papelera=1`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.status === 'success' && Array.isArray(data.data)) {
+                    count = data.data.length;
+                    if (count === 0) {
+                        try { localStorage.removeItem('duri_papelera'); } catch(e) {}
+                    }
+                }
+            }
+        } catch (e) {
+            try {
+                const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+                count = trash.length;
+            } catch(err) {}
         }
-        if (b2) {
-            b2.textContent = count;
-            b2.style.display = count > 0 ? 'inline-block' : 'none';
-        }
-    } catch(e) {}
+    } else {
+        try {
+            const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+            count = trash.length;
+        } catch(e) {}
+    }
+
+    const b1 = document.getElementById('trashBadgeProductos');
+    const b2 = document.getElementById('trashBadgeInventario');
+    if (b1) {
+        b1.textContent = count;
+        b1.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+    if (b2) {
+        b2.textContent = count;
+        b2.style.display = count > 0 ? 'inline-block' : 'none';
+    }
 }
 window.updateTrashBadges = updateTrashBadges;
 
