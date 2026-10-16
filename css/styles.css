@@ -3984,7 +3984,7 @@ img { max-width:100%; height:auto; }
     background: rgba(15, 23, 42, 0.78);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    z-index: 10000;
+    z-index: 999999 !important;
     display: flex;
     align-items: center;
     justify-content: center;

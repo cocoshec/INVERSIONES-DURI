@@ -1531,7 +1531,7 @@ function renderProductos(productos) {
         
         let actions = '';
         if (canEdit) {
-            actions = '<div style="display:flex;gap:6px;margin-top:8px"><button onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" style="flex:1"><i class="fas fa-edit"></i> Editar</button><button onclick="deleteProduct(\'' + p.id + '\')" class="btn btn-sm" style="flex:0;background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3)"><i class="fas fa-trash"></i></button></div>';
+            actions = '<div style="display:flex;gap:6px;margin-top:8px"><button type="button" onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" style="flex:1"><i class="fas fa-edit"></i> Editar</button><button type="button" onclick="event.stopPropagation(); deleteProduct(\'' + p.id + '\', event)" class="btn btn-sm" style="flex:0;background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3);cursor:pointer;" title="Eliminar"><i class="fas fa-trash" style="pointer-events:none;"></i></button></div>';
         } else if (!user) {
             actions = p.stock_actual <= 0
                 ? '<button class="btn btn-primary btn-block" style="margin-top:8px" disabled><i class="fas fa-times-circle"></i> No Disponible</button>'
@@ -2090,7 +2090,7 @@ function renderInventarioTable(productos) {
         
         let actionBtn = '';
         if (canEdit) {
-            actionBtn = '<div style="display:flex;gap:4px"><button onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button><button onclick="deleteProduct(\'' + p.id + '\')" class="btn btn-sm" style="background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3)" title="Eliminar"><i class="fas fa-trash"></i></button></div>';
+            actionBtn = '<div style="display:flex;gap:4px"><button type="button" onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button><button type="button" onclick="event.stopPropagation(); deleteProduct(\'' + p.id + '\', event)" class="btn btn-sm" style="background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3);cursor:pointer;" title="Eliminar"><i class="fas fa-trash" style="pointer-events:none;"></i></button></div>';
         } else if (canOrder && p.stock_actual > 0) {
             actionBtn = '<a href="' + getPedidosUrl() + '" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
         } else if (p.stock_actual <= 0) {
@@ -2596,76 +2596,132 @@ function showConfirmModal({
     cancelText = 'Cancelar',
     onConfirm = null
 }) {
-    const old = document.getElementById('duriConfirmModalOverlay');
-    if (old) old.remove();
+    try {
+        const old = document.getElementById('duriConfirmModalOverlay');
+        if (old && old.parentNode) old.parentNode.removeChild(old);
 
-    const overlay = document.createElement('div');
-    overlay.className = 'confirm-modal-overlay';
-    overlay.id = 'duriConfirmModalOverlay';
-    overlay.innerHTML = `
-        <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
-            <button type="button" class="confirm-modal-close" onclick="closeConfirmModal()" aria-label="Cerrar">&times;</button>
-            <div class="confirm-modal-icon ${confirmType}">
-                <i class="fas ${confirmIcon}"></i>
+        const safeTitle = (typeof escapeHtml === 'function') ? escapeHtml(title) : (title || '');
+        const safeMsg = (typeof escapeHtml === 'function') ? escapeHtml(message) : (message || '');
+        const safeItem = itemDetails && (typeof escapeHtml === 'function') ? escapeHtml(itemDetails) : (itemDetails || '');
+        const safeCancel = (typeof escapeHtml === 'function') ? escapeHtml(cancelText) : (cancelText || 'Cancelar');
+        const safeConfirm = (typeof escapeHtml === 'function') ? escapeHtml(confirmText) : (confirmText || 'Aceptar');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-modal-overlay';
+        overlay.id = 'duriConfirmModalOverlay';
+        overlay.style.zIndex = '999999';
+        overlay.innerHTML = `
+            <div class="confirm-modal-card" role="dialog" aria-modal="true" aria-label="${safeTitle}">
+                <button type="button" class="confirm-modal-close" onclick="closeConfirmModal()" aria-label="Cerrar">&times;</button>
+                <div class="confirm-modal-icon ${confirmType}">
+                    <i class="fas ${confirmIcon}"></i>
+                </div>
+                <h3 class="confirm-modal-title">${safeTitle}</h3>
+                <p class="confirm-modal-msg">${safeMsg}</p>
+                ${safeItem ? `<div class="confirm-modal-item"><i class="fas fa-box-open" style="color:var(--accent);"></i> <span>${safeItem}</span></div>` : ''}
+                <div class="confirm-modal-actions">
+                    <button type="button" class="confirm-modal-btn-cancel" onclick="closeConfirmModal()">
+                        ${safeCancel}
+                    </button>
+                    <button type="button" class="confirm-modal-btn-action btn-danger" id="confirmModalBtnAction">
+                        <i class="fas ${confirmIcon}"></i> ${safeConfirm}
+                    </button>
+                </div>
             </div>
-            <h3 class="confirm-modal-title">${escapeHtml(title)}</h3>
-            <p class="confirm-modal-msg">${escapeHtml(message)}</p>
-            ${itemDetails ? `<div class="confirm-modal-item"><i class="fas fa-box-open" style="color:var(--accent);"></i> <span>${escapeHtml(itemDetails)}</span></div>` : ''}
-            <div class="confirm-modal-actions">
-                <button type="button" class="confirm-modal-btn-cancel" onclick="closeConfirmModal()">
-                    ${escapeHtml(cancelText)}
-                </button>
-                <button type="button" class="confirm-modal-btn-action btn-danger" id="confirmModalBtnAction">
-                    <i class="fas ${confirmIcon}"></i> ${escapeHtml(confirmText)}
-                </button>
-            </div>
-        </div>
-    `;
+        `;
 
-    document.body.appendChild(overlay);
+        document.body.appendChild(overlay);
 
-    function close() {
-        overlay.classList.add('closing');
-        setTimeout(() => { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 180);
-    }
-    window.closeConfirmModal = close;
+        function close() {
+            if (!overlay) return;
+            overlay.classList.add('closing');
+            setTimeout(() => {
+                if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            }, 180);
+        }
+        window.closeConfirmModal = close;
 
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) close();
-    });
-
-    const actionBtn = overlay.querySelector('#confirmModalBtnAction');
-    if (actionBtn) {
-        actionBtn.addEventListener('click', () => {
-            close();
-            if (typeof onConfirm === 'function') onConfirm();
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) close();
         });
+
+        const actionBtn = overlay.querySelector('#confirmModalBtnAction');
+        if (actionBtn) {
+            actionBtn.addEventListener('click', async (e) => {
+                if (e && e.stopPropagation) e.stopPropagation();
+                close();
+                if (typeof onConfirm === 'function') {
+                    try {
+                        await onConfirm();
+                    } catch (err) {
+                        console.error('Error al ejecutar onConfirm:', err);
+                    }
+                }
+            });
+        }
+    } catch (errModal) {
+        console.error('Error en showConfirmModal:', errModal);
+        if (confirm(`${title}\n\n${message}`)) {
+            if (typeof onConfirm === 'function') onConfirm();
+        }
     }
 }
 window.showConfirmModal = showConfirmModal;
 
-async function deleteProduct(id) {
+async function deleteProduct(id, e) {
+    if (e) {
+        if (typeof e.stopPropagation === 'function') e.stopPropagation();
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+    }
+    console.log('[deleteProduct] Solicitando eliminación para ID:', id);
+
     let prodName = '';
-    if (window._allCatalogProducts && window._allCatalogProducts.length) {
-        const found = window._allCatalogProducts.find(p => String(p.id) === String(id));
-        if (found) prodName = found.nombre;
-    } else if (Array.isArray(_cachedInventory)) {
-        const found = _cachedInventory.find(p => String(p.id) === String(id));
-        if (found) prodName = found.nombre;
+    try {
+        const catalog = (Array.isArray(window._allCatalogProducts) && window._allCatalogProducts.length)
+            ? window._allCatalogProducts
+            : ((Array.isArray(window._catalogProducts) && window._catalogProducts.length) ? window._catalogProducts : []);
+        const found = catalog.find(p => p && String(p.id) === String(id));
+        if (found && found.nombre) prodName = found.nombre;
+
+        if (!prodName) {
+            const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            if (Array.isArray(customProds)) {
+                const foundCust = customProds.find(p => p && String(p.id) === String(id));
+                if (foundCust && foundCust.nombre) prodName = foundCust.nombre;
+            }
+        }
+
+        if (!prodName && typeof _cachedInventory !== 'undefined' && Array.isArray(_cachedInventory)) {
+            const foundInv = _cachedInventory.find(p => p && String(p.id) === String(id));
+            if (foundInv && foundInv.nombre) prodName = foundInv.nombre;
+        }
+    } catch (err) {
+        console.warn('Error al resolver nombre del producto:', err);
     }
 
-    showConfirmModal({
-        title: '¿Eliminar este producto?',
-        message: 'Esta acción retirará el producto del catálogo y del inventario de forma permanente.',
-        itemDetails: prodName || null,
-        confirmText: 'Sí, eliminar',
-        confirmIcon: 'fa-trash-alt',
-        confirmType: 'danger',
-        onConfirm: async () => {
+    try {
+        showConfirmModal({
+            title: '¿Eliminar este producto?',
+            message: 'Esta acción retirará el producto del catálogo y del inventario de forma permanente.',
+            itemDetails: prodName || null,
+            confirmText: 'Sí, eliminar',
+            confirmIcon: 'fa-trash-alt',
+            confirmType: 'danger',
+            onConfirm: async () => {
+                await ejecutarEliminacionProducto(id);
+            }
+        });
+    } catch (errModal) {
+        console.warn('Fallback a confirmación nativa:', errModal);
+        const confirmMsg = prodName 
+            ? `¿Estás seguro de que deseas eliminar permanentemente "${prodName}"?`
+            : '¿Estás seguro de que deseas eliminar este producto?';
+        if (confirm(confirmMsg)) {
             await ejecutarEliminacionProducto(id);
         }
-    });
+    }
 }
+window.deleteProduct = deleteProduct;
 
 async function ejecutarEliminacionProducto(id) {
     const isGH = window.location.hostname.includes('github.io');
@@ -2673,30 +2729,50 @@ async function ejecutarEliminacionProducto(id) {
 
     if (!isGH) {
         try {
-            const res = await fetch(`${API_BASE}/productos.php?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/productos.php?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
             if (res.ok) {
                 const data = await res.json();
-                if (data.status === 'success') deleted = true;
+                if (data && data.status === 'success') deleted = true;
             }
-        } catch (err) {}
-    }
-
-    if (!deleted) {
-        if (Array.isArray(_cachedInventory)) {
-            _cachedInventory = _cachedInventory.filter(item => String(item.id) !== String(id));
-            localStorage.setItem('duri_products_custom', JSON.stringify(_cachedInventory));
-            deleted = true;
+        } catch (err) {
+            console.warn('API productos no disponible, sincronizando localmente:', err);
         }
     }
 
-    if (deleted) {
-        showToast('Producto eliminado exitosamente');
-        if (typeof loadInventario === 'function') loadInventario();
-        if (document.body.dataset.page === 'productos' && typeof loadProductos === 'function') loadProductos();
-    } else {
-        showToast('Error al eliminar producto', 'error');
+    // 1. Remover de duri_products_custom en localStorage
+    try {
+        let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        if (Array.isArray(customProds)) {
+            const prevLen = customProds.length;
+            customProds = customProds.filter(item => item && String(item.id) !== String(id));
+            if (customProds.length !== prevLen) {
+                localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+                deleted = true;
+            }
+        }
+    } catch (e) {}
+
+    // 2. Remover de catalogos en memoria
+    if (Array.isArray(window._allCatalogProducts)) {
+        window._allCatalogProducts = window._allCatalogProducts.filter(item => item && String(item.id) !== String(id));
+    }
+    if (Array.isArray(window._catalogProducts)) {
+        window._catalogProducts = window._catalogProducts.filter(item => item && String(item.id) !== String(id));
+    }
+    if (typeof _cachedInventory !== 'undefined' && Array.isArray(_cachedInventory)) {
+        _cachedInventory = _cachedInventory.filter(item => item && String(item.id) !== String(id));
+    }
+
+    // 3. Notificar y actualizar UI
+    showToast('✅ Producto retirado exitosamente', 'success');
+    if (typeof loadInventario === 'function') loadInventario();
+    if (typeof loadProductos === 'function') {
+        loadProductos();
+    } else if (typeof applyCatalogFilters === 'function') {
+        applyCatalogFilters();
     }
 }
+window.ejecutarEliminacionProducto = ejecutarEliminacionProducto;
 
 // ============================================
 // AGREGAR NUEVO PRODUCTO (SUPER USUARIO Y OPERADOR)
