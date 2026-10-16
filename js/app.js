@@ -337,12 +337,11 @@ function fallbackCopyText(text, btnElement) {
 window.copyTextToClipboard = copyTextToClipboard;
 
 // ============================================
-// PWA (PROGRESSIVE WEB APP - INSTALABLE EN PC Y MÓVIL)
 // ============================================
-let _deferredPwaPrompt = null;
-
+// PWA (PROGRESSIVE WEB APP - INSTALABLE DESDE EL NAVEGADOR)
+// ============================================
 function initPwa() {
-    // 1. Registrar Service Worker
+    // 1. Registrar Service Worker para permitir la instalación nativa desde la barra del navegador
     if ('serviceWorker' in navigator) {
         const swPath = window.location.pathname.includes('/pages/') ? '../sw.js' : './sw.js';
         navigator.serviceWorker.register(swPath).then((reg) => {
@@ -352,166 +351,17 @@ function initPwa() {
         });
     }
 
-    // 2. Capturar evento de instalación en PC (Chrome, Edge, etc.)
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        _deferredPwaPrompt = e;
-        mostrarBotonInstalarPwa();
-
-        // Mostrar el anuncio elegante automáticamente si no fue descartado recientemente
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        if (!isStandalone) {
-            const dismissed = localStorage.getItem('duri_pwa_prompt_dismissed');
-            const now = Date.now();
-            if (!dismissed || (now - Number(dismissed) > 48 * 60 * 60 * 1000)) {
-                setTimeout(() => {
-                    abrirModalInstalarPwa();
-                }, 2500);
-            }
-        }
-    });
-
-    // 3. Confirmación cuando la app ya fue instalada
+    // 2. Notificación cuando el usuario la instale desde la barra de direcciones
     window.addEventListener('appinstalled', () => {
         console.log('[PWA] Inversiones Duri fue instalada en el sistema');
-        _deferredPwaPrompt = null;
-        ocultarBotonInstalarPwa();
-        cerrarModalInstalarPwa();
         showToast('🎉 ¡Inversiones Duri se instaló con éxito en tu PC!', 'success');
     });
 
-    // 4. Si ya está corriendo como PWA independiente (standalone)
+    // 3. Estilos especiales si está corriendo en ventana propia (standalone)
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
         document.body.classList.add('is-pwa-standalone');
-        ocultarBotonInstalarPwa();
     }
 }
-
-function mostrarBotonInstalarPwa() {
-    if (document.getElementById('pwaInstallBtnTop')) return;
-    
-    const btn = document.createElement('button');
-    btn.id = 'pwaInstallBtnTop';
-    btn.type = 'button';
-    btn.className = 'btn-pwa-install';
-    btn.innerHTML = '<i class="fas fa-desktop"></i> <span>Instalar en PC</span>';
-    btn.title = 'Instalar Inversiones Duri en tu PC o teléfono con acceso directo en el escritorio';
-    btn.onclick = abrirModalInstalarPwa;
-
-    const topBarRight = document.querySelector('.top-bar-right');
-    if (topBarRight) {
-        topBarRight.prepend(btn);
-    } else {
-        const stack = getOrCreateFloatingStack();
-        if (stack) stack.prepend(btn);
-    }
-}
-
-function ocultarBotonInstalarPwa() {
-    const btn = document.getElementById('pwaInstallBtnTop');
-    if (btn) btn.remove();
-}
-
-function abrirModalInstalarPwa() {
-    if (document.getElementById('duriInstallModal')) return;
-
-    const basePath = window.location.pathname.includes('/pages/') ? '../' : './';
-    const modal = document.createElement('div');
-    modal.className = 'duri-install-overlay';
-    modal.id = 'duriInstallModal';
-    modal.innerHTML = `
-        <div class="duri-install-card">
-            <button type="button" class="duri-install-close" onclick="cerrarModalInstalarPwa()" aria-label="Cerrar">&times;</button>
-            
-            <div class="duri-install-header">
-                <div class="duri-install-glow"></div>
-                <div class="duri-install-app-icon">
-                    <img src="${basePath}img/icon-192.png" alt="Inversiones Duri" onerror="this.src='${basePath}img/logo-duri.png'">
-                </div>
-                <div class="duri-install-badge"><i class="fas fa-sparkles"></i> App Oficial para PC</div>
-                <h2>Inversiones Duri C.A</h2>
-                <p>Instala la aplicación en tu computadora para gestionar inventario, catálogo y pedidos sin distracciones.</p>
-            </div>
-
-            <div class="duri-install-body">
-                <div class="duri-install-benefits">
-                    <div class="duri-benefit-item">
-                        <div class="duri-benefit-icon orange"><i class="fas fa-desktop"></i></div>
-                        <div class="duri-benefit-text">
-                            <strong>Acceso Directo en tu Escritorio</strong>
-                            <span>Ábrela al instante con un solo clic desde tu pantalla de inicio o barra de tareas de Windows.</span>
-                        </div>
-                    </div>
-                    <div class="duri-benefit-item">
-                        <div class="duri-benefit-icon purple"><i class="fas fa-bolt"></i></div>
-                        <div class="duri-benefit-text">
-                            <strong>Ventana Propia sin Navegador</strong>
-                            <span>Disfruta de una pantalla limpia sin barras de navegación ni pestañas molestas.</span>
-                        </div>
-                    </div>
-                    <div class="duri-benefit-item">
-                        <div class="duri-benefit-icon green"><i class="fas fa-boxes"></i></div>
-                        <div class="duri-benefit-text">
-                            <strong>Inventario y Pedidos en Tiempo Real</strong>
-                            <span>Control de stock en vivo, facturación y catálogo siempre a la mano en tu negocio.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="duri-install-tip">
-                    <i class="fas fa-info-circle"></i>
-                    <span>También puedes instalarla desde el icono <strong>(+)</strong> o <strong>[💻 Instalar]</strong> en la barra superior de tu navegador.</span>
-                </div>
-            </div>
-
-            <div class="duri-install-footer">
-                <button type="button" class="btn-duri-install-action" onclick="ejecutarInstalacionPwa()">
-                    <i class="fas fa-download"></i> <span>Instalar Ahora en mi PC</span>
-                </button>
-                <button type="button" class="btn-duri-install-cancel" onclick="descartarModalInstalarPwa()">
-                    Quizás más tarde
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) cerrarModalInstalarPwa();
-    });
-}
-window.abrirModalInstalarPwa = abrirModalInstalarPwa;
-
-function cerrarModalInstalarPwa() {
-    const modal = document.getElementById('duriInstallModal');
-    if (modal) modal.remove();
-}
-window.cerrarModalInstalarPwa = cerrarModalInstalarPwa;
-
-function descartarModalInstalarPwa() {
-    localStorage.setItem('duri_pwa_prompt_dismissed', String(Date.now()));
-    cerrarModalInstalarPwa();
-}
-window.descartarModalInstalarPwa = descartarModalInstalarPwa;
-
-async function ejecutarInstalacionPwa() {
-    if (_deferredPwaPrompt) {
-        _deferredPwaPrompt.prompt();
-        const { outcome } = await _deferredPwaPrompt.userChoice;
-        console.log('[PWA] Elección del usuario:', outcome);
-        if (outcome === 'accepted') {
-            _deferredPwaPrompt = null;
-            ocultarBotonInstalarPwa();
-            cerrarModalInstalarPwa();
-            showToast('🎉 ¡Instalando Inversiones Duri en tu PC!', 'success');
-            return;
-        }
-    }
-    cerrarModalInstalarPwa();
-    showToast('💡 Haz clic en el ícono de instalar (+) en la barra de direcciones de tu navegador', 'info');
-}
-window.ejecutarInstalacionPwa = ejecutarInstalacionPwa;
 
 // ============================================
 // NAVBAR
