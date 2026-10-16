@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <link rel="stylesheet" href="css/styles.css?v=40.0">
+    <link rel="stylesheet" href="css/styles.css?v=41.0">
     <style>
         /* Alineación vertical permanente para DuriBot y Carrito */
         .floating-actions-stack {
@@ -354,8 +354,9 @@
             <div class="products-grid">
                 <div class="product-card">
                     <div class="product-badge popular">Popular</div>
-                    <div class="product-image">
+                    <div class="product-image" onclick="abrirVisorDesdeElemento(this)" title="Haz clic para ver imagen ampliada">
                         <img src="img/productos/lapices-color.jpg" alt="Lápices de Color" loading="lazy">
+                        <span class="product-zoom-hint" title="Ver imagen ampliada"><i class="fas fa-search-plus"></i></span>
                     </div>
                     <div class="product-content">
                         <span class="product-category">Útiles Escolares</span>
@@ -370,8 +371,9 @@
                     </div>
                 </div>
                 <div class="product-card">
-                    <div class="product-image">
+                    <div class="product-image" onclick="abrirVisorDesdeElemento(this)" title="Haz clic para ver imagen ampliada">
                         <img src="img/productos/cuadernos-universitarios.jpg" alt="Cuadernos Universitarios" loading="lazy">
+                        <span class="product-zoom-hint" title="Ver imagen ampliada"><i class="fas fa-search-plus"></i></span>
                     </div>
                     <div class="product-content">
                         <span class="product-category">Papelería</span>
@@ -386,8 +388,9 @@
                     </div>
                 </div>
                 <div class="product-card">
-                    <div class="product-image">
+                    <div class="product-image" onclick="abrirVisorDesdeElemento(this)" title="Haz clic para ver imagen ampliada">
                         <img src="img/productos/cartuchos-tinta.jpg" alt="Cartuchos de Tinta" loading="lazy">
+                        <span class="product-zoom-hint" title="Ver imagen ampliada"><i class="fas fa-search-plus"></i></span>
                     </div>
                     <div class="product-content">
                         <span class="product-category">Tecnología</span>
@@ -548,6 +551,6 @@
         </div>
     </footer>
 
-    <script src="js/app.js?v=51.0"></script>
+    <script src="js/app.js?v=52.0"></script>
 </body>
 </html>

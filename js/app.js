@@ -1544,16 +1544,22 @@ function renderProductos(productos) {
         
         const imgSrc = getProductImageUrl(p);
         let imageHtml = '';
-        const editPhotoBtn = canEdit ? `<button type="button" onclick="editProduct('${p.id}')" title="Cambiar foto o editar producto" style="position:absolute; top:10px; right:10px; background:rgba(15,23,42,0.75); color:#fff; border:1px solid rgba(255,255,255,0.25); border-radius:50%; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:5; box-shadow:0 3px 8px rgba(0,0,0,0.3); transition:transform 0.2s;"><i class="fas fa-camera" style="font-size:0.85rem;"></i></button>` : '';
+        const editPhotoBtn = canEdit ? `<button type="button" onclick="event.stopPropagation(); editProduct('${p.id}')" title="Cambiar foto o editar producto" style="position:absolute; top:10px; right:10px; background:rgba(15,23,42,0.75); color:#fff; border:1px solid rgba(255,255,255,0.25); border-radius:50%; width:34px; height:34px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:5; box-shadow:0 3px 8px rgba(0,0,0,0.3); transition:transform 0.2s;"><i class="fas fa-camera" style="font-size:0.85rem;"></i></button>` : '';
 
         if (imgSrc) {
             imageHtml = `
-            <div class="product-image">
+            <div class="product-image" onclick="abrirVisorProducto('${p.id}')" title="Haz clic para ver imagen ampliada">
                 ${editPhotoBtn}
                 <img src="${imgSrc}" alt="${p.nombre}" loading="lazy" onerror="handleImgError(this, '${p.categoria_nombre}')">
+                <span class="product-zoom-hint" title="Ver imagen ampliada"><i class="fas fa-search-plus"></i></span>
             </div>`;
         } else {
-            imageHtml = `<div class="product-image ${colores[i % colores.length]}">${editPhotoBtn}<i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i></div>`;
+            imageHtml = `
+            <div class="product-image ${colores[i % colores.length]}" onclick="abrirVisorProducto('${p.id}')" title="Haz clic para ver detalles">
+                ${editPhotoBtn}
+                <i class="fas ${icons[p.categoria_nombre] || 'fa-box'}"></i>
+                <span class="product-zoom-hint" title="Ver detalles"><i class="fas fa-search-plus"></i></span>
+            </div>`;
         }
         
         return `
@@ -1751,6 +1757,169 @@ function buyNow(id, name, price, stock) {
         window.location.href = isInPages ? 'pedidos.html' : 'pages/pedidos.html';
     }, 600);
 }
+
+// ============================================
+// VISOR DE IMÁGENES / LIGHTBOX DE PRODUCTOS
+// ============================================
+function cerrarVisorProducto() {
+    const overlay = document.getElementById('productLightboxOverlay');
+    if (!overlay) return;
+    overlay.classList.add('closing');
+    setTimeout(() => {
+        if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+    }, 180);
+}
+
+function abrirVisorProducto(prodOrId) {
+    let p = null;
+    if (typeof prodOrId === 'object' && prodOrId !== null) {
+        p = prodOrId;
+    } else if (window._allCatalogProducts && window._allCatalogProducts.length) {
+        p = window._allCatalogProducts.find(item => String(item.id) === String(prodOrId));
+    }
+
+    if (!p) return;
+
+    const logoPath = isInPages ? '../img/logo-duri.png' : 'img/logo-duri.png';
+    const imgSrc = (typeof getProductImageUrl === 'function') ? getProductImageUrl(p) : (p.imagen || logoPath);
+    const priceUsd = parseFloat(p.precio_venta || 0).toFixed(2);
+    const priceBs = (typeof BcvManager !== 'undefined') ? BcvManager.formatBs(BcvManager.toBs(p.precio_venta)) : '';
+    const stock = parseInt(p.stock_actual || 0, 10);
+    const isOut = stock <= 0;
+    const isLow = stock > 0 && stock <= (p.stock_minimo || 5);
+    const stockLabel = isOut ? 'Agotado' : (isLow ? `Stock bajo (${stock} unidades disponibles)` : `Disponible (${stock} unidades)`);
+    const stockClass = isOut ? 'out' : (isLow ? 'low' : '');
+    const stockIcon = isOut ? 'fa-times-circle' : (isLow ? 'fa-exclamation-triangle' : 'fa-check-circle');
+
+    const oldOverlay = document.getElementById('productLightboxOverlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'product-lightbox-overlay';
+    overlay.id = 'productLightboxOverlay';
+    overlay.innerHTML = `
+        <div class="product-lightbox-card" role="dialog" aria-modal="true" aria-label="Visualizador de Producto">
+            <button type="button" class="product-lightbox-close" onclick="cerrarVisorProducto()" aria-label="Cerrar modal">&times;</button>
+            <div class="product-lightbox-body">
+                <div class="product-lightbox-img-wrap">
+                    <img src="${imgSrc}" alt="${escapeHtml(p.nombre || 'Producto')}" onerror="this.src='${logoPath}'">
+                </div>
+                <div class="product-lightbox-info">
+                    <div>
+                        <span class="product-lightbox-cat">${escapeHtml(p.categoria_nombre || 'Catálogo Duri')}</span>
+                        <h3 class="product-lightbox-title">${escapeHtml(p.nombre || '')}</h3>
+                        <p class="product-lightbox-desc">${escapeHtml(p.descripcion || 'Producto de alta calidad disponible en Inversiones Duri C.A.')}</p>
+                        <div class="product-lightbox-pricing">
+                            <span class="product-lightbox-usd">$${priceUsd}</span>
+                            ${priceBs ? `<span class="product-lightbox-bs">Aprox. ${priceBs} (Tasa Oficial BCV)</span>` : ''}
+                            <div class="product-lightbox-stock ${stockClass}">
+                                <i class="fas ${stockIcon}"></i> ${stockLabel}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="product-lightbox-actions">
+                        ${isOut ? `
+                            <button type="button" class="btn btn-dark btn-block" disabled style="opacity:0.6;">
+                                <i class="fas fa-ban"></i> Producto Agotado
+                            </button>
+                        ` : `
+                            <button type="button" class="btn btn-primary" style="flex:1;" onclick="buyNowFromLightbox('${p.id}', '${escapeHtml(p.nombre || '').replace(/'/g, "\\'")}', ${p.precio_venta || 0}, ${stock})">
+                                <i class="fas fa-cart-plus"></i> Pedir Ahora
+                            </button>
+                        `}
+                        <button type="button" class="btn btn-outline" onclick="cerrarVisorProducto()">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            cerrarVisorProducto();
+        }
+    });
+
+    document.body.appendChild(overlay);
+}
+
+function buyNowFromLightbox(id, name, price, stock) {
+    cerrarVisorProducto();
+    buyNow(id, name, price, stock);
+}
+
+function abrirVisorDesdeElemento(el) {
+    if (!el) return;
+    const card = el.closest('.product-card') || el;
+    const imgEl = card.querySelector('.product-image img') || card.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+    if (!imgEl) return;
+
+    const titleEl = card.querySelector('h3') || card.querySelector('.duribot-product-title');
+    const catEl = card.querySelector('.product-category');
+    const priceEl = card.querySelector('.product-price strong') || card.querySelector('.product-price');
+    const descEl = card.querySelector('p');
+
+    let parsedPrice = 0;
+    if (priceEl) {
+        const numStr = priceEl.textContent.replace(/[^0-9.]/g, '');
+        if (numStr) parsedPrice = parseFloat(numStr);
+    }
+
+    const fakeProd = {
+        id: 'p-' + Math.floor(Math.random() * 10000),
+        nombre: titleEl ? titleEl.textContent.trim() : (imgEl.alt || 'Producto'),
+        categoria_nombre: catEl ? catEl.textContent.trim() : 'Destacados',
+        descripcion: descEl ? descEl.textContent.trim() : 'Producto de alta calidad disponible en Inversiones Duri.',
+        precio_venta: parsedPrice || 10,
+        stock_actual: 50,
+        imagen: imgEl.src
+    };
+
+    abrirVisorProducto(fakeProd);
+}
+
+// Delegador global para que cualquier clic en una imagen de producto abra el visor
+document.addEventListener('click', function(e) {
+    // Si se hizo clic en el botón de cambiar foto/editar, no abrir visor
+    if (e.target.closest('button[onclick*="editProduct"]')) return;
+    if (e.target.closest('button[onclick*="buyNow"]')) return;
+    if (e.target.closest('button[onclick*="addToCart"]')) return;
+
+    const pImg = e.target.closest('.product-image');
+    if (pImg) {
+        // Verificar si la tarjeta ya tiene onclick directo
+        if (pImg.getAttribute('onclick')) return;
+
+        const card = pImg.closest('.product-card');
+        if (card) {
+            const buyBtn = card.querySelector('button[onclick*="buyNow"]');
+            let prodId = null;
+            if (buyBtn) {
+                const match = buyBtn.getAttribute('onclick').match(/buyNow\(['"]?([^'",]+)['"]?/);
+                if (match) prodId = match[1];
+            }
+            if (prodId && window._allCatalogProducts && window._allCatalogProducts.length) {
+                const found = window._allCatalogProducts.find(p => String(p.id) === String(prodId));
+                if (found) {
+                    abrirVisorProducto(found);
+                    return;
+                }
+            }
+            abrirVisorDesdeElemento(pImg);
+        }
+    }
+});
+
+// Cerrar con la tecla Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+        cerrarVisorProducto();
+    }
+});
 
 // ============================================
 // INVENTARIO
