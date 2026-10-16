@@ -5,6 +5,45 @@
 const isInPages = window.location.pathname.includes('/pages/');
 const API_BASE = isInPages ? '../backend/api' : 'backend/api';
 
+function getPedidosUrl() {
+    return window.location.pathname.includes('/pages/') ? 'pedidos.html' : 'pages/pedidos.html';
+}
+
+function getProductosUrl() {
+    return window.location.pathname.includes('/pages/') ? 'productos.html' : 'pages/productos.html';
+}
+
+// Inicialización global del Carrito (Accesible en todo el ciclo de vida)
+let cart = [];
+try {
+    const savedCart = sessionStorage.getItem('cartDuri');
+    if (savedCart) cart = JSON.parse(savedCart);
+} catch(e) {}
+
+function saveCart() {
+    try { sessionStorage.setItem('cartDuri', JSON.stringify(cart)); } catch(e) {}
+}
+
+function handleCartPanelCheckout(e) {
+    if (e) e.preventDefault();
+    const safeCart = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : [];
+    if (safeCart.length === 0) {
+        showToast('Tu carrito está vacío. Agrega productos del catálogo para hacer tu pedido.', 'warning');
+        setTimeout(() => {
+            window.location.href = getProductosUrl();
+        }, 1100);
+        return false;
+    }
+    if (window.location.pathname.includes('pedidos.html')) {
+        toggleCartPanel();
+        const form = document.getElementById('orderForm') || document.querySelector('.order-card');
+        if (form) form.scrollIntoView({ behavior: 'smooth' });
+        return false;
+    }
+    window.location.href = getPedidosUrl();
+    return false;
+}
+
 // Limpieza garantizada de métodos de pago obsoletos (Efectivo / Tarjeta)
 function sanitizarMetodosPago() {
     const sel = document.getElementById('paymentMethod');
@@ -340,19 +379,21 @@ function getOrCreateFloatingStack() {
 function initFloatingCart() {
     if (document.querySelector('.floating-cart-btn')) return;
 
+    const pedidosUrl = getPedidosUrl();
+
     // Cart Panel (Drawer modal independiente)
     const panelHtml = `
     <div class="cart-panel" id="cartPanel">
         <div class="cart-panel-header">
             <h4><i class="fas fa-shopping-cart"></i> Mi Pedido</h4>
-            <button onclick="toggleCartPanel()">&times;</button>
+            <button type="button" onclick="toggleCartPanel()">&times;</button>
         </div>
         <div class="cart-panel-body" id="cartPanelBody">
             <div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>
         </div>
         <div class="cart-panel-footer">
             <div class="cart-panel-total"><span>Total:</span><strong id="cartPanelTotal">$0.00</strong></div>
-            <a href="pedidos.html" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Ver Pedido</a>
+            <a href="${pedidosUrl}" id="cartPanelActionBtn" class="btn btn-primary btn-block" onclick="return handleCartPanelCheckout(event)"><i class="fas fa-paper-plane"></i> Ver Pedido</a>
         </div>
     </div>`;
     document.body.insertAdjacentHTML('beforeend', panelHtml);
@@ -862,11 +903,13 @@ async function processDuriQuery(rawQuery) {
 }
 
 function updateFloatingCart() {
-    const count = cart.reduce((sum, it) => sum + it.qty, 0);
-    const total = cart.reduce((sum, it) => sum + (it.price * it.qty), 0);
+    const safeCart = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : [];
+    const count = safeCart.reduce((sum, it) => sum + (it.qty || 1), 0);
+    const total = safeCart.reduce((sum, it) => sum + ((it.price || 0) * (it.qty || 1)), 0);
     const countEl = document.getElementById('floatingCartCount');
     const body = document.getElementById('cartPanelBody');
     const totalEl = document.getElementById('cartPanelTotal');
+    const actionBtn = document.getElementById('cartPanelActionBtn');
     
     if (countEl) {
         countEl.style.display = count > 0 ? 'flex' : 'none';
@@ -874,23 +917,45 @@ function updateFloatingCart() {
     }
     
     if (!body) return;
+
+    const pedidosUrl = getPedidosUrl();
+    const productosUrl = getProductosUrl();
     
-    if (cart.length === 0) {
-        body.innerHTML = '<div class="cart-empty"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío</p></div>';
+    if (safeCart.length === 0) {
+        body.innerHTML = `
+            <div class="cart-empty">
+                <i class="fas fa-shopping-basket"></i>
+                <p>Tu carrito está vacío</p>
+                <a href="${productosUrl}" class="btn btn-sm btn-outline-primary" style="margin-top:12px; border-radius:100px; padding:7px 18px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fas fa-store"></i> Explorar Catálogo
+                </a>
+            </div>`;
+        if (actionBtn) {
+            actionBtn.href = productosUrl;
+            actionBtn.innerHTML = '<i class="fas fa-box-open"></i> Explorar Productos';
+            actionBtn.className = 'btn btn-outline btn-block';
+            actionBtn.onclick = null;
+        }
     } else {
-        body.innerHTML = cart.map((it, i) => `
+        body.innerHTML = safeCart.map((it, i) => `
             <div class="cart-panel-item">
                 <div class="cart-panel-item-info">
                     <div class="cart-panel-item-name">${it.name}</div>
-                    <div class="cart-panel-item-price">$${it.price.toFixed(2)} c/u</div>
+                    <div class="cart-panel-item-price">$${(it.price || 0).toFixed(2)} c/u</div>
                 </div>
                 <div class="cart-panel-item-qty">
-                    <button onclick="updateQty(${i},-1)">-</button>
+                    <button type="button" onclick="updateQty(${i},-1)">-</button>
                     <span>${it.qty}</span>
-                    <button onclick="updateQty(${i},1)">+</button>
+                    <button type="button" onclick="updateQty(${i},1)">+</button>
                 </div>
             </div>
         `).join('');
+        if (actionBtn) {
+            actionBtn.href = pedidosUrl;
+            actionBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Tramitar Pedido';
+            actionBtn.className = 'btn btn-primary btn-block';
+            actionBtn.onclick = (e) => handleCartPanelCheckout(e);
+        }
     }
     
     if (totalEl) totalEl.textContent = '$' + total.toFixed(2);
@@ -1847,11 +1912,11 @@ function renderInventarioTable(productos) {
         if (canEdit) {
             actionBtn = '<div style="display:flex;gap:4px"><button onclick="editProduct(\'' + p.id + '\')" class="btn btn-sm btn-outline-primary" title="Editar"><i class="fas fa-edit"></i></button><button onclick="deleteProduct(\'' + p.id + '\')" class="btn btn-sm" style="background:rgba(220,53,69,0.1);color:#dc3545;border:1px solid rgba(220,53,69,0.3)" title="Eliminar"><i class="fas fa-trash"></i></button></div>';
         } else if (canOrder && p.stock_actual > 0) {
-            actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
+            actionBtn = '<a href="' + getPedidosUrl() + '" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
         } else if (p.stock_actual <= 0) {
             actionBtn = '<button class="btn btn-sm" disabled><i class="fas fa-ban"></i></button>';
         } else {
-            actionBtn = '<a href="pedidos.html" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
+            actionBtn = '<a href="' + getPedidosUrl() + '" class="btn btn-sm btn-primary"><i class="fas fa-cart-plus"></i></a>';
         }
         
         const thumbSrc = getProductImageUrl(p);
@@ -3207,17 +3272,7 @@ window.ejecutarImportacionMasiva = ejecutarImportacionMasiva;
 // ============================================
 // PEDIDOS
 // ============================================
-let cart = [];
-
-// Cargar carrito guardado (sobrevive recargas)
-try {
-    const savedCart = sessionStorage.getItem('cartDuri');
-    if (savedCart) cart = JSON.parse(savedCart);
-} catch(e) {}
-
-function saveCart() {
-    try { sessionStorage.setItem('cartDuri', JSON.stringify(cart)); } catch(e) {}
-}
+// Nota: La variable global 'cart' y 'saveCart()' se inicializan en la cabecera del script.
 
 async function loadClientesSelect() {
     try {
