@@ -2877,9 +2877,14 @@ async function abrirModalPapelera() {
 
             <div class="papelera-modal-toolbar">
                 <span id="papeleraCountLabel" style="font-size:0.88rem;color:#64748b;font-weight:600;">Cargando artículos...</span>
-                <button type="button" id="btnRestaurarTodos" class="btn btn-sm btn-primary" onclick="restaurarTodosLosProductos()" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border:none;padding:8px 16px;border-radius:10px;font-weight:700;gap:7px;cursor:pointer;box-shadow:0 3px 10px rgba(22,163,74,0.35);">
-                    <i class="fas fa-history"></i> Restaurar Todos los Productos
-                </button>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="btnVaciarPapelera" class="btn btn-sm" onclick="vaciarPapeleraDefinitiva()" style="display:none;background:rgba(220,38,38,0.1);color:#dc2626;border:1px solid rgba(220,38,38,0.3);padding:8px 14px;border-radius:10px;font-weight:700;gap:7px;cursor:pointer;" title="Eliminar definitivamente todos los productos de la papelera">
+                        <i class="fas fa-trash"></i> Vaciar de por vida
+                    </button>
+                    <button type="button" id="btnRestaurarTodos" class="btn btn-sm btn-primary" onclick="restaurarTodosLosProductos()" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border:none;padding:8px 16px;border-radius:10px;font-weight:700;gap:7px;cursor:pointer;box-shadow:0 3px 10px rgba(22,163,74,0.35);">
+                        <i class="fas fa-history"></i> Restaurar Todos
+                    </button>
+                </div>
             </div>
 
             <div class="papelera-modal-body" id="papeleraListContainer">
@@ -2891,7 +2896,7 @@ async function abrirModalPapelera() {
 
             <div class="papelera-modal-footer">
                 <span style="font-size:0.8rem;color:#64748b;display:flex;align-items:center;gap:6px;">
-                    <i class="fas fa-info-circle" style="color:var(--accent);"></i> Al restaurar, el producto recuperará su stock, precio y visibilidad en el catálogo.
+                    <i class="fas fa-info-circle" style="color:var(--accent);"></i> Puedes restaurar un producto al catálogo o eliminarlo de forma irreversible de por vida.
                 </span>
                 <button type="button" class="btn btn-outline" onclick="cerrarModalPapelera()" style="border-radius:10px;padding:8px 18px;font-weight:600;cursor:pointer;">
                     Cerrar
@@ -2920,6 +2925,7 @@ async function cargarContenidoPapelera() {
     const container = document.getElementById('papeleraListContainer');
     const countLabel = document.getElementById('papeleraCountLabel');
     const btnAll = document.getElementById('btnRestaurarTodos');
+    const btnVaciar = document.getElementById('btnVaciarPapelera');
     if (!container) return;
 
     let eliminados = [];
@@ -2969,18 +2975,20 @@ async function cargarContenidoPapelera() {
     if (!eliminados.length) {
         if (countLabel) countLabel.textContent = '0 artículos en papelera';
         if (btnAll) btnAll.style.display = 'none';
+        if (btnVaciar) btnVaciar.style.display = 'none';
         container.innerHTML = `
             <div style="text-align:center;padding:50px 20px;color:#64748b;">
                 <i class="fas fa-check-circle" style="font-size:3.2rem;color:#10b981;margin-bottom:14px;display:block;"></i>
                 <h4 style="color:#0f172a;font-weight:700;margin-bottom:6px;">La papelera está limpia</h4>
-                <p style="font-size:0.9rem;max-width:380px;margin:0 auto;">Todos los productos están activos en el catálogo. Si borras un producto en el futuro, podrás restaurarlo aquí en un solo clic.</p>
+                <p style="font-size:0.9rem;max-width:380px;margin:0 auto;">No hay productos eliminados. Si borras un artículo en el catálogo, podrás restaurarlo o borrarlo de por vida desde aquí.</p>
             </div>
         `;
         return;
     }
 
-    if (countLabel) countLabel.innerHTML = `<strong>${eliminados.length}</strong> producto(s) listo(s) para restaurar`;
+    if (countLabel) countLabel.innerHTML = `<strong>${eliminados.length}</strong> producto(s) en papelera`;
     if (btnAll) btnAll.style.display = 'inline-flex';
+    if (btnVaciar) btnVaciar.style.display = 'inline-flex';
 
     const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
     const logoFallback = `${basePath}img/logo-duri.png`;
@@ -2991,12 +2999,14 @@ async function cargarContenidoPapelera() {
                 const img = getProductImageUrl(p) || logoFallback;
                 const precio = parseFloat(p.precio_venta || 0).toFixed(2);
                 const precioBs = BcvManager.formatBs(BcvManager.toBs(p.precio_venta || 0));
+                const safeName = escapeHtml(p.nombre || 'Producto');
+                const safeNameJs = safeName.replace(/'/g, "\\'");
                 return `
                     <div class="papelera-item-row" id="trashRow_${p.id}">
                         <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
-                            <img src="${img}" alt="${escapeHtml(p.nombre)}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0;background:#f8fafc;" onerror="this.src='${logoFallback}'">
+                            <img src="${img}" alt="${safeName}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0;background:#f8fafc;" onerror="this.src='${logoFallback}'">
                             <div style="min-width:0;">
-                                <h4 style="margin:0 0 3px;font-size:0.95rem;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre)}</h4>
+                                <h4 style="margin:0 0 3px;font-size:0.95rem;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${safeName}</h4>
                                 <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;">
                                     <span style="background:#f1f5f9;padding:2px 8px;border-radius:6px;font-weight:600;">${escapeHtml(p.categoria_nombre || 'General')}</span>
                                     <span><strong>$${precio}</strong> (${precioBs})</span>
@@ -3004,9 +3014,14 @@ async function cargarContenidoPapelera() {
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm" onclick="restaurarProducto('${p.id}')" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;box-shadow:0 3px 8px rgba(22,163,74,0.3);">
-                            <i class="fas fa-undo"></i> Restaurar
-                        </button>
+                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            <button type="button" class="btn btn-sm" onclick="restaurarProducto('${p.id}')" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 3px 8px rgba(22,163,74,0.3);" title="Devolver producto al catálogo activo">
+                                <i class="fas fa-undo"></i> Restaurar
+                            </button>
+                            <button type="button" class="btn btn-sm" onclick="eliminarProductoDefinitivo('${p.id}', '${safeNameJs}')" style="background:rgba(220,38,38,0.1);color:#dc2626;border:1px solid rgba(220,38,38,0.3);border-radius:10px;padding:8px 12px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="Eliminar de forma irreversible de por vida">
+                                <i class="fas fa-trash-alt"></i> Borrar de por vida
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join('')}
@@ -3071,7 +3086,7 @@ async function restaurarProducto(id) {
             cargarContenidoPapelera();
         } else {
             const countLabel = document.getElementById('papeleraCountLabel');
-            if (countLabel) countLabel.innerHTML = `<strong>${remaining.length}</strong> producto(s) listo(s) para restaurar`;
+            if (countLabel) countLabel.innerHTML = `<strong>${remaining.length}</strong> producto(s) en papelera`;
         }
     }, 350);
 }
@@ -3109,6 +3124,85 @@ async function restaurarTodosLosProductos() {
     updateTrashBadges();
 }
 window.restaurarTodosLosProductos = restaurarTodosLosProductos;
+
+async function eliminarProductoDefinitivo(id, nombre) {
+    showDuriConfirmModal({
+        title: '¿Borrar de por vida?',
+        message: 'Esta acción borrará este producto de la base de datos de forma definitiva. No se podrá recuperar nunca más.',
+        itemDetails: nombre ? `⚠️ ${nombre}` : null,
+        confirmText: 'Sí, borrar de por vida',
+        confirmIcon: 'fa-trash-alt',
+        confirmType: 'danger',
+        onConfirm: async () => {
+            const isGH = window.location.hostname.includes('github.io');
+            if (!isGH) {
+                try {
+                    await fetch(`${API_BASE}/productos.php?id=${encodeURIComponent(id)}&permanent=1`, { method: 'DELETE' });
+                } catch(e) {
+                    console.warn('Error en API al borrar permanente:', e);
+                }
+            }
+
+            try {
+                let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+                trash = trash.filter(item => String(item.id) !== String(id));
+                localStorage.setItem('duri_papelera', JSON.stringify(trash));
+
+                let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+                customProds = customProds.filter(item => String(item.id) !== String(id));
+                localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+            } catch(e) {}
+
+            const row = document.getElementById(`trashRow_${id}`);
+            if (row) {
+                row.style.transition = 'all 0.3s';
+                row.style.opacity = '0';
+                row.style.transform = 'scale(0.85)';
+                setTimeout(() => {
+                    row.remove();
+                    const remaining = document.querySelectorAll('.papelera-item-row');
+                    if (remaining.length === 0) {
+                        cargarContenidoPapelera();
+                    } else {
+                        const countLabel = document.getElementById('papeleraCountLabel');
+                        if (countLabel) countLabel.innerHTML = `<strong>${remaining.length}</strong> producto(s) en papelera`;
+                    }
+                }, 300);
+            }
+
+            showToast('🔥 Producto borrado definitivamente de por vida', 'warning');
+            updateTrashBadges();
+        }
+    });
+}
+window.eliminarProductoDefinitivo = eliminarProductoDefinitivo;
+
+async function vaciarPapeleraDefinitiva() {
+    showDuriConfirmModal({
+        title: '¿Vaciar toda la papelera?',
+        message: 'Se borrarán de por vida TODOS los productos que están actualmente en la papelera. Esta acción es irreversible.',
+        confirmText: 'Sí, vaciar de por vida',
+        confirmIcon: 'fa-dumpster-fire',
+        confirmType: 'danger',
+        onConfirm: async () => {
+            const isGH = window.location.hostname.includes('github.io');
+            if (!isGH) {
+                try {
+                    await fetch(`${API_BASE}/productos.php?vaciar=1`, { method: 'DELETE' });
+                } catch(e) {}
+            }
+
+            try {
+                localStorage.removeItem('duri_papelera');
+            } catch(e) {}
+
+            showToast('🔥 Papelera vaciada por completo de por vida', 'warning');
+            updateTrashBadges();
+            cargarContenidoPapelera();
+        }
+    });
+}
+window.vaciarPapeleraDefinitiva = vaciarPapeleraDefinitiva;
 
 function updateTrashBadges() {
     try {

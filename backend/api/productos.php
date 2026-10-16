@@ -191,6 +191,15 @@ switch ($method) {
         break;
 
     case 'DELETE':
+        $permanent = isset($_GET['permanent']) || isset($_GET['definitivo']);
+        $vaciar = isset($_GET['vaciar']) || (isset($_GET['id']) && $_GET['id'] === 'all');
+
+        if ($vaciar) {
+            $stmt = $db->query("DELETE FROM productos WHERE activo = 0");
+            echo json_encode(["status" => "success", "message" => "Papelera vaciada por completo de por vida"]);
+            break;
+        }
+
         $id = $_GET['id'] ?? null;
         if (!$id) {
             http_response_code(400);
@@ -198,11 +207,17 @@ switch ($method) {
             exit();
         }
 
-        // Soft delete
-        $stmt = $db->prepare("UPDATE productos SET activo = 0 WHERE id = ?");
-        $stmt->execute([$id]);
-
-        echo json_encode(["status" => "success", "message" => "Producto eliminado"]);
+        if ($permanent) {
+            // Eliminación física definitiva de la base de datos (de por vida)
+            $stmt = $db->prepare("DELETE FROM productos WHERE id = ?");
+            $stmt->execute([$id]);
+            echo json_encode(["status" => "success", "message" => "Producto eliminado de por vida"]);
+        } else {
+            // Soft delete (papelera)
+            $stmt = $db->prepare("UPDATE productos SET activo = 0 WHERE id = ?");
+            $stmt->execute([$id]);
+            echo json_encode(["status" => "success", "message" => "Producto movido a la papelera"]);
+        }
         break;
 }
 ?>
