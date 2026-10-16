@@ -1398,25 +1398,64 @@ function getProductImageUrl(p) {
     return inPages ? '../' + clean : clean;
 }
 
-async function getFallbackProducts() {
-    try {
-        const custom = JSON.parse(localStorage.getItem('duri_products_custom') || 'null');
-        if (Array.isArray(custom) && custom.length) {
-            // Verificar si el custom antiguo no tenía fotos
-            const tieneFotos = custom.some(item => item.imagen);
-            if (tieneFotos) return custom;
-            localStorage.removeItem('duri_products_custom');
-        }
-    } catch(e) {}
-
+async function getBaseProductsForStorage() {
+    const customRaw = localStorage.getItem('duri_products_custom');
+    if (customRaw !== null) {
+        try {
+            const parsed = JSON.parse(customRaw);
+            if (Array.isArray(parsed)) return parsed;
+        } catch(e) {}
+    }
+    if (Array.isArray(window._allCatalogProducts) && window._allCatalogProducts.length > 0) {
+        return JSON.parse(JSON.stringify(window._allCatalogProducts));
+    }
+    let list = [];
     try {
         const inPages = window.location.pathname.includes('/pages/') || window.location.href.includes('/pages/');
         const staticUrl = inPages ? '../data/productos.json' : 'data/productos.json';
         const resStatic = await fetch(staticUrl);
         if (resStatic.ok) {
-            const list = await resStatic.json();
-            if (Array.isArray(list) && list.length) {
-                return list.map(item => ({
+            const data = await resStatic.json();
+            if (Array.isArray(data) && data.length) {
+                list = data.map(item => ({
+                    ...item,
+                    imagen: item.imagen || PRODUCT_IMAGE_FALLBACK[item.id] || PRODUCT_IMAGE_FALLBACK[item.codigo] || ''
+                }));
+            }
+        }
+    } catch(e) {}
+    if (!list.length) {
+        list = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS_FALLBACK));
+    }
+    return list;
+}
+
+async function getFallbackProducts() {
+    const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+    const trashIds = new Set(trash.map(t => String(t.id)));
+    const deletedIds = new Set(JSON.parse(localStorage.getItem('duri_deleted_ids') || '[]').map(String));
+
+    // 1. Si duri_products_custom ya fue inicializado o editado (incluso si está vacío [])
+    const customRaw = localStorage.getItem('duri_products_custom');
+    if (customRaw !== null) {
+        try {
+            const custom = JSON.parse(customRaw);
+            if (Array.isArray(custom)) {
+                return custom.filter(item => item && !trashIds.has(String(item.id)) && !deletedIds.has(String(item.id)));
+            }
+        } catch(e) {}
+    }
+
+    // 2. Carga inicial desde data/productos.json
+    let list = [];
+    try {
+        const inPages = window.location.pathname.includes('/pages/') || window.location.href.includes('/pages/');
+        const staticUrl = inPages ? '../data/productos.json' : 'data/productos.json';
+        const resStatic = await fetch(staticUrl);
+        if (resStatic.ok) {
+            const data = await resStatic.json();
+            if (Array.isArray(data) && data.length) {
+                list = data.map(item => ({
                     ...item,
                     imagen: item.imagen || PRODUCT_IMAGE_FALLBACK[item.id] || PRODUCT_IMAGE_FALLBACK[item.codigo] || ''
                 }));
@@ -1424,7 +1463,11 @@ async function getFallbackProducts() {
         }
     } catch(e) {}
 
-    return JSON.parse(JSON.stringify(DEFAULT_PRODUCTS_FALLBACK));
+    if (!list.length) {
+        list = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS_FALLBACK));
+    }
+
+    return list.filter(item => item && !trashIds.has(String(item.id)) && !deletedIds.has(String(item.id)));
 }
 
 // ============================================
@@ -1452,7 +1495,7 @@ async function loadProductos(categoria = null) {
     }
 
     try {
-        let productos = [];
+        let productos = null;
         const isGH = window.location.hostname.includes('github.io');
 
         // Intentar primero API PHP si no estamos exclusivamente en GitHub Pages
@@ -1472,34 +1515,26 @@ async function loadProductos(categoria = null) {
         }
 
         // Si la API PHP no devolvió productos (ej: GitHub Pages o servidor estático)
-        if (!productos || !productos.length) {
-            let staticList = await getFallbackProducts();
-            productos = staticList;
+        if (!productos) {
+            productos = await getFallbackProducts();
         }
 
-        // Integrar productos creados por el admin si aún no vienen del backend
-        try {
-            const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
-            if (Array.isArray(customProds) && customProds.length > 0) {
-                const existingIds = new Set((productos || []).map(p => String(p.id)));
-                const existingCodes = new Set((productos || []).map(p => (p.codigo || '').toLowerCase()));
-                const missing = customProds.filter(cp => !existingIds.has(String(cp.id)) && !existingCodes.has((cp.codigo || '').toLowerCase()));
-                if (missing.length > 0) {
-                    productos = [...missing, ...(productos || [])];
-                }
-            }
-        } catch(e) {}
-
-        if (!productos || !productos.length) {
-            if (grid) grid.innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.5;display:block"></i><p style="font-size:1.05rem">No hay productos en esta categoría.</p></div>';
-            return;
-        }
+        // Filtrar papelera y eliminados definitivos
+        const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        const trashIds = new Set(trash.map(t => String(t.id)));
+        const deletedIds = new Set(JSON.parse(localStorage.getItem('duri_deleted_ids') || '[]').map(String));
+        productos = (productos || []).filter(p => p && !trashIds.has(String(p.id)) && !deletedIds.has(String(p.id)));
 
         window._allCatalogProducts = productos;
         window._catalogProducts = productos;
 
-        // Actualizar contadores de categorías si existen
+        // Actualizar contadores de categorías
         updateCategoryCounts(productos);
+
+        if (!productos || !productos.length) {
+            if (grid) grid.innerHTML = '<div style="text-align:center;grid-column:1/-1;padding:50px;color:var(--text-tertiary)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.4;display:block"></i><p style="font-size:1.05rem;font-weight:600;">No hay productos en esta sección.</p></div>';
+            return;
+        }
 
         // Si se especificó una categoría concreta
         if (categoria && categoria !== 'all') {
@@ -1724,7 +1759,11 @@ function selectCatalogPredictiveItem(id) {
 }
 
 function applyCatalogFilters() {
-    if (!window._allCatalogProducts || !window._allCatalogProducts.length) return;
+    const grid = document.getElementById('productsGrid');
+    if (!window._allCatalogProducts || !window._allCatalogProducts.length) {
+        if (grid) grid.innerHTML = '<div style="text-align:center;grid-column:1/-1;padding:50px;color:var(--text-tertiary)"><i class="fas fa-box-open" style="font-size:2.5rem;margin-bottom:12px;opacity:0.4;display:block"></i><p style="font-size:1.05rem;font-weight:600;">No hay productos en esta sección.</p></div>';
+        return;
+    }
     
     const searchVal = (document.getElementById('catalogSearchInput') ? document.getElementById('catalogSearchInput').value : '').toLowerCase().trim();
     const activeBtn = document.querySelector('#categoryFilterBar .filter-btn.active');
@@ -1978,50 +2017,28 @@ async function loadInventario() {
     }
 
     // Fallback estático para GitHub Pages o si la API PHP no responde
-    if (!productos || !productos.length) {
+    if (!productos) {
         productos = await getFallbackProducts();
-        if (productos && productos.length) {
-            stats = {
-                total_productos: productos.length,
-                en_stock: productos.filter(p => Number(p.stock_actual) > Number(p.stock_minimo)).length,
-                stock_bajo: productos.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo) && Number(p.stock_actual) > 0).length,
-                agotados: productos.filter(p => Number(p.stock_actual) <= 0).length,
-                total_categorias: new Set(productos.map(p => p.categoria_nombre || p.categoria_id).filter(Boolean)).size || 4,
-                valor_inventario: productos.reduce((sum, p) => sum + (Number(p.stock_actual) * Number(p.precio_venta || 0)), 0)
-            };
-        }
     }
 
-    // Integrar productos creados por el admin si aún no vienen del backend
-    try {
-        const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
-        if (Array.isArray(customProds) && customProds.length > 0) {
-            const existingIds = new Set((productos || []).map(p => String(p.id)));
-            const existingCodes = new Set((productos || []).map(p => (p.codigo || '').toLowerCase()));
-            const missing = customProds.filter(cp => !existingIds.has(String(cp.id)) && !existingCodes.has((cp.codigo || '').toLowerCase())).map(p => ({
-                ...p,
-                estado_stock: p.stock_actual <= 0 ? 'agotado' : (p.stock_actual <= p.stock_minimo ? 'bajo' : 'disponible')
-            }));
-            if (missing.length > 0) {
-                productos = [...missing, ...(productos || [])];
-            }
-        }
-    } catch(e) {}
+    // Filtrar papelera y eliminados definitivos
+    const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+    const trashIds = new Set(trash.map(t => String(t.id)));
+    const deletedIds = new Set(JSON.parse(localStorage.getItem('duri_deleted_ids') || '[]').map(String));
+    productos = (productos || []).filter(p => p && !trashIds.has(String(p.id)) && !deletedIds.has(String(p.id)));
 
-    if (productos && productos.length) {
-        _cachedInventory = productos;
-        renderInventarioTable(productos);
-        if (stats) renderInventarioStats(stats);
-    } else {
-        const tbody = document.getElementById('invBody');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#dc3545"><i class="fas fa-exclamation-triangle" style="font-size:1.8rem;margin-bottom:8px;display:block"></i>No se pudo cargar el inventario.</td></tr>';
-        }
-        const statsEl = document.getElementById('invStats');
-        if (statsEl) {
-            statsEl.innerHTML = '<div class="stat-card red"><div class="stat-card-icon red"><i class="fas fa-exclamation-triangle"></i></div><div><div class="stat-card-label">Error al cargar estadísticas</div></div></div>';
-        }
-    }
+    stats = {
+        total_productos: productos.length,
+        en_stock: productos.filter(p => Number(p.stock_actual) > Number(p.stock_minimo)).length,
+        stock_bajo: productos.filter(p => Number(p.stock_actual) <= Number(p.stock_minimo) && Number(p.stock_actual) > 0).length,
+        agotados: productos.filter(p => Number(p.stock_actual) <= 0).length,
+        total_categorias: new Set(productos.map(p => p.categoria_nombre || p.categoria_id).filter(Boolean)).size || 0,
+        valor_inventario: productos.reduce((sum, p) => sum + (Number(p.stock_actual) * Number(p.precio_venta || 0)), 0)
+    };
+
+    _cachedInventory = productos;
+    renderInventarioTable(productos);
+    if (stats) renderInventarioStats(stats);
 }
 
 function renderInventarioStats(stats) {
@@ -2624,7 +2641,7 @@ async function saveEditProduct() {
 
     // Persistencia local / GitHub Pages
     if (!saved || isGH) {
-        let currentList = await getFallbackProducts();
+        let currentList = await getBaseProductsForStorage();
         const idx = currentList.findIndex(item => String(item.id) === String(_editingProductId));
         const catNames = {1:'Útiles Escolares', 2:'Papelería', 3:'Tecnología', 4:'Accesorios'};
         if (idx !== -1) {
@@ -2854,14 +2871,11 @@ async function ejecutarEliminacionProducto(id) {
 
     // 2. Remover de duri_products_custom en localStorage
     try {
-        let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        let customProds = await getBaseProductsForStorage();
         if (Array.isArray(customProds)) {
-            const prevLen = customProds.length;
             customProds = customProds.filter(item => item && String(item.id) !== String(id));
-            if (customProds.length !== prevLen) {
-                localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
-                deleted = true;
-            }
+            localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+            deleted = true;
         }
     } catch (e) {}
 
@@ -3119,11 +3133,17 @@ async function restaurarProducto(id) {
         trash = trash.filter(item => String(item.id) !== String(id));
         localStorage.setItem('duri_papelera', JSON.stringify(trash));
 
+        let deletedIds = JSON.parse(localStorage.getItem('duri_deleted_ids') || '[]');
+        deletedIds = deletedIds.filter(dId => String(dId) !== String(id));
+        localStorage.setItem('duri_deleted_ids', JSON.stringify(deletedIds));
+
         if (foundInTrash) {
-            let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            let customProds = await getBaseProductsForStorage();
             const exists = customProds.some(p => String(p.id) === String(id));
             if (!exists) {
-                customProds.push(foundInTrash);
+                const restoredItem = { ...foundInTrash };
+                delete restoredItem.deleted_at;
+                customProds.push(restoredItem);
                 localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
             }
             restored = true;
@@ -3171,15 +3191,18 @@ async function restaurarTodosLosProductos() {
     try {
         let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
         if (trash.length) {
-            let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            let customProds = await getBaseProductsForStorage();
             const existingIds = new Set(customProds.map(p => String(p.id)));
             trash.forEach(t => {
                 if (!existingIds.has(String(t.id))) {
-                    customProds.push(t);
+                    const restoredItem = { ...t };
+                    delete restoredItem.deleted_at;
+                    customProds.push(restoredItem);
                 }
             });
             localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
             localStorage.removeItem('duri_papelera');
+            localStorage.setItem('duri_deleted_ids', JSON.stringify([]));
         }
     } catch (e) {}
 
@@ -3215,9 +3238,15 @@ async function eliminarProductoDefinitivo(id, nombre) {
                 trash = trash.filter(item => String(item.id) !== String(id));
                 localStorage.setItem('duri_papelera', JSON.stringify(trash));
 
-                let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+                let customProds = await getBaseProductsForStorage();
                 customProds = customProds.filter(item => String(item.id) !== String(id));
                 localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+
+                let deletedIds = JSON.parse(localStorage.getItem('duri_deleted_ids') || '[]');
+                if (!deletedIds.map(String).includes(String(id))) {
+                    deletedIds.push(String(id));
+                    localStorage.setItem('duri_deleted_ids', JSON.stringify(deletedIds));
+                }
             } catch(e) {}
 
             const row = document.getElementById(`trashRow_${id}`);
@@ -3260,6 +3289,14 @@ async function vaciarPapeleraDefinitiva() {
             }
 
             try {
+                let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+                let deletedIds = JSON.parse(localStorage.getItem('duri_deleted_ids') || '[]');
+                trash.forEach(t => {
+                    if (!deletedIds.map(String).includes(String(t.id))) {
+                        deletedIds.push(String(t.id));
+                    }
+                });
+                localStorage.setItem('duri_deleted_ids', JSON.stringify(deletedIds));
                 localStorage.removeItem('duri_papelera');
             } catch(e) {}
 
@@ -3624,8 +3661,9 @@ async function guardarNuevoProducto() {
     };
 
     try {
-        let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        let customProds = await getBaseProductsForStorage();
         if (!Array.isArray(customProds)) customProds = [];
+        customProds = customProds.filter(p => String(p.id) !== String(localItem.id) && (p.codigo || '').toLowerCase() !== (localItem.codigo || '').toLowerCase());
         customProds.unshift(localItem);
         localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
     } catch(e) {}
@@ -4117,7 +4155,7 @@ async function ejecutarImportacionMasiva() {
 
     // Sincronizar en caché local
     try {
-        let customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        let customProds = await getBaseProductsForStorage();
         if (!Array.isArray(customProds)) customProds = [];
 
         // Integrar o actualizar por código
