@@ -3,7 +3,7 @@
 // Permite instalar la aplicación en PC / Móvil
 // ============================================
 
-const CACHE_NAME = 'duri-pwa-v66.0';
+const CACHE_NAME = 'duri-pwa-v67.0';
 const CORE_ASSETS = [
     './',
     './index.html',

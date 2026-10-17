@@ -973,12 +973,26 @@ img { max-width:100%; height:auto; }
 /* ============================================
    CONTACT PAGE HERO (image bg)
    ============================================ */
-.page-hero { padding:0; background:var(--dark); position:relative; overflow:hidden; min-height:240px; display:flex; align-items:center; }
-.page-hero-bg { position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=1600&q=80') center/cover no-repeat; opacity:0.3; }
-.page-hero-overlay { position:absolute; inset:0; background:linear-gradient(135deg, rgba(26,15,46,0.85) 0%, rgba(232,93,38,0.4) 100%); }
-.page-hero-content { text-align:center; position:relative; z-index:1; padding:80px 24px; width:100%; }
-.page-hero h1 { font-size:2.4rem; margin-bottom:8px; color:var(--white); letter-spacing:-0.03em; }
-.page-hero p { font-size:1rem; color:rgba(255,255,255,0.6); }
+.page-hero {
+    padding: 0;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #E85D26 100%) !important;
+    position: relative;
+    overflow: hidden;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.page-hero-bg { position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1423666639041-f56000c27a9a?w=1600&q=80') center/cover no-repeat; opacity:0.15; }
+.page-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(26,15,46,0.85) 0%, rgba(232,93,38,0.4) 100%);
+    pointer-events: none;
+}
+.page-hero-content { text-align:center; position:relative; z-index:2; padding:65px 20px; width:100%; }
+.page-hero h1 { font-size:2.5rem; font-weight:800; margin:12px 0 10px; color:#ffffff; letter-spacing:-0.03em; }
+.page-hero p { font-size:1.05rem; color:rgba(255,255,255,0.85); max-width:620px; margin:0 auto; line-height:1.6; }
 
 /* ============================================
    PEDIDOS HERO - Modern & Eye-Catching
