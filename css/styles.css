@@ -1609,9 +1609,9 @@ img { max-width:100%; height:auto; }
     }
     .page-hero p {
         font-size: 0.98rem !important;
-        text-align: justify !important;
-        text-align-last: center !important;
-        text-justify: inter-word !important;
+        text-align: center !important;
+        word-spacing: normal !important;
+        letter-spacing: normal !important;
         max-width: 92% !important;
         margin: 0 auto !important;
         line-height: 1.6 !important;
@@ -2148,9 +2148,9 @@ img { max-width:100%; height:auto; }
     }
     .page-hero p {
         font-size: 0.96rem !important;
-        text-align: justify !important;
-        text-align-last: center !important;
-        text-justify: inter-word !important;
+        text-align: center !important;
+        word-spacing: normal !important;
+        letter-spacing: normal !important;
         max-width: 95% !important;
         margin: 0 auto !important;
         line-height: 1.55 !important;
@@ -2162,10 +2162,9 @@ img { max-width:100%; height:auto; }
     }
     .cta-content h2 { font-size:1.4rem; }
     .cta-content p {
-        font-size:0.95rem;
-        text-align: justify !important;
-        text-align-last: center !important;
-        text-justify: inter-word !important;
+        font-size: 0.95rem;
+        text-align: center !important;
+        word-spacing: normal !important;
     }
 
     .contact-items {
