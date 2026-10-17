@@ -5553,41 +5553,23 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
                         <span><i class="fas fa-user-check" style="color:#059669;margin-right:4px;"></i> <b>Cliente:</b> ${p.cliente_nombre || 'Cliente'}</span>
                         ${p.cliente_ci ? `<span style="color:#64748b;font-weight:600;">${p.cliente_ci}</span>` : ''}
                     </div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
                         <span><i class="fas fa-stamp" style="color:#059669;margin-right:4px;"></i> <b>Estado:</b></span>
                         <span style="background:#dcfce7;color:#166534;font-weight:700;padding:1px 6px;border-radius:6px;font-size:0.68rem;">✅ Pago Confirmado</span>
                     </div>
-                    ${p.cliente_email ? `
-                        <div style="display:flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#166534;line-height:1.35;">
-                            <i class="fas fa-clock" style="color:#16a34a;font-size:0.85rem;flex-shrink:0;"></i>
-                            <span>Correo: <b>${p.cliente_email}</b><br><span style="color:#15803d;font-size:0.68rem;">(Se enviará la factura automáticamente al marcar el pedido como <b>Entregado</b>)</span></span>
-                        </div>
-                    ` : `
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#92400e;">
-                            <span><i class="fas fa-info-circle"></i> Sin correo registrado</span>
-                            <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" style="background:#f59e0b;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.68rem;font-weight:700;cursor:pointer;">
-                                + Registrar Correo
-                            </button>
-                        </div>
-                    `}
                 </div>
 
-                <!-- Botones Organizados: Acción principal y Fila 2 Columnas -->
-                <div style="display:flex;flex-direction:column;gap:6px;">
+                <!-- Botones de Acción -->
+                <div style="display:flex;flex-direction:column;gap:7px;">
                     <!-- Botón Principal: Ver/Descargar PDF -->
-                    <button type="button" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="width:100%;min-height:36px;padding:8px 12px;background:linear-gradient(135deg, #4f46e5, #3730a3);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 8px rgba(79,70,229,0.28);">
+                    <button type="button" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="width:100%;min-height:38px;padding:9px 12px;background:linear-gradient(135deg, #4f46e5, #3730a3);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.83rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 8px rgba(79,70,229,0.28);">
                         <i class="fas fa-file-invoice-dollar" style="font-size:0.95rem;"></i> Ver y Descargar Factura (PDF)
                     </button>
 
-                    <!-- Fila 2 Columnas: WhatsApp y Correo -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                        <button type="button" onclick="compartirFacturaWhatsApp('${codigo}');" style="min-height:34px;padding:6px 8px;background:#25d366;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(37,211,102,0.2);">
-                            <i class="fab fa-whatsapp" style="font-size:0.95rem;"></i> WhatsApp
-                        </button>
-                        <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}');" style="min-height:34px;padding:6px 8px;background:#0284c7;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 6px rgba(2,132,199,0.2);">
-                            <i class="fas fa-envelope" style="font-size:0.85rem;"></i> ${p.cliente_email ? 'Reenviar' : 'Correo'}
-                        </button>
-                    </div>
+                    <!-- Botón WhatsApp -->
+                    <button type="button" onclick="compartirFacturaWhatsApp('${codigo}');" style="width:100%;min-height:36px;padding:8px 12px;background:#25d366;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 6px rgba(37,211,102,0.25);">
+                        <i class="fab fa-whatsapp" style="font-size:1rem;"></i> Compartir Factura por WhatsApp
+                    </button>
 
                     <!-- Botón Volver sutil -->
                     <button type="button" onclick="cerrarModalPagoAprobado();" style="width:100%;min-height:30px;padding:5px;background:#f8fafc;color:#64748b;border:1px solid #cbd5e1;border-radius:8px;font-weight:600;font-size:0.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:2px;">
@@ -6501,11 +6483,7 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
 
     const isGH = window.location.hostname.includes('github.io');
     if (nuevoEstado === 'procesando') {
-        if (clienteEmail) {
-            showToast(`¡Pago del pedido ${codigo || ''} aprobado! (La factura se enviará a ${clienteEmail} cuando valides la entrega)`, 'success');
-        } else {
-            showToast(`¡Pago del pedido ${codigo || ''} aprobado con éxito! (Sin correo registrado)`, 'success');
-        }
+        showToast(`¡Pago del pedido ${codigo || ''} validado y aprobado con éxito!`, 'success');
     } else if (nuevoEstado === 'completado') {
         if (isGH) {
             if (clienteEmail) {
