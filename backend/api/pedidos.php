@@ -371,7 +371,8 @@ switch ($method) {
             $emailDestino = !empty($data['cliente_email']) ? trim($data['cliente_email']) : ($pedidoActual['final_email'] ?? $pedidoActual['cliente_email'] ?? '');
             $emailMensaje = '';
 
-            if (in_array($nuevoEstado, ['procesando', 'completado'])) {
+            // Envío automático de factura al correo del cliente: ÚNICAMENTE cuando se valide como 'completado' (Entregado)
+            if ($nuevoEstado === 'completado') {
                 if ($emailDestino && filter_var($emailDestino, FILTER_VALIDATE_EMAIL) && function_exists('enviarFacturaClienteEmail')) {
                     $stmtDet = $db->prepare("SELECT dp.*, pr.nombre as producto_nombre FROM detalle_pedido dp LEFT JOIN productos pr ON dp.producto_id = pr.id WHERE dp.pedido_id = ?");
                     $stmtDet->execute([$realId]);

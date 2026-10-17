@@ -4670,8 +4670,8 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                 `;
             } else if (p.estado === 'procesando') {
                 statusBtn = `
-                    <button type="button" class="btn btn-sm" style="background:#007bff;color:#fff;padding:7px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="actualizarEstadoPedidoDirecto(${p.id}, 'completado', '${safeCode}')">
-                        <i class="fas fa-box-check"></i> Entregar / Completar
+                    <button type="button" class="btn btn-sm" style="background:#059669;color:#fff;font-weight:700;padding:8px 13px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(5,150,105,0.3);" onclick="confirmarEntregaPedido(${p.id}, '${safeCode}', '${safeEmail}')">
+                        <i class="fas fa-truck-ramp-box"></i> Validar y Entregado
                     </button>
                     <button type="button" class="btn btn-sm" style="background:#ffc107;color:#212529;padding:7px 10px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;" onclick="confirmarCancelarPedido(${p.id}, '${safeCode}')">
                         <i class="fas fa-undo"></i> Cancelar
@@ -5558,15 +5558,15 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
                         <span style="background:#dcfce7;color:#166534;font-weight:700;padding:1px 6px;border-radius:6px;font-size:0.68rem;">✅ Pago Confirmado</span>
                     </div>
                     ${p.cliente_email ? `
-                        <div style="display:flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:4px 8px;font-size:0.72rem;color:#1e40af;">
-                            <i class="fas fa-envelope-circle-check" style="color:#2563eb;font-size:0.85rem;flex-shrink:0;"></i>
-                            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Enviada a: <b>${p.cliente_email}</b></span>
+                        <div style="display:flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#166534;line-height:1.35;">
+                            <i class="fas fa-clock" style="color:#16a34a;font-size:0.85rem;flex-shrink:0;"></i>
+                            <span>Correo: <b>${p.cliente_email}</b><br><span style="color:#15803d;font-size:0.68rem;">(Se enviará la factura automáticamente al marcar el pedido como <b>Entregado</b>)</span></span>
                         </div>
                     ` : `
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:4px 8px;font-size:0.72rem;color:#92400e;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:5px 8px;font-size:0.72rem;color:#92400e;">
                             <span><i class="fas fa-info-circle"></i> Sin correo registrado</span>
-                            <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" style="background:#f59e0b;color:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:0.68rem;font-weight:700;cursor:pointer;">
-                                + Enviar
+                            <button type="button" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" style="background:#f59e0b;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.68rem;font-weight:700;cursor:pointer;">
+                                + Registrar Correo
                             </button>
                         </div>
                     `}
@@ -6397,6 +6397,47 @@ function confirmarCancelarPedido(id, codigo) {
 }
 window.confirmarCancelarPedido = confirmarCancelarPedido;
 
+function confirmarEntregaPedido(id, codigo, email = '') {
+    cerrarModalValidacionPago();
+    const p = findOrderData(codigo || id);
+    const clienteEmail = (email && email !== 'undefined' ? email : (p ? p.cliente_email : '')) || '';
+
+    const modal = document.createElement('div');
+    modal.id = 'modalValidarPagoAdmin';
+    modal.className = 'modal show';
+    modal.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:rgba(15,23,42,0.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,12px)) max(12px,env(safe-area-inset-right,12px)) max(12px,env(safe-area-inset-bottom,12px)) max(12px,env(safe-area-inset-left,12px));box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+
+    const emailNotice = clienteEmail
+        ? `<div style="margin-top:10px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:0.75rem;color:#166534;text-align:left;line-height:1.4;"><i class="fas fa-paper-plane" style="color:#16a34a;margin-right:5px;"></i> Se enviará la factura oficial al correo: <b>${clienteEmail}</b></div>`
+        : `<div style="margin-top:10px;padding:9px 12px;background:#fffbeb;border:1px solid #fef3c7;border-radius:8px;font-size:0.75rem;color:#92400e;text-align:left;line-height:1.4;"><i class="fas fa-info-circle" style="color:#d97706;margin-right:5px;"></i> El cliente no tiene correo registrado. Podrás compartir el comprobante por WhatsApp.</div>`;
+
+    modal.innerHTML = `
+        <div style="background:#fff;border-radius:18px;width:100%;max-width:410px;max-height:min(90dvh,calc(100vh - 24px));display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.35);margin:auto;text-align:center;">
+            <div style="padding:24px 20px 16px;flex:1 1 auto;overflow-y:auto;">
+                <div style="width:52px;height:52px;border-radius:50%;background:rgba(5,150,105,0.14);border:2px solid #059669;color:#059669;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 12px;">
+                    <i class="fas fa-truck-ramp-box"></i>
+                </div>
+                <h3 style="margin:0 0 6px;font-size:1.2rem;color:#0f172a;font-weight:800;">¿Validar y Marcar como Entregado?</h3>
+                <p style="margin:0;font-size:0.84rem;color:#64748b;line-height:1.5;">Confirmas que la mercancía del pedido <b>${codigo}</b> fue recibida conforme por el cliente.</p>
+                ${emailNotice}
+            </div>
+            <div style="padding:12px 18px;padding-bottom:max(12px,env(safe-area-inset-bottom,12px));display:flex;gap:10px;background:#ffffff;border-top:1px solid #f1f5f9;flex-shrink:0;">
+                <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;min-height:44px;padding:10px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;font-size:0.88rem;font-weight:600;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                    Volver
+                </button>
+                <button type="button" id="btnConfirmarEntregaModal" onclick="actualizarEstadoPedidoDirecto(${id}, 'completado', '${codigo}'); cerrarModalValidacionPago();" style="flex:1.3;min-height:44px;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:10px;font-size:0.88rem;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(5,150,105,0.35);">
+                    <i class="fas fa-check-double"></i> Sí, Entregado
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModalValidacionPago();
+    });
+}
+window.confirmarEntregaPedido = confirmarEntregaPedido;
+
 async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     if (!isSuperUsuario()) {
         showToast('Acceso restringido: solo el superusuario puede verificar y administrar pagos', 'error');
@@ -6459,32 +6500,42 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     if (typeof loadInventario === 'function') loadInventario();
 
     const isGH = window.location.hostname.includes('github.io');
-    if (isGH) {
-        if (nuevoEstado === 'procesando') {
-            if (clienteEmail) {
-                showToast(`¡Pago validado con éxito! (En GitHub Pages se simula el correo a ${clienteEmail}; en tu servidor local se envía por Gmail)`, 'success');
-            } else {
-                showToast('Pago validado con éxito (sin correo de cliente registrado).', 'info');
-            }
+    if (nuevoEstado === 'procesando') {
+        if (clienteEmail) {
+            showToast(`¡Pago del pedido ${codigo || ''} aprobado! (La factura se enviará a ${clienteEmail} cuando valides la entrega)`, 'success');
+        } else {
+            showToast(`¡Pago del pedido ${codigo || ''} aprobado con éxito! (Sin correo registrado)`, 'success');
         }
-    } else {
-        if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
-            showToast(`¡Factura enviada automáticamente al correo ${backendResult.email_destino}!`, 'success');
-        } else if (backendResult && backendResult.email_mensaje) {
-            showToast(`Aviso de correo: ${backendResult.email_mensaje}`, 'warning');
-        } else if (nuevoEstado === 'procesando' && !clienteEmail) {
-            showToast('Pago validado (sin correo de cliente registrado).', 'info');
+    } else if (nuevoEstado === 'completado') {
+        if (isGH) {
+            if (clienteEmail) {
+                showToast(`¡Pedido ${codigo || ''} Entregado con éxito! (En GitHub Pages se simula el correo a ${clienteEmail}; en local se envía por Gmail)`, 'success');
+            } else {
+                showToast(`¡Pedido ${codigo || ''} marcado como Entregado!`, 'success');
+            }
+        } else {
+            if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
+                showToast(`¡Pedido ${codigo || ''} Entregado! Factura oficial enviada al correo ${backendResult.email_destino}`, 'success');
+            } else if (backendResult && backendResult.email_mensaje) {
+                showToast(`Pedido Entregado. Aviso correo: ${backendResult.email_mensaje}`, 'warning');
+            } else if (clienteEmail) {
+                showToast(`¡Pedido ${codigo || ''} marcado como Entregado! Factura lista para ${clienteEmail}`, 'success');
+            } else {
+                showToast(`¡Pedido ${codigo || ''} marcado como Entregado con éxito!`, 'success');
+            }
         }
     }
     return backendResult;
 }
 window.actualizarEstadoPedidoDirecto = actualizarEstadoPedidoDirecto;
 
-function actualizarEstadoPedido(id, nuevoEstado, codigo = '', total = 0) {
+function actualizarEstadoPedido(id, nuevoEstado, codigo = '', total = 0, email = '') {
     if (nuevoEstado === 'procesando') {
         abrirModalValidarPago(id, codigo, total);
     } else if (nuevoEstado === 'cancelado') {
         confirmarCancelarPedido(id, codigo);
+    } else if (nuevoEstado === 'completado') {
+        confirmarEntregaPedido(id, codigo, email);
     } else {
         actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo);
     }
