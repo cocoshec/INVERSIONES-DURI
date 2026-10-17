@@ -3,7 +3,7 @@
 // Permite instalar la aplicación en PC / Móvil
 // ============================================
 
-const CACHE_NAME = 'duri-pwa-v71.0';
+const CACHE_NAME = 'duri-pwa-v80.0';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -49,7 +49,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Estrategia de Fetch: Network-First para APIs y HTML, Cache-First para estáticos
+// Estrategia de Fetch: Network-First para APIs, HTML, JS y CSS
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
@@ -57,7 +57,7 @@ self.addEventListener('fetch', (event) => {
     // Ignorar peticiones de extensiones de navegador o esquemas no soportados
     if (!url.protocol.startsWith('http')) return;
 
-    // Peticiones a la API PHP siempre de la red (nunca congelar el inventario en caché)
+    // Peticiones a la API PHP siempre de la red (nunca congelar en caché)
     if (url.pathname.includes('/backend/api/')) {
         event.respondWith(
             fetch(request).catch(() => {
@@ -85,7 +85,21 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Para recursos estáticos (CSS, JS, Imágenes, Fuentes): Stale-While-Revalidate
+    // Para JS y CSS: Network-First (para que cualquier actualización de código se aplique de inmediato)
+    if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.search.includes('v=')) {
+        event.respondWith(
+            fetch(request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+                }
+                return networkResponse;
+            }).catch(() => caches.match(request))
+        );
+        return;
+    }
+
+    // Para imágenes y recursos estáticos multimedia: Cache-First con fallback a red
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
             const fetchPromise = fetch(request).then((networkResponse) => {
