@@ -10,8 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="../css/styles.css?v=80.0">
@@ -177,12 +177,15 @@
                         <div id="contenedorDireccionDespacho" style="display:none;" class="form-group">
                             <label><i class="fas fa-map-marker-alt"></i> Dirección Exacta de Despacho <span style="color:#dc3545">*</span></label>
                             
-                            <!-- Botones: Solo Mi GPS Actual y Sede Duri -->
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:10px;">
-                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.84rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 6px rgba(40,167,69,0.25);">
-                                    <i class="fas fa-crosshairs"></i> Mi GPS Actual
+                            <!-- Botones: Abrir Mapa, Mi GPS y Sede Duri -->
+                            <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:8px; margin-bottom:10px;">
+                                <button type="button" class="btn btn-sm" id="btnAbrirMapaDirect" onclick="abrirModalMapa(false, false)" style="background:#e85d26; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 6px rgba(232,93,38,0.28);">
+                                    <i class="fas fa-map-marked-alt"></i> Abrir Mapa
                                 </button>
-                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:0.84rem; color:#991b1b; text-decoration:none; padding:10px 8px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca; font-weight:700; text-align:center;">
+                                <button type="button" class="btn btn-sm" id="btnGpsDirect" onclick="obtenerGpsDirecto()" style="background:#28a745; color:#fff; border:none; padding:10px 8px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 2px 6px rgba(40,167,69,0.25);">
+                                    <i class="fas fa-crosshairs"></i> Mi GPS
+                                </button>
+                                <a href="https://maps.app.goo.gl/b7vwPaeU1rCJfcZX7" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center; justify-content:center; gap:5px; font-size:0.82rem; color:#991b1b; text-decoration:none; padding:10px 8px; background:#fef2f2; border-radius:8px; border:1px solid #fecaca; font-weight:700; text-align:center;">
                                     <i class="fas fa-store"></i> Sede Duri
                                 </a>
                             </div>
@@ -573,22 +576,30 @@
             caracas: { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zoom: 13, zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
         };
 
-        const googlePinIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
-        });
+        const MAPBOX_ACCESS_TOKEN = atob('cGsuZXlKMUlqb2lhbWh2Y21kbFpXVWlMQ0poSWpvaVkyMTJabXh5ZW5CeU1ETmhZVE0wY0hwcWF6RnhNR0ZoWmlKOS5jUFYzXzdJeVIxYy1qY2RFNnBTMEt3');
+
+        function moverMapaYMarcador(lat, lon, zoom = 16) {
+            const latNum = parseFloat(lat);
+            const lonNum = parseFloat(lon);
+            if (!isNaN(latNum) && !isNaN(lonNum)) {
+                if (gmap) {
+                    gmap.flyTo({
+                        center: [lonNum, latNum],
+                        zoom: zoom,
+                        essential: true,
+                        speed: 1.2
+                    });
+                }
+                if (gmarker) {
+                    gmarker.setLngLat([lonNum, latNum]);
+                }
+            }
+        }
 
         function centrarEnCiudad(clave) {
             const info = CIUDADES_VE[clave];
             if (!info) return;
-            if (gmap) {
-                gmap.flyTo(info.coords, info.zoom, { animate: true, duration: 1.2 });
-                if (gmarker) gmarker.setLatLng(info.coords);
-            }
+            moverMapaYMarcador(info.coords[0], info.coords[1], info.zoom);
             actualizarPuntoSeleccionado(info.coords[0], info.coords[1], info.nombre, info.zona);
             if (typeof showToast === 'function') {
                 if (info.bloqueado || info.zona === 'fuera_aragua') {
@@ -646,9 +657,7 @@
             } catch(e) {}
         }
 
-        let mapTileLayerRoad = null;
-        let mapTileLayerSat = null;
-        let currentMapTileMode = 'road';
+        let currentMapStyleMode = 'sat';
 
         function cambiarCapaMapa(tipo) {
             if (!gmap) return;
@@ -656,77 +665,70 @@
             const btnSat = document.getElementById('btnMapStyleSat');
 
             if (tipo === 'sat') {
-                if (mapTileLayerRoad && gmap.hasLayer(mapTileLayerRoad)) {
-                    gmap.removeLayer(mapTileLayerRoad);
-                }
-                if (!mapTileLayerSat) {
-                    mapTileLayerSat = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-                        maxZoom: 20,
-                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-                        attribution: '&copy; Google Maps Satelital'
-                    });
-                }
-                mapTileLayerSat.addTo(gmap);
-                currentMapTileMode = 'sat';
+                gmap.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
+                currentMapStyleMode = 'sat';
                 if (btnRoad) { btnRoad.style.background = '#f1f3f4'; btnRoad.style.color = '#3c4043'; }
-                if (btnSat) { btnSat.style.background = '#ea4335'; btnSat.style.color = '#fff'; }
+                if (btnSat) { btnSat.style.background = '#e85d26'; btnSat.style.color = '#fff'; }
             } else {
-                if (mapTileLayerSat && gmap.hasLayer(mapTileLayerSat)) {
-                    gmap.removeLayer(mapTileLayerSat);
-                }
-                if (mapTileLayerRoad && !gmap.hasLayer(mapTileLayerRoad)) {
-                    mapTileLayerRoad.addTo(gmap);
-                }
-                currentMapTileMode = 'road';
-                if (btnRoad) { btnRoad.style.background = '#1a73e8'; btnRoad.style.color = '#fff'; }
+                gmap.setStyle('mapbox://styles/mapbox/streets-v12');
+                currentMapStyleMode = 'streets';
+                if (btnRoad) { btnRoad.style.background = '#e85d26'; btnRoad.style.color = '#fff'; }
                 if (btnSat) { btnSat.style.background = '#f1f3f4'; btnSat.style.color = '#3c4043'; }
             }
         }
 
-        function initGoogleMap(coords = DEFAULT_COORD, zoom = 15) {
+        function initGoogleMap(coords = DEFAULT_COORD, zoom = 16) {
+            const container = document.getElementById('gmapsCanvas');
+            if (!container || typeof mapboxgl === 'undefined') return;
+
+            mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+            const lat = coords[0];
+            const lon = coords[1];
+
             if (gmap) {
-                gmap.setView(coords, zoom);
-                if (gmarker) gmarker.setLatLng(coords);
-                actualizarPuntoSeleccionado(coords[0], coords[1]);
-                setTimeout(() => gmap.invalidateSize(), 250);
+                moverMapaYMarcador(lat, lon, zoom);
+                actualizarPuntoSeleccionado(lat, lon);
+                setTimeout(() => { if (gmap) gmap.resize(); }, 150);
                 return;
             }
 
-            const container = document.getElementById('gmapsCanvas');
-            if (!container || typeof L === 'undefined') return;
+            gmap = new mapboxgl.Map({
+                container: 'gmapsCanvas',
+                style: 'mapbox://styles/mapbox/satellite-streets-v12',
+                center: [lon, lat],
+                zoom: zoom
+            });
 
-            gmap = L.map('gmapsCanvas', {
-                zoomControl: true
-            }).setView(coords, zoom);
+            gmap.on('load', () => {
+                gmap.resize();
+            });
 
-            // Capa oficial de Calles de Google Maps
-            mapTileLayerRoad = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                maxZoom: 20,
-                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-                attribution: '&copy; Google Maps'
-            }).addTo(gmap);
+            // Controles de zoom y orientación
+            gmap.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-left');
 
-            // Marcador rojo arrastrable
-            gmarker = L.marker(coords, {
+            // Marcador corporativo Duri (naranja #e85d26) arrastrable
+            gmarker = new mapboxgl.Marker({
                 draggable: true,
-                icon: googlePinIcon,
-                autoPan: true
-            }).addTo(gmap);
+                color: '#e85d26'
+            })
+            .setLngLat([lon, lat])
+            .addTo(gmap);
 
             // Evento al arrastrar el marcador (donde yo deje la marca)
-            gmarker.on('dragend', function(e) {
-                const pos = e.target.getLatLng();
+            gmarker.on('dragend', function() {
+                const pos = gmarker.getLngLat();
                 actualizarPuntoSeleccionado(pos.lat, pos.lng);
             });
 
             // Evento al hacer clic o tocar en cualquier parte del mapa
             gmap.on('click', function(e) {
-                if (gmarker) gmarker.setLatLng(e.latlng);
-                actualizarPuntoSeleccionado(e.latlng.lat, e.latlng.lng);
+                const { lng, lat: clickLat } = e.lngLat;
+                if (gmarker) gmarker.setLngLat([lng, clickLat]);
+                actualizarPuntoSeleccionado(clickLat, lng);
             });
 
-            actualizarPuntoSeleccionado(coords[0], coords[1]);
-            setTimeout(() => { if (gmap) gmap.invalidateSize(); }, 250);
+            actualizarPuntoSeleccionado(lat, lon);
+            setTimeout(() => { if (gmap) gmap.resize(); }, 250);
         }
 
         function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
@@ -900,7 +902,29 @@
          * Motor de Geolocalización Satelital Real y Soporte de Google Maps Oficial
          */
         let gpsWatchTrackerId = null;
-        let gpsAccuracyCircle = null;
+
+        function createGeoJSONCircle(center, radiusInMeters, points = 48) {
+            const [lng, lat] = center;
+            const km = radiusInMeters / 1000;
+            const ret = [];
+            const distanceX = km / (111.320 * Math.cos(lat * Math.PI / 180));
+            const distanceY = km / 110.574;
+
+            for (let i = 0; i < points; i++) {
+                const theta = (i / points) * (2 * Math.PI);
+                const x = distanceX * Math.cos(theta);
+                const y = distanceY * Math.sin(theta);
+                ret.push([lng + x, lat + y]);
+            }
+            ret.push(ret[0]);
+            return {
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [ret]
+                }
+            };
+        }
 
         function detenerRastreoGps() {
             if (gpsWatchTrackerId !== null) {
@@ -911,19 +935,37 @@
 
         function dibujarCirculoPrecision(lat, lon, accuracy) {
             if (!gmap) return;
-            if (gpsAccuracyCircle) {
-                try { gmap.removeLayer(gpsAccuracyCircle); } catch(e) {}
-                gpsAccuracyCircle = null;
-            }
-            if (accuracy && accuracy < 2000) {
-                gpsAccuracyCircle = L.circle([lat, lon], {
-                    radius: Math.min(accuracy, 250),
-                    color: '#1a73e8',
-                    fillColor: '#1a73e8',
-                    fillOpacity: 0.15,
-                    weight: 1.5
-                }).addTo(gmap);
-            }
+            const radius = Math.min(accuracy || 30, 250);
+            const circleData = createGeoJSONCircle([lon, lat], radius);
+            try {
+                if (gmap.getSource('gps-accuracy-source')) {
+                    gmap.getSource('gps-accuracy-source').setData(circleData);
+                } else if (gmap.isStyleLoaded()) {
+                    gmap.addSource('gps-accuracy-source', {
+                        type: 'geojson',
+                        data: circleData
+                    });
+                    gmap.addLayer({
+                        id: 'gps-accuracy-layer-fill',
+                        type: 'fill',
+                        source: 'gps-accuracy-source',
+                        paint: {
+                            'fill-color': '#e85d26',
+                            'fill-opacity': 0.15
+                        }
+                    });
+                    gmap.addLayer({
+                        id: 'gps-accuracy-layer-line',
+                        type: 'line',
+                        source: 'gps-accuracy-source',
+                        paint: {
+                            'line-color': '#e85d26',
+                            'line-width': 1.5,
+                            'line-dasharray': [2, 2]
+                        }
+                    });
+                }
+            } catch(e) {}
         }
 
         let yaIntentoConPermiso = false;
@@ -980,10 +1022,7 @@
                 const lat = parseFloat(qMatch[1]);
                 const lon = parseFloat(qMatch[2]);
                 aplicarUbicacionFijada(lat, lon);
-                if (gmap) {
-                    gmap.setView([lat, lon], 17);
-                    if (gmarker) gmarker.setLatLng([lat, lon]);
-                }
+                moverMapaYMarcador(lat, lon, 17);
                 if (typeof showToast === 'function') showToast('📍 Enlace de Google Maps fijado con éxito', 'success');
                 return;
             }
@@ -994,10 +1033,7 @@
                 const lat = parseFloat(atMatch[1]);
                 const lon = parseFloat(atMatch[2]);
                 aplicarUbicacionFijada(lat, lon);
-                if (gmap) {
-                    gmap.setView([lat, lon], 17);
-                    if (gmarker) gmarker.setLatLng([lat, lon]);
-                }
+                moverMapaYMarcador(lat, lon, 17);
                 if (typeof showToast === 'function') showToast('📍 Ubicación de Google Maps fijada con éxito', 'success');
                 return;
             }
@@ -1008,10 +1044,7 @@
                 const lat = parseFloat(geoMatch[1]);
                 const lon = parseFloat(geoMatch[2]);
                 aplicarUbicacionFijada(lat, lon);
-                if (gmap) {
-                    gmap.setView([lat, lon], 17);
-                    if (gmarker) gmarker.setLatLng([lat, lon]);
-                }
+                moverMapaYMarcador(lat, lon, 17);
                 if (typeof showToast === 'function') showToast('📍 Coordenadas fijadas con éxito', 'success');
                 return;
             }
@@ -1024,10 +1057,7 @@
                 let lon = parseFloat(dmsMatch[5]) + parseFloat(dmsMatch[6])/60 + parseFloat(dmsMatch[7])/3600;
                 if (dmsMatch[8].toUpperCase() === 'W' || dmsMatch[8].toUpperCase() === 'O') lon = -lon;
                 aplicarUbicacionFijada(lat, lon);
-                if (gmap) {
-                    gmap.setView([lat, lon], 17);
-                    if (gmarker) gmarker.setLatLng([lat, lon]);
-                }
+                moverMapaYMarcador(lat, lon, 17);
                 if (typeof showToast === 'function') showToast('📍 Coordenadas DMS convertidas y fijadas', 'success');
                 return;
             }
@@ -1039,10 +1069,7 @@
                 const lon = parseFloat(coordMatch[2]);
                 if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
                     aplicarUbicacionFijada(lat, lon);
-                    if (gmap) {
-                        gmap.setView([lat, lon], 17);
-                        if (gmarker) gmarker.setLatLng([lat, lon]);
-                    }
+                    moverMapaYMarcador(lat, lon, 17);
                     if (typeof showToast === 'function') showToast('📍 Coordenadas fijadas con éxito', 'success');
                     return;
                 }
@@ -1235,7 +1262,7 @@
                 extModalBtn.href = `https://www.google.com/maps/search/?api=1&query=${coordsToUse[0]},${coordsToUse[1]}`;
             }
             setTimeout(() => {
-                if (gmap) gmap.invalidateSize();
+                if (gmap) gmap.resize();
             }, 200);
 
             if (typeof sincronizarMontosUbicacion === 'function') {
@@ -1284,10 +1311,7 @@
                     const acc = pos.coords.accuracy || 20;
 
                     const zoomNivel = (acc < 30 ? 18 : 16);
-                    if (gmap) {
-                        gmap.flyTo([lat, lon], zoomNivel, { animate: true, duration: 1.0 });
-                        if (gmarker) gmarker.setLatLng([lat, lon]);
-                    }
+                    moverMapaYMarcador(lat, lon, zoomNivel);
                     dibujarCirculoPrecision(lat, lon, acc);
                     actualizarPuntoSeleccionado(lat, lon);
 
@@ -1329,10 +1353,7 @@
             if (typeof SECTORES_MARACAY !== 'undefined') {
                 for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
                     if (qLower.includes(key) || key.includes(qLower)) {
-                        if (gmap) {
-                            gmap.flyTo(sec.coords, 16, { animate: true, duration: 1.0 });
-                            if (gmarker) gmarker.setLatLng(sec.coords);
-                        }
+                        moverMapaYMarcador(sec.coords[0], sec.coords[1], 16);
                         actualizarPuntoSeleccionado(sec.coords[0], sec.coords[1], sec.nombre, sec.zona);
                         const tarifaTxt = sec.tarifa === 0 ? '¡Delivery GRATIS ($0.00)!' : `Tarifa Delivery: +$${sec.tarifa.toFixed(2)} USD`;
                         if (typeof showToast === 'function') showToast(`📍 ${sec.nombre} — ${tarifaTxt}`, 'success');
@@ -1350,10 +1371,7 @@
                     if (data && data.length > 0) {
                         const lat = parseFloat(data[0].lat);
                         const lon = parseFloat(data[0].lon);
-                        if (gmap) {
-                            gmap.flyTo([lat, lon], 16, { animate: true, duration: 1.0 });
-                            if (gmarker) gmarker.setLatLng([lat, lon]);
-                        }
+                        moverMapaYMarcador(lat, lon, 16);
                         const partes = data[0].display_name.split(',');
                         const nombreCorto = partes.slice(0, 3).join(',').trim();
                         actualizarPuntoSeleccionado(lat, lon, nombreCorto);
@@ -1366,10 +1384,7 @@
                                 if (d2 && d2.length > 0) {
                                     const lat2 = parseFloat(d2[0].lat);
                                     const lon2 = parseFloat(d2[0].lon);
-                                    if (gmap) {
-                                        gmap.flyTo([lat2, lon2], 16, { animate: true, duration: 1.0 });
-                                        if (gmarker) gmarker.setLatLng([lat2, lon2]);
-                                    }
+                                    moverMapaYMarcador(lat2, lon2, 16);
                                     const partes2 = d2[0].display_name.split(',');
                                     const nombreCorto2 = partes2.slice(0, 3).join(',').trim();
                                     actualizarPuntoSeleccionado(lat2, lon2, nombreCorto2);
@@ -1463,27 +1478,27 @@
     <div id="modalGoogleMaps" style="display:none; position:fixed; inset:0; width:100%; height:100%; height:100dvh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); padding:max(6px,env(safe-area-inset-top,6px)) 8px max(8px,env(safe-area-inset-bottom,8px)); box-sizing:border-box; overflow-y:auto;">
         <div style="background:#fff; width:680px; max-width:100%; max-height:min(94dvh,640px); height:min(94dvh,640px); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; margin:auto;">
             <!-- Header Modal -->
-            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <i class="fab fa-google" style="color:#ea4335; font-size:1.15rem;"></i>
+            <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <div style="display:flex; align-items:center; gap:9px;">
+                    <i class="fas fa-map-marked-alt" style="color:#e85d26; font-size:1.25rem;"></i>
                     <div>
-                        <strong style="font-size:0.92rem; color:#202124; display:block; line-height:1.2;">Google Maps Interactivo</strong>
-                        <span style="font-size:0.68rem; color:#5f6368;">Mueve el marcador rojo a tu casa o entrega</span>
+                        <strong style="font-size:0.95rem; color:#1e293b; display:block; line-height:1.2;">Mapa Satelital Interactivo</strong>
+                        <span style="font-size:0.7rem; color:#64748b;">Mueve el marcador naranja o toca donde deseas recibir tu pedido</span>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <!-- Botón para ver en Google Maps externo si el usuario lo desea -->
-                    <a id="btnGmapsExternalView" href="https://maps.google.com" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:#1a73e8; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:4px; background:#e8f0fe; padding:5px 9px; border-radius:6px;" title="Ver punto en la App de Google Maps">
-                        <i class="fas fa-external-link-alt"></i> App Maps
+                    <a id="btnGmapsExternalView" href="https://maps.google.com" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:#1a73e8; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:4px; background:#eff6ff; border:1px solid #bfdbfe; padding:5px 9px; border-radius:7px;" title="Ver punto en Google Maps">
+                        <i class="fab fa-google"></i> Google Maps
                     </a>
-                    <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:30px; height:30px; border-radius:50%; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;" aria-label="Cerrar">&times;</button>
+                    <button type="button" onclick="cerrarModalMapa()" style="background:#f1f3f4; border:none; width:32px; height:32px; border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#5f6368;" aria-label="Cerrar">&times;</button>
                 </div>
             </div>
 
             <!-- Banner de confirmación e instrucciones claras -->
-            <div id="gmapsPromptNotice" style="display:flex; background:#e8f4fd; border-bottom:1px solid #cbe5fb; padding:5px 12px; font-size:0.76rem; color:#035388; align-items:center; gap:6px; flex-shrink:0;">
-                <i class="fas fa-map-pin" style="color:#ea4335; font-size:0.9rem;"></i>
-                <span><b>Mueve o toca el mapa:</b> Donde dejes el marcador rojo, esa ubicación exacta se fija en tu pedido.</span>
+            <div id="gmapsPromptNotice" style="display:flex; background:#fff7ed; border-bottom:1px solid #fed7aa; padding:6px 12px; font-size:0.76rem; color:#9a3412; align-items:center; gap:6px; flex-shrink:0;">
+                <i class="fas fa-map-pin" style="color:#e85d26; font-size:0.9rem;"></i>
+                <span><b>Toca o arrastra en el mapa:</b> Donde dejes el marcador naranja, esa ubicación exacta se fija en tu pedido.</span>
             </div>
 
             <!-- Buscador rápido de sector / ciudad / avenida en toda Venezuela -->
@@ -1491,7 +1506,7 @@
                 <div style="display:flex; gap:6px; background:#fff; border:1.5px solid #d0d7de; border-radius:8px; padding:2px 6px; align-items:center;">
                     <i class="fas fa-search" style="color:#5f6368; padding-left:4px; font-size:0.8rem;"></i>
                     <input type="text" id="mapSearchInput" placeholder="🔍 Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Limón)..." style="flex:1; border:none; background:transparent; padding:5px 6px; font-size:0.8rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
-                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#ea4335; color:#fff; border:none; padding:5px 10px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">Buscar</button>
+                    <button type="button" onclick="buscarSectorEnMapa()" style="background:#e85d26; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">Buscar</button>
                 </div>
                 <!-- Botones rápidos con scroll horizontal para ahorrar espacio vertical -->
                 <div style="display:flex; gap:5px; align-items:center; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:thin;">
@@ -1535,22 +1550,22 @@
                 </div>
             </div>
 
-            <!-- Mapa con Cartografía de Google Maps -->
+            <!-- Mapa con Cartografía de Mapbox GL JS HD -->
             <div style="flex:1; min-height:130px; position:relative; width:100%;">
                 <div id="gmapsCanvas" style="width:100%; height:100%; min-height:130px; z-index:1;"></div>
                 
-                <!-- Selector flotante de capas Calles / Satélite -->
-                <div style="position:absolute; top:10px; right:10px; z-index:999; display:flex; gap:3px; background:rgba(255,255,255,0.92); padding:3px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.2); border:1px solid #dadce0;">
-                    <button type="button" id="btnMapStyleRoad" onclick="cambiarCapaMapa('road')" style="border:none; background:#1a73e8; color:#fff; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
-                        🗺️ Calles
+                <!-- Selector flotante de capas Calles / Satélite HD -->
+                <div style="position:absolute; top:10px; right:10px; z-index:9; display:flex; gap:4px; background:rgba(255,255,255,0.95); padding:4px; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.18); border:1px solid #e2e8f0; backdrop-filter:blur(6px);">
+                    <button type="button" id="btnMapStyleSat" onclick="cambiarCapaMapa('sat')" style="border:none; background:#e85d26; color:#fff; font-size:0.74rem; font-weight:700; padding:5px 10px; border-radius:7px; cursor:pointer; transition:all 0.2s ease;">
+                        🛰️ Satélite HD
                     </button>
-                    <button type="button" id="btnMapStyleSat" onclick="cambiarCapaMapa('sat')" style="border:none; background:#f1f3f4; color:#3c4043; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
-                        🛰️ Satélite
+                    <button type="button" id="btnMapStyleRoad" onclick="cambiarCapaMapa('road')" style="border:none; background:#f1f3f4; color:#3c4043; font-size:0.74rem; font-weight:700; padding:5px 10px; border-radius:7px; cursor:pointer; transition:all 0.2s ease;">
+                        🗺️ Calles HD
                     </button>
                 </div>
 
                 <!-- Botón flotante para recentrar con GPS del teléfono -->
-                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:10px; right:10px; z-index:999; background:#fff; border:1px solid #dadce0; width:40px; height:40px; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-size:1.1rem;" title="Mi ubicación GPS">
+                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:14px; right:14px; z-index:9; background:#fff; border:1px solid #e2e8f0; width:42px; height:42px; border-radius:50%; box-shadow:0 4px 14px rgba(0,0,0,0.22); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#e85d26; font-size:1.15rem; transition:transform 0.15s ease;" title="Mi ubicación GPS">
                     <i class="fas fa-crosshairs"></i>
                 </button>
             </div>

@@ -1002,29 +1002,129 @@ function updateFloatingCart() {
 }
 
 function initCinematicEffects() {
-    // Scroll Reveal - observer para elementos existentes Y futuros
-    const observer = new IntersectionObserver((entries) => {
+    // Limpieza de barra de progreso si existiera en DOM
+    const oldProgressBar = document.getElementById('scrollProgressBar');
+    if (oldProgressBar) oldProgressBar.remove();
+
+    // 1. Botón Flotante "Volver Arriba" (Back to Top)
+    let backToTopBtn = document.getElementById('backToTopBtn');
+    if (!backToTopBtn) {
+        backToTopBtn = document.createElement('button');
+        backToTopBtn.id = 'backToTopBtn';
+        backToTopBtn.className = 'back-to-top-btn';
+        backToTopBtn.setAttribute('aria-label', 'Volver arriba');
+        backToTopBtn.setAttribute('title', 'Volver arriba');
+        backToTopBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        document.body.appendChild(backToTopBtn);
+    }
+
+    // 3. Observer de Intersección de Alto Rendimiento para Efectos de Scroll
+    const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('active');
+                const el = entry.target;
+                el.classList.add('active');
+
+                // Al culminar la transición, liberar transform para mantener activos los :hover
+                const handleTransitionEnd = (e) => {
+                    if (e.target === el) {
+                        el.classList.add('revealed');
+                        el.removeEventListener('transitionend', handleTransitionEnd);
+                    }
+                };
+                el.addEventListener('transitionend', handleTransitionEnd);
+                setTimeout(() => el.classList.add('revealed'), 950);
+
+                obs.unobserve(el);
             }
         });
-    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-    
-    function observeReveals() {
-        document.querySelectorAll('.feature-card, .service-card, .stat-card, .contact-item, .order-row, .category-card').forEach(el => {
-            if (!el.classList.contains('reveal')) {
+    }, { threshold: 0.1, rootMargin: '0px 0px -45px 0px' });
+
+    // 4. Mapeo Inteligente de Elementos con Animaciones Direccionales y Stagger
+    function attachReveals() {
+        // Revelaciones Direccionales Específicas
+        document.querySelectorAll('.about-image-wrap, .hero-text').forEach(el => {
+            if (!el.classList.contains('reveal-left') && !el.classList.contains('active')) {
+                el.classList.add('reveal-left');
+                observer.observe(el);
+            }
+        });
+
+        document.querySelectorAll('.about-text, .hero-image').forEach(el => {
+            if (!el.classList.contains('reveal-right') && !el.classList.contains('active')) {
+                el.classList.add('reveal-right');
+                observer.observe(el);
+            }
+        });
+
+        document.querySelectorAll('.cta-banner .cta-content, .pilar-hero-badge').forEach(el => {
+            if (!el.classList.contains('reveal-zoom') && !el.classList.contains('active')) {
+                el.classList.add('reveal-zoom');
+                observer.observe(el);
+            }
+        });
+
+        // Contenedores en Grilla con Efecto Cascada (Staggered Delay)
+        const gridSelectors = [
+            '.icons-grid > .icon-item',
+            '.process-grid > .process-card',
+            '.products-grid > .product-card',
+            '.services-grid > .service-card',
+            '.hero-stats > .stat-item',
+            '.about-list > li',
+            '.footer-grid > div'
+        ];
+
+        gridSelectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach((el, idx) => {
+                if (!el.classList.contains('reveal') && !el.classList.contains('active')) {
+                    el.classList.add('reveal');
+                    const stagger = (idx % 6) * 0.085;
+                    el.style.setProperty('--stagger-delay', `${stagger.toFixed(2)}s`);
+                    observer.observe(el);
+                }
+            });
+        });
+
+        // Headers de Secciones y Elementos de Páginas Internas
+        const generalSelectors = [
+            '.section-header',
+            '.process-header',
+            '.catalog-search-wrap',
+            '.filters-bar',
+            '.contact-card',
+            '.contact-form-card',
+            '.service-detail-card',
+            '.order-card',
+            '.summary-card',
+            '.stat-card',
+            '.category-card'
+        ];
+
+        document.querySelectorAll(generalSelectors.join(', ')).forEach(el => {
+            if (!el.classList.contains('reveal') && !el.classList.contains('active')) {
                 el.classList.add('reveal');
                 observer.observe(el);
             }
         });
     }
-    
-    observeReveals();
-    // Re-observar cada 500ms por si se cargan contenido dinámico
-    setInterval(observeReveals, 500);
-    
-    // Particles in hero
+
+    // Ejecución inicial de detección
+    attachReveals();
+
+    // Observar cambios dinámicos (filtros de catálogo, carga de productos, etc.)
+    const productsGrid = document.getElementById('productsGrid') || document.querySelector('.products-grid');
+    if (productsGrid) {
+        const dynObserver = new MutationObserver(() => {
+            attachReveals();
+        });
+        dynObserver.observe(productsGrid, { childList: true });
+    }
+
+    // 5. Partículas sutiles en Hero
     const hero = document.querySelector('.hero');
     if (hero && !hero.querySelector('.particles')) {
         const particlesDiv = document.createElement('div');
@@ -1040,26 +1140,47 @@ function initCinematicEffects() {
         }
         hero.appendChild(particlesDiv);
     }
-    
-    // Smooth hardware-accelerated parallax for hero shapes (60fps)
-    let isParallaxTicking = false;
-    let shapesCache = null;
+
+    // 6. Controlador de Scroll Fluido (60fps con requestAnimationFrame)
+    let isScrollTicking = false;
+    let cachedShapes = null;
+    let cachedNavbar = null;
+
     window.addEventListener('scroll', () => {
-        if (!isParallaxTicking) {
+        if (!isScrollTicking) {
             window.requestAnimationFrame(() => {
                 const scrollY = window.scrollY;
+                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+
+                // A. Botón Volver Arriba
+                if (backToTopBtn) {
+                    if (scrollY > 350) {
+                        backToTopBtn.classList.add('visible');
+                    } else {
+                        backToTopBtn.classList.remove('visible');
+                    }
+                }
+
+                // C. Navbar Dinámico con Blur y Sombra
+                if (!cachedNavbar) cachedNavbar = document.querySelector('.navbar');
+                if (cachedNavbar) {
+                    cachedNavbar.classList.toggle('scrolled', scrollY > 40);
+                }
+
+                // D. Efecto Parallax en Formas del Hero
                 if (scrollY < 1200) {
-                    if (!shapesCache) shapesCache = document.querySelectorAll('.shape');
-                    if (shapesCache.length > 0) {
-                        shapesCache.forEach((shape, i) => {
-                            const speed = (i + 1) * 0.15;
+                    if (!cachedShapes) cachedShapes = document.querySelectorAll('.shape');
+                    if (cachedShapes.length > 0) {
+                        cachedShapes.forEach((shape, i) => {
+                            const speed = (i + 1) * 0.16;
                             shape.style.transform = `translate3d(0, ${(scrollY * speed).toFixed(1)}px, 0)`;
                         });
                     }
                 }
-                isParallaxTicking = false;
+
+                isScrollTicking = false;
             });
-            isParallaxTicking = true;
+            isScrollTicking = true;
         }
     }, { passive: true });
 }
@@ -1518,6 +1639,20 @@ async function loadProductos(categoria = null) {
         if (!productos) {
             productos = await getFallbackProducts();
         }
+
+        // Incorporar productos locales añadidos si los hay
+        try {
+            const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+            if (Array.isArray(customProds) && customProds.length > 0) {
+                const existingCodes = new Set((productos || []).map(p => (p.codigo || '').toLowerCase()));
+                const existingIds = new Set((productos || []).map(p => String(p.id)));
+                for (const cp of customProds) {
+                    if (!existingCodes.has((cp.codigo || '').toLowerCase()) && !existingIds.has(String(cp.id))) {
+                        productos.unshift(cp);
+                    }
+                }
+            }
+        } catch(e) {}
 
         // Filtrar papelera y eliminados definitivos
         const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
@@ -2020,6 +2155,20 @@ async function loadInventario() {
     if (!productos) {
         productos = await getFallbackProducts();
     }
+
+    // Incorporar productos locales añadidos si los hay
+    try {
+        const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
+        if (Array.isArray(customProds) && customProds.length > 0) {
+            const existingCodes = new Set((productos || []).map(p => (p.codigo || '').toLowerCase()));
+            const existingIds = new Set((productos || []).map(p => String(p.id)));
+            for (const cp of customProds) {
+                if (!existingCodes.has((cp.codigo || '').toLowerCase()) && !existingIds.has(String(cp.id))) {
+                    productos.unshift(cp);
+                }
+            }
+        }
+    } catch(e) {}
 
     // Filtrar papelera y eliminados definitivos
     const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
@@ -3633,16 +3782,29 @@ async function guardarNuevoProducto() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) {
-                const resData = await res.json();
-                if (resData.status === 'success') {
-                    savedOnline = true;
-                    if (resData.id) newId = resData.id;
-                    if (resData.codigo) finalCodigo = resData.codigo;
+            const resData = await res.json().catch(() => ({}));
+            if (res.ok && resData.status === 'success') {
+                savedOnline = true;
+                if (resData.id) newId = resData.id;
+                if (resData.codigo) finalCodigo = resData.codigo;
+                if (resData.imagen) imagenFinal = resData.imagen;
+            } else {
+                const msg = resData.message || 'Error al guardar el producto en el servidor';
+                showToast(`❌ ${msg}`, 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Publicar Producto';
                 }
+                return;
             }
         } catch(err) {
-            console.warn('Backend no disponible al crear producto, guardando localmente:', err);
+            console.error('Error al conectar con backend de productos:', err);
+            showToast('❌ Error de conexión al guardar el producto en el servidor', 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Publicar Producto';
+            }
+            return;
         }
     }
 

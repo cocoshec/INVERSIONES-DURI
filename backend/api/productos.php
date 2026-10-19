@@ -127,29 +127,70 @@ switch ($method) {
             break;
         }
 
-        if (empty($data['nombre']) || empty($data['precio_venta'])) {
+        if (empty($data['nombre']) || !isset($data['precio_venta']) || $data['precio_venta'] === '') {
             http_response_code(400);
             echo json_encode(["status" => "error", "message" => "Nombre y precio son requeridos"]);
             exit();
         }
 
-        $codigo = !empty($data['codigo']) ? trim($data['codigo']) : ('PRD-' . str_pad(rand(100, 9999), 4, '0', STR_PAD_LEFT));
+        // Generar o sanear código de producto asegurando unicidad
+        $codigo = !empty($data['codigo']) ? trim($data['codigo']) : '';
+        if (empty($codigo)) {
+            $codigo = 'PRD-' . str_pad(rand(100, 99999), 5, '0', STR_PAD_LEFT);
+        }
+        $stmtCheck = $db->prepare("SELECT id FROM productos WHERE codigo = ? LIMIT 1");
+        $stmtCheck->execute([$codigo]);
+        if ($stmtCheck->fetch()) {
+            $codigo = 'PRD-' . str_pad(rand(100, 99999), 5, '0', STR_PAD_LEFT);
+        }
 
-        $stmt = $db->prepare("INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([
-            $codigo,
-            $data['nombre'],
-            $data['descripcion'] ?? '',
-            $data['categoria_id'] ?? 1,
-            $data['precio_venta'],
-            $data['stock_actual'] ?? 0,
-            $data['stock_minimo'] ?? 10,
-            $data['imagen'] ?? ''
-        ]);
+        // Procesar y guardar imagen si viene en formato base64
+        $imagenPath = $data['imagen'] ?? '';
+        if (!empty($imagenPath) && preg_match('/^data:image\/(\w+);base64,/', $imagenPath, $type)) {
+            $dataImg = substr($imagenPath, strpos($imagenPath, ',') + 1);
+            $ext = strtolower($type[1]);
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                $decoded = base64_decode($dataImg);
+                if ($decoded !== false) {
+                    $uploadDir = dirname(dirname(__DIR__)) . '/img/productos/';
+                    if (!file_exists($uploadDir)) {
+                        @mkdir($uploadDir, 0777, true);
+                    }
+                    $safeCode = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $codigo);
+                    $fileName = 'prod_' . $safeCode . '_' . time() . '.' . ($ext === 'jpeg' ? 'jpg' : $ext);
+                    if (@file_put_contents($uploadDir . $fileName, $decoded)) {
+                        $imagenPath = 'img/productos/' . $fileName;
+                    }
+                }
+            }
+        }
 
-        $id = $db->lastInsertId();
-        http_response_code(201);
-        echo json_encode(["status" => "success", "message" => "Producto creado", "id" => $id, "codigo" => $codigo]);
+        try {
+            $stmt = $db->prepare("INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo, imagen, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)");
+            $stmt->execute([
+                $codigo,
+                $data['nombre'],
+                $data['descripcion'] ?? '',
+                $data['categoria_id'] ?? 1,
+                $data['precio_venta'],
+                $data['stock_actual'] ?? 0,
+                $data['stock_minimo'] ?? 10,
+                $imagenPath
+            ]);
+
+            $id = $db->lastInsertId();
+            http_response_code(201);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Producto creado con éxito",
+                "id" => $id,
+                "codigo" => $codigo,
+                "imagen" => $imagenPath
+            ]);
+        } catch (\PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Error al guardar producto en base de datos: " . $e->getMessage()]);
+        }
         break;
 
     case 'PUT':
@@ -162,32 +203,56 @@ switch ($method) {
             exit();
         }
 
-        if (isset($data['imagen'])) {
-            $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ?, imagen = ? WHERE id = ?");
-            $stmt->execute([
-                $data['nombre'],
-                $data['descripcion'] ?? '',
-                $data['categoria_id'] ?? 1,
-                $data['precio_venta'],
-                $data['stock_actual'] ?? 0,
-                $data['stock_minimo'] ?? 10,
-                $data['imagen'],
-                $id
-            ]);
-        } else {
-            $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ? WHERE id = ?");
-            $stmt->execute([
-                $data['nombre'],
-                $data['descripcion'] ?? '',
-                $data['categoria_id'] ?? 1,
-                $data['precio_venta'],
-                $data['stock_actual'] ?? 0,
-                $data['stock_minimo'] ?? 10,
-                $id
-            ]);
-        }
+        try {
+            if (isset($data['imagen'])) {
+                $imagenPath = $data['imagen'];
+                if (!empty($imagenPath) && preg_match('/^data:image\/(\w+);base64,/', $imagenPath, $type)) {
+                    $dataImg = substr($imagenPath, strpos($imagenPath, ',') + 1);
+                    $ext = strtolower($type[1]);
+                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                        $decoded = base64_decode($dataImg);
+                        if ($decoded !== false) {
+                            $uploadDir = dirname(dirname(__DIR__)) . '/img/productos/';
+                            if (!file_exists($uploadDir)) {
+                                @mkdir($uploadDir, 0777, true);
+                            }
+                            $fileName = 'prod_' . $id . '_' . time() . '.' . ($ext === 'jpeg' ? 'jpg' : $ext);
+                            if (@file_put_contents($uploadDir . $fileName, $decoded)) {
+                                $imagenPath = 'img/productos/' . $fileName;
+                            }
+                        }
+                    }
+                }
 
-        echo json_encode(["status" => "success", "message" => "Producto actualizado"]);
+                $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ?, imagen = ? WHERE id = ?");
+                $stmt->execute([
+                    $data['nombre'],
+                    $data['descripcion'] ?? '',
+                    $data['categoria_id'] ?? 1,
+                    $data['precio_venta'],
+                    $data['stock_actual'] ?? 0,
+                    $data['stock_minimo'] ?? 10,
+                    $imagenPath,
+                    $id
+                ]);
+            } else {
+                $stmt = $db->prepare("UPDATE productos SET nombre = ?, descripcion = ?, categoria_id = ?, precio_venta = ?, stock_actual = ?, stock_minimo = ? WHERE id = ?");
+                $stmt->execute([
+                    $data['nombre'],
+                    $data['descripcion'] ?? '',
+                    $data['categoria_id'] ?? 1,
+                    $data['precio_venta'],
+                    $data['stock_actual'] ?? 0,
+                    $data['stock_minimo'] ?? 10,
+                    $id
+                ]);
+            }
+
+            echo json_encode(["status" => "success", "message" => "Producto actualizado"]);
+        } catch (\PDOException $e) {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Error al actualizar producto: " . $e->getMessage()]);
+        }
         break;
 
     case 'DELETE':
