@@ -3378,36 +3378,41 @@ function abrirModalCrearProducto() {
     modal.id = 'modalCrearProducto';
     modal.className = 'modal show';
     modal.innerHTML = `
-        <div style="width:530px;max-width:95%;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:92vh;display:flex;flex-direction:column;">
-            <div style="background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <h3 style="margin:0;font-size:1.15rem;color:#fff;display:flex;align-items:center;gap:8px;">
-                        <i class="fas fa-plus-circle" style="color:var(--accent,#FF6600);"></i> Agregar Nuevo Producto
-                    </h3>
-                    <p style="margin:3px 0 0;font-size:0.8rem;color:#cbd5e1;">Ingresa los datos para registrarlo en el catálogo e inventario</p>
+        <div class="prod-modal-card">
+            <!-- Header Elegante y Compacto -->
+            <div class="prod-modal-header">
+                <div class="prod-modal-header-left">
+                    <div class="prod-modal-header-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="prod-modal-header-text">
+                        <h3>Agregar Nuevo Producto</h3>
+                        <p>Ingresa los datos para registrarlo en el catálogo</p>
+                    </div>
                 </div>
-                <button type="button" onclick="cerrarModalCrearProducto()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                <button type="button" class="prod-modal-close-btn" onclick="cerrarModalCrearProducto()" title="Cerrar">&times;</button>
             </div>
 
-            <div style="padding:22px;overflow-y:auto;flex:1;">
+            <!-- Cuerpo con scroll suave y campos adaptables -->
+            <div class="prod-modal-body">
                 <!-- FOTO DEL PRODUCTO -->
-                <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:18px;">
-                    <label style="display:block;font-size:0.86rem;font-weight:700;color:#1e293b;margin-bottom:10px;">
+                <div class="prod-modal-photo-box">
+                    <label>
                         <i class="fas fa-camera" style="color:var(--accent,#FF6600);margin-right:6px;"></i> Foto del Producto
                     </label>
-                    <div style="display:flex;gap:14px;align-items:center;">
-                        <div id="newProdImagePreviewWrapper" style="width:96px;height:96px;border-radius:12px;overflow:hidden;border:2px dashed #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-                            <i id="newProdImagePlaceholder" class="fas fa-image" style="font-size:2rem;color:#94a3b8;"></i>
+                    <div style="display:flex;gap:12px;align-items:center;">
+                        <div id="newProdImagePreviewWrapper" style="width:78px;height:78px;border-radius:12px;overflow:hidden;border:2px dashed #cbd5e1;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+                            <i id="newProdImagePlaceholder" class="fas fa-image" style="font-size:1.8rem;color:#94a3b8;"></i>
                         </div>
                         <div style="flex:1;min-width:0;">
                             <input type="file" id="newProdFileInput" accept="image/*" style="display:none;" onchange="handleNewProductImageFile(event)">
-                            <button type="button" onclick="document.getElementById('newProdFileInput').click()" style="width:100%;background:linear-gradient(135deg,#FF6600,#e85d26);color:#fff;border:none;border-radius:8px;padding:9px 12px;font-weight:600;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;box-shadow:0 2px 6px rgba(232,93,38,0.25);">
+                            <button type="button" onclick="document.getElementById('newProdFileInput').click()" style="width:100%;background:linear-gradient(135deg,#FF6600,#e85d26);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px;box-shadow:0 2px 6px rgba(232,93,38,0.25);">
                                 <i class="fas fa-upload"></i> Subir Foto (Celular o PC)
                             </button>
-                            <input type="text" id="newProdUrlInput" placeholder="O escribe enlace / ruta de imagen..." oninput="actualizarPreviewNuevoProducto(this.value)" style="width:100%;font-size:0.78rem;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                            <input type="text" id="newProdUrlInput" placeholder="O escribe enlace / ruta..." oninput="actualizarPreviewNuevoProducto(this.value)" class="prod-form-input" style="padding:6px 10px;font-size:0.78rem;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;flex-wrap:wrap;gap:4px;">
                                 <button type="button" onclick="toggleGaleriaPredefinidaNuevo()" style="background:none;border:none;color:#0284c7;font-size:0.75rem;cursor:pointer;font-weight:600;padding:0;">
-                                    <i class="fas fa-th"></i> Galería de fotos del sistema
+                                    <i class="fas fa-th"></i> Galería de fotos
                                 </button>
                                 <button type="button" onclick="quitarFotoNuevoProducto()" style="background:none;border:none;color:#ef4444;font-size:0.75rem;cursor:pointer;font-weight:600;padding:0;">
                                     <i class="fas fa-trash"></i> Quitar foto
@@ -3429,58 +3434,54 @@ function abrirModalCrearProducto() {
                     </div>
                 </div>
 
-                <!-- DATOS PRINCIPALES -->
-                <div style="display:flex;gap:12px;margin-bottom:14px;">
-                    <div style="flex:1.5;">
-                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">
-                            Nombre del Producto <span style="color:#dc3545">*</span>
-                        </label>
-                        <input type="text" id="newProdNombre" placeholder="Ej: Resma Papel Carta 500 Hojas" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.9rem;" required>
+                <!-- NOMBRE Y CÓDIGO (Grid responsive) -->
+                <div class="prod-form-row-2">
+                    <div class="prod-form-group">
+                        <label>Nombre del Producto <span style="color:#dc3545">*</span></label>
+                        <input type="text" id="newProdNombre" class="prod-form-input" placeholder="Ej: Resma Papel Carta 500 Hojas" required>
                     </div>
-                    <div style="flex:1;">
-                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">
-                            Código <small style="color:#64748b;font-weight:normal;">(Opcional)</small>
-                        </label>
-                        <input type="text" id="newProdCodigo" placeholder="Ej: PRD-030" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.9rem;text-transform:uppercase;">
+                    <div class="prod-form-group">
+                        <label>Código <small style="color:#64748b;font-weight:normal;">(Opcional)</small></label>
+                        <input type="text" id="newProdCodigo" class="prod-form-input" placeholder="Ej: PRD-030" style="text-transform:uppercase;">
                     </div>
                 </div>
 
-                <div style="margin-bottom:14px;">
-                    <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Descripción corta</label>
-                    <textarea id="newProdDesc" rows="2" placeholder="Marca, modelo, características o especificaciones del producto..." style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.85rem;resize:vertical;"></textarea>
+                <div class="prod-form-group">
+                    <label>Descripción corta</label>
+                    <textarea id="newProdDesc" rows="2" class="prod-form-input" placeholder="Marca, modelo, características o especificaciones del producto..." style="resize:vertical;"></textarea>
                 </div>
 
-                <div style="margin-bottom:14px;">
-                    <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Categoría <span style="color:#dc3545">*</span></label>
-                    <select id="newProdCat" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.88rem;background:#fff;cursor:pointer;">
+                <div class="prod-form-group">
+                    <label>Categoría <span style="color:#dc3545">*</span></label>
+                    <select id="newProdCat" class="prod-form-input" style="cursor:pointer;">
                         ${catList.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
                     </select>
                 </div>
 
-                <div style="display:flex;gap:10px;margin-bottom:10px;">
-                    <div style="flex:1;">
-                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">
-                            Precio Venta ($ USD) <span style="color:#dc3545">*</span>
-                        </label>
-                        <input type="number" id="newProdPrecio" step="0.01" min="0.01" placeholder="Ej: 3.50" oninput="actualizarBsPreviewNuevoProducto(this.value)" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-weight:700;color:#0f172a;font-size:0.92rem;">
-                        <small id="newProdBsPreview" style="display:block;margin-top:4px;color:#16a34a;font-weight:700;font-size:0.75rem;">≈ Bs. 0,00</small>
+                <!-- PRECIOS Y STOCK (Grid responsive adaptada a móviles) -->
+                <div class="prod-form-row-3">
+                    <div class="prod-form-group prod-precio-full">
+                        <label>Precio Venta ($ USD) <span style="color:#dc3545">*</span></label>
+                        <input type="number" id="newProdPrecio" step="0.01" min="0.01" placeholder="Ej: 3.50" oninput="actualizarBsPreviewNuevoProducto(this.value)" class="prod-form-input" style="font-weight:700;">
+                        <small id="newProdBsPreview" style="display:block;margin-top:3px;color:#16a34a;font-weight:700;font-size:0.75rem;">≈ Bs. 0,00</small>
                     </div>
-                    <div style="flex:1;">
-                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Stock Inicial</label>
-                        <input type="number" id="newProdStock" min="0" value="10" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.92rem;">
+                    <div class="prod-form-group">
+                        <label>Stock Inicial</label>
+                        <input type="number" id="newProdStock" min="0" value="10" class="prod-form-input">
                     </div>
-                    <div style="flex:1;">
-                        <label style="display:block;font-size:0.84rem;font-weight:600;margin-bottom:5px;color:#334155;">Stock Mínimo</label>
-                        <input type="number" id="newProdStockMin" min="0" value="5" style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;box-sizing:border-box;font-size:0.92rem;">
+                    <div class="prod-form-group">
+                        <label>Stock Mínimo</label>
+                        <input type="number" id="newProdStockMin" min="0" value="5" class="prod-form-input">
                     </div>
                 </div>
             </div>
 
-            <div style="padding:14px 24px 18px;display:flex;gap:10px;border-top:1px solid #e2e8f0;background:#f8fafc;">
-                <button type="button" onclick="cerrarModalCrearProducto()" style="flex:1;padding:11px;border:1.5px solid #cbd5e1;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#475569;">
+            <!-- Footer Compacto y Bien Proporcionado -->
+            <div class="prod-modal-footer">
+                <button type="button" class="btn-prod-cancel" onclick="cerrarModalCrearProducto()">
                     Cancelar
                 </button>
-                <button type="button" id="btnGuardarNuevoProducto" onclick="guardarNuevoProducto()" style="flex:2;padding:11px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:10px;font-size:0.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(22,163,74,0.35);">
+                <button type="button" id="btnGuardarNuevoProducto" class="btn-prod-submit" onclick="guardarNuevoProducto()">
                     <i class="fas fa-check-circle"></i> Guardar y Publicar
                 </button>
             </div>
