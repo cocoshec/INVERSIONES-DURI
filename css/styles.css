@@ -1727,7 +1727,7 @@ img { max-width:100%; height:auto; }
 
     .icons-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; padding:0 10px; }
     .icon-circle { width:72px; height:72px; font-size:1.6rem; }
-    .icon-item span { font-size:0.88rem; font-weight:500; }
+    .icon-item span { font-size:0.88rem; font-weight:700; color:#ffffff !important; text-shadow:0 2px 5px rgba(0,0,0,0.55) !important; }
 
     .section { padding:64px 0; }
     .section-header { margin-bottom:28px; }
@@ -2219,8 +2219,9 @@ img { max-width:100%; height:auto; }
     }
     .icon-item span {
         font-size: 0.88rem !important;
-        font-weight: 600 !important;
-        color: var(--text-primary) !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.6) !important;
         text-align: center !important;
         display: block !important;
         width: 100% !important;
