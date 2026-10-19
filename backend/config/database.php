@@ -5,7 +5,7 @@
 // ============================================
 
 class Database {
-    private $host = "localhost";
+    private $host = "127.0.0.1";
     private $db_name = "inversiones_duri";
     private $username = "root";
     private $password = "";

@@ -3710,52 +3710,57 @@ function abrirModalImportarExcel() {
     const modal = document.createElement('div');
     modal.id = 'modalImportarExcel';
     modal.className = 'modal show';
+    modal.style.zIndex = '99999';
     modal.innerHTML = `
-        <div style="width:680px;max-width:95%;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:92vh;display:flex;flex-direction:column;">
-            <div style="background:linear-gradient(135deg,#0284c7 0%,#0f172a 100%);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <h3 style="margin:0;font-size:1.18rem;color:#fff;display:flex;align-items:center;gap:10px;">
-                        <i class="fas fa-file-excel" style="color:#38bdf8;"></i> Importar Productos desde Excel o CSV
-                    </h3>
-                    <p style="margin:3px 0 0;font-size:0.82rem;color:#cbd5e1;">Carga automática de catálogo e inventario masivo (ej. 300 productos)</p>
+        <div class="import-modal-card">
+            <!-- Encabezado estilo Papelera -->
+            <div class="import-modal-header">
+                <div class="import-modal-header-left">
+                    <div class="import-modal-badge-icon"><i class="fas fa-file-excel"></i></div>
+                    <div class="import-modal-header-text">
+                        <h3>Importar Productos desde Excel o CSV</h3>
+                        <p>Carga automática de catálogo e inventario masivo</p>
+                    </div>
                 </div>
-                <button type="button" onclick="cerrarModalImportarExcel()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                <button type="button" class="confirm-modal-close" onclick="cerrarModalImportarExcel()" style="position:static;background:rgba(255,255,255,0.15);color:#fff;" aria-label="Cerrar">&times;</button>
             </div>
 
-            <div style="padding:22px;overflow-y:auto;flex:1;">
+            <!-- Toolbar con estado y botón de plantilla estilo Papelera -->
+            <div class="import-modal-toolbar">
+                <span class="import-toolbar-count">
+                    <i class="fas fa-table" style="color:#0284c7;margin-right:6px;"></i> Formatos:&nbsp;<strong>.xlsx</strong>,&nbsp;<strong>.xls</strong>&nbsp;o&nbsp;<strong>.csv</strong>
+                </span>
+                <div class="import-toolbar-actions">
+                    <button type="button" class="btn btn-sm btn-toolbar-plantilla" onclick="descargarPlantillaExcel()" title="Descargar plantilla de ejemplo con las columnas correctas">
+                        <i class="fas fa-download"></i> Descargar Plantilla
+                    </button>
+                </div>
+            </div>
+
+            <div class="import-modal-body">
                 <!-- Zona de Arrastrar o Seleccionar Archivo -->
-                <div id="dropZoneImportExcel" onclick="document.getElementById('importFileInput').click()" style="border:2.5px dashed #0284c7;background:#f0f9ff;border-radius:14px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.25s;margin-bottom:16px;">
+                <div id="dropZoneImportExcel" class="import-dropzone" onclick="document.getElementById('importFileInput').click()">
                     <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" onchange="handleArchivoImportacion(event)">
-                    <div style="width:60px;height:60px;background:#e0f2fe;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#0284c7;font-size:1.8rem;">
+                    <div class="import-dropzone-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
                     </div>
-                    <h4 style="margin:0 0 6px;color:#0f172a;font-size:1.05rem;font-weight:700;">Haz clic aquí para seleccionar tu Excel o CSV</h4>
-                    <p style="margin:0 0 10px;font-size:0.83rem;color:#64748b;">Compatible con archivos <strong>.xlsx</strong>, <strong>.xls</strong> o <strong>.csv</strong></p>
-                    <span style="display:inline-block;background:#0284c7;color:#fff;font-size:0.78rem;font-weight:700;padding:6px 14px;border-radius:20px;">
+                    <h4 class="import-dropzone-title">Haz clic aquí para seleccionar tu Excel o CSV</h4>
+                    <p class="import-dropzone-sub">Arrastra tu archivo aquí o presiona para buscarlo en tu dispositivo</p>
+                    <span class="btn-import-browse">
                         <i class="fas fa-folder-open"></i> Explorar Archivos
                     </span>
                 </div>
 
-                <!-- Botón de plantilla de ejemplo -->
-                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px 16px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:18px;">
-                    <div style="font-size:0.83rem;color:#334155;">
-                        <i class="fas fa-info-circle" style="color:#0284c7;margin-right:6px;"></i> ¿Necesitas el formato de ejemplo con las columnas correctas?
-                    </div>
-                    <button type="button" onclick="descargarPlantillaExcel()" style="background:#fff;border:1.5px solid #0284c7;color:#0284c7;padding:6px 12px;border-radius:8px;font-weight:700;font-size:0.78rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                        <i class="fas fa-download"></i> Descargar Plantilla
-                    </button>
-                </div>
-
                 <!-- Vista previa de los datos procesados -->
                 <div id="importPreviewContainer" style="display:none;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                         <h4 style="margin:0;font-size:0.95rem;color:#0f172a;font-weight:700;display:flex;align-items:center;gap:8px;">
                             <i class="fas fa-check-circle" style="color:#16a34a;"></i> Productos Detectados: <span id="importCountBadge" style="background:#16a34a;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.8rem;">0</span>
                         </h4>
                         <span id="importFileStatus" style="font-size:0.8rem;color:#64748b;"></span>
                     </div>
 
-                    <div style="max-height:220px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;background:#fff;">
+                    <div style="max-height:200px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:14px;background:#fff;">
                         <table style="width:100%;border-collapse:collapse;font-size:0.82rem;text-align:left;">
                             <thead style="background:#f1f5f9;position:sticky;top:0;z-index:2;">
                                 <tr>
@@ -3773,7 +3778,7 @@ function abrirModalImportarExcel() {
                 </div>
 
                 <!-- Barra de Progreso durante la importación -->
-                <div id="importProgressBox" style="display:none;margin-top:14px;background:#f8fafc;padding:14px;border-radius:10px;border:1px solid #e2e8f0;">
+                <div id="importProgressBox" style="display:none;margin-top:14px;background:#f8fafc;padding:14px;border-radius:12px;border:1px solid #e2e8f0;">
                     <div style="display:flex;justify-content:space-between;font-size:0.84rem;font-weight:600;margin-bottom:8px;color:#1e293b;">
                         <span id="importProgressText"><i class="fas fa-spinner fa-spin"></i> Guardando productos en la base de datos...</span>
                         <span id="importProgressPercent">0%</span>
@@ -3784,13 +3789,19 @@ function abrirModalImportarExcel() {
                 </div>
             </div>
 
-            <div style="padding:14px 24px 18px;display:flex;gap:10px;border-top:1px solid #e2e8f0;background:#f8fafc;">
-                <button type="button" onclick="cerrarModalImportarExcel()" style="flex:1;padding:11px;border:1.5px solid #cbd5e1;background:#fff;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:#475569;">
-                    Cancelar
-                </button>
-                <button type="button" id="btnEjecutarImportacion" onclick="ejecutarImportacionMasiva()" disabled style="flex:2;padding:11px;background:#cbd5e1;color:#fff;border:none;border-radius:10px;font-size:0.92rem;font-weight:700;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:none;">
-                    <i class="fas fa-upload"></i> Subir e Importar Productos
-                </button>
+            <!-- Footer con aviso informativo y botones estilo Papelera -->
+            <div class="import-modal-footer">
+                <span class="import-footer-tip">
+                    <i class="fas fa-info-circle" style="color:var(--accent,#ea580c);"></i> Puedes descargar la plantilla para asegurar el orden de las columnas.
+                </span>
+                <div class="import-footer-actions">
+                    <button type="button" class="btn btn-outline btn-import-cancel" onclick="cerrarModalImportarExcel()">
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnEjecutarImportacion" class="btn-import-submit" onclick="ejecutarImportacionMasiva()" disabled>
+                        <i class="fas fa-upload"></i> Subir e Importar Productos
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -3811,7 +3822,7 @@ function abrirModalImportarExcel() {
         ['dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, (e) => {
                 e.preventDefault();
-                dropZone.style.background = '#f0f9ff';
+                dropZone.style.background = '#f8fafc';
                 dropZone.style.borderColor = '#0284c7';
             }, false);
         });
@@ -6431,33 +6442,7 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     const clienteEmail = orderData ? (orderData.cliente_email || '') : '';
     const tasaBcv = (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null;
 
-    let backendResult = null;
-    // 2. Enviar al Backend si está activo
-    try {
-        const isGH = window.location.hostname.includes('github.io');
-        if (!isGH) {
-            const currentUser = getUser();
-            const res = await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    estado: nuevoEstado,
-                    codigo: codigo || (orderData ? orderData.codigo : ''),
-                    usuario_id: currentUser ? currentUser.id : null,
-                    cliente_email: clienteEmail,
-                    tasa_bcv: tasaBcv,
-                    pedido: orderData
-                })
-            });
-            if (res.ok) {
-                backendResult = await res.json();
-            }
-        }
-    } catch (err) {
-        console.warn('API backend no disponible al actualizar pedido:', err);
-    }
-
-    // 3. Actualizar en localStorage
+    // 2. ACTUALIZACIÓN OPTIMISTA INMEDIATA (0 ms de espera para el usuario)
     const localOrders = getLocalOrders();
     const match = localOrders.find(o => String(o.id) === String(id) || (codigo && o.codigo === codigo));
     if (match) {
@@ -6476,33 +6461,51 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
         }));
     } catch(e) {}
 
+    // Refrescar tablas e indicadores al instante
     loadPedidosRecientes();
     updateSuperAdminNotifBadge(false);
     if (typeof loadProductos === 'function') loadProductos();
     if (typeof loadInventario === 'function') loadInventario();
 
-    const isGH = window.location.hostname.includes('github.io');
     if (nuevoEstado === 'procesando') {
-        showToast(`¡Pago del pedido ${codigo || ''} validado y aprobado con éxito!`, 'success');
+        showToast(`¡Pago del pedido ${codigo || ''} aprobado y validado!`, 'success');
     } else if (nuevoEstado === 'completado') {
-        if (isGH) {
-            if (clienteEmail) {
-                showToast(`¡Pedido ${codigo || ''} Entregado con éxito! (En GitHub Pages se simula el correo a ${clienteEmail}; en local se envía por Gmail)`, 'success');
-            } else {
-                showToast(`¡Pedido ${codigo || ''} marcado como Entregado!`, 'success');
-            }
+        if (clienteEmail) {
+            showToast(`¡Pedido ${codigo || ''} marcado como Entregado! Enviando factura...`, 'info');
         } else {
-            if (backendResult && backendResult.email_enviado && backendResult.email_destino) {
-                showToast(`¡Pedido ${codigo || ''} Entregado! Factura oficial enviada al correo ${backendResult.email_destino}`, 'success');
-            } else if (backendResult && backendResult.email_mensaje) {
-                showToast(`Pedido Entregado. Aviso correo: ${backendResult.email_mensaje}`, 'warning');
-            } else if (clienteEmail) {
-                showToast(`¡Pedido ${codigo || ''} marcado como Entregado! Factura lista para ${clienteEmail}`, 'success');
-            } else {
-                showToast(`¡Pedido ${codigo || ''} marcado como Entregado con éxito!`, 'success');
-            }
+            showToast(`¡Pedido ${codigo || ''} marcado como Entregado con éxito!`, 'success');
         }
     }
+
+    let backendResult = null;
+    // 3. Sincronización en segundo plano con el Backend MySQL y envío de correo
+    try {
+        const isGH = window.location.hostname.includes('github.io');
+        if (!isGH) {
+            const currentUser = getUser();
+            const res = await fetch(`${API_BASE}/pedidos.php?id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    estado: nuevoEstado,
+                    codigo: codigo || (orderData ? orderData.codigo : ''),
+                    usuario_id: currentUser ? currentUser.id : null,
+                    cliente_email: clienteEmail,
+                    tasa_bcv: tasaBcv,
+                    pedido: orderData
+                })
+            });
+            if (res.ok) {
+                backendResult = await res.json();
+                if (nuevoEstado === 'completado' && backendResult && backendResult.email_enviado && backendResult.email_destino) {
+                    showToast(`Factura oficial enviada con éxito a ${backendResult.email_destino}`, 'success');
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('API backend sincronización en segundo plano:', err);
+    }
+
     return backendResult;
 }
 window.actualizarEstadoPedidoDirecto = actualizarEstadoPedidoDirecto;

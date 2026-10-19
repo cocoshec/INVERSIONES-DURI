@@ -14,7 +14,7 @@ CREATE TABLE usuarios (
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    rol ENUM('admin', 'vendedor', 'inventario') DEFAULT 'vendedor',
+    rol ENUM('super_usuario', 'operador', 'usuario', 'admin', 'vendedor', 'inventario') DEFAULT 'usuario',
     telefono VARCHAR(20),
     activo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

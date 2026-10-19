@@ -31,12 +31,7 @@ if (!function_exists('enviarFacturaClienteEmail')) {
 $database = new Database();
 $db = $database->getConnection();
 
-try {
-    $cols = $db->query("SHOW COLUMNS FROM pedidos LIKE 'cliente_email'")->fetchAll();
-    if (empty($cols)) {
-        $db->exec("ALTER TABLE pedidos ADD COLUMN cliente_email VARCHAR(150) NULL AFTER cliente_ci");
-    }
-} catch(Exception $e) {}
+
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
