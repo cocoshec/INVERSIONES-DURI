@@ -2508,13 +2508,14 @@ async function editProduct(id) {
         ];
 
         _editingProductId = id;
+        const initialImg = p.imagen || (typeof getProductImageUrl === 'function' ? getProductImageUrl(p) : '');
         _currentProductImageData = p.imagen || '';
 
         const old = document.getElementById('editModal');
         if (old) old.remove();
 
         const basePath = window.location.pathname.includes('/pages/') ? '../' : '';
-        const currentImgSrc = p.imagen ? ((p.imagen.startsWith('http') || p.imagen.startsWith('data:')) ? p.imagen : basePath + p.imagen.replace(/^\.\.\//, '')) : '';
+        const currentImgSrc = initialImg ? ((initialImg.startsWith('http') || initialImg.startsWith('data:') || initialImg.startsWith('../')) ? initialImg : basePath + initialImg.replace(/^(\.\.\/)+/, '')) : '';
 
         const modal = document.createElement('div');
         modal.id = 'editModal';
@@ -3733,7 +3734,7 @@ async function guardarNuevoProducto() {
     const stockMin = document.getElementById('newProdStockMin').value;
 
     const urlInput = document.getElementById('newProdUrlInput') ? document.getElementById('newProdUrlInput').value.trim() : '';
-    const imagenFinal = _newProductImageData || urlInput || '';
+    let imagenFinal = _newProductImageData || urlInput || '';
 
     if (!nombre) {
         showToast('El nombre del producto es obligatorio', 'error');

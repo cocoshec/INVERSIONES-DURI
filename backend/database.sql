@@ -151,17 +151,17 @@ INSERT INTO categorias (nombre, descripcion) VALUES
 ('Accesorios', 'Accesorios varios de oficina');
 
 -- Productos de ejemplo
-INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo) VALUES
-('PRD-001', 'Lápices de Color (12-pack)', 'Set de 12 lápices de colores vibrantes', 1, 12.50, 45, 20),
-('PRD-002', 'Marcadores Permanentes', 'Pack de 8 marcadores permanentes', 1, 8.75, 8, 15),
-('PRD-003', 'Cuadernos Universitarios', 'Cuaderno de 100 hojas rayadas', 2, 3.25, 120, 25),
-('PRD-004', 'Cartuchos de Tinta', 'Cartuchos negra y color para impresoras', 3, 24.99, 32, 10),
-('PRD-005', 'Tijeras de Oficina', 'Tijeras ergonómicas de acero inoxidable', 2, 5.50, 28, 15),
-('PRD-006', 'Clips Metálicos (100u)', 'Caja con 100 clips metálicos', 4, 2.00, 0, 50),
-('PRD-007', 'Borradores Premium', 'Borrador blanco de alta calidad', 1, 1.25, 89, 30),
-('PRD-008', 'Carpetas Archivador', 'Carpeta de cartón tamaño carta', 2, 4.75, 56, 20),
-('PRD-009', 'Resaltadores Fluorescentes', 'Set de 6 resaltadores neón', 2, 7.50, 38, 15),
-('PRD-010', 'Organizador de Escritorio', 'Organizador multi-función', 4, 15.99, 12, 15);
+INSERT INTO productos (codigo, nombre, descripcion, categoria_id, precio_venta, stock_actual, stock_minimo, imagen) VALUES
+('PRD-001', 'Lápices de Color (12-pack)', 'Set de 12 lápices de colores vibrantes', 1, 12.50, 45, 20, 'img/productos/lapices-color.jpg'),
+('PRD-002', 'Marcadores Permanentes', 'Pack de 8 marcadores permanentes', 1, 8.75, 8, 15, 'img/productos/marcadores-permanentes.jpg'),
+('PRD-003', 'Cuadernos Universitarios', 'Cuaderno de 100 hojas rayadas', 2, 3.25, 120, 25, 'img/productos/cuadernos-universitarios.jpg'),
+('PRD-004', 'Cartuchos de Tinta', 'Cartuchos negra y color para impresoras', 3, 24.99, 32, 10, 'img/productos/cartuchos-tinta.jpg'),
+('PRD-005', 'Tijeras de Oficina', 'Tijeras ergonómicas de acero inoxidable', 2, 5.50, 28, 15, 'img/productos/tijeras-oficina.jpg'),
+('PRD-006', 'Clips Metálicos (100u)', 'Caja con 100 clips metálicos', 4, 2.00, 0, 50, 'img/productos/clips-metalicos.jpg'),
+('PRD-007', 'Borradores Premium', 'Borrador blanco de alta calidad', 1, 1.25, 89, 30, 'img/productos/borradores-premium.jpg'),
+('PRD-008', 'Carpetas Archivador', 'Carpeta de cartón tamaño carta', 2, 4.75, 56, 20, 'img/productos/carpetas-archivador.jpg'),
+('PRD-009', 'Resaltadores Fluorescentes', 'Set de 6 resaltadores neón', 2, 7.50, 38, 15, 'img/productos/resaltadores-fluorescentes.jpg'),
+('PRD-010', 'Organizador de Escritorio', 'Organizador multi-función', 4, 15.99, 12, 15, 'img/productos/organizador-escritorio.jpg');
 
 -- Clientes de ejemplo
 INSERT INTO clientes (nombre, email, telefono, direccion) VALUES
