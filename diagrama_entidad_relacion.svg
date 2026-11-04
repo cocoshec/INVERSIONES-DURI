@@ -1,0 +1,141 @@
+<svg viewBox="0 0 950 560" xmlns="http://www.w3.org/2000/svg" style="background-color: #ffffff;">
+    <defs>
+        <style>
+            .entidad { fill: #ffffff; stroke: #1e293b; stroke-width: 1.8; rx: 6px; ry: 6px; }
+            .rombo { fill: #ffffff; stroke: #1e293b; stroke-width: 1.8; }
+            .atributo { fill: #ffffff; stroke: #1e293b; stroke-width: 1.6; rx: 18px; ry: 18px; }
+            .linea { stroke: #1e293b; stroke-width: 1.5; fill: none; }
+            .texto-titulo { font-family: 'Segoe UI', Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #000000; text-anchor: middle; }
+            .texto-subtitulo { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; font-weight: 600; fill: #333333; text-anchor: middle; }
+            .texto-entidad { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+            .texto-rombo { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; font-weight: 600; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+            .texto-atributo { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+        </style>
+    </defs>
+
+    <!-- TITULOS AL ESTILO ACADEMICO -->
+    <text x="475" y="35" class="texto-titulo">Figura Nº 5</text>
+    <text x="475" y="60" class="texto-subtitulo">Inversiones Duri C.A EDR</text>
+
+    <!-- ================= LINEAS DE CONEXION ================= -->
+
+    <!-- CLIENTE A ATRIBUTOS -->
+    <path d="M 120 180 L 120 145" class="linea" />
+    <path d="M 70 205 L 45 205 L 45 270" class="linea" />
+
+    <!-- CLIENTE A REALIZA -->
+    <path d="M 170 205 L 235 205" class="linea" />
+    <line x1="195" y1="198" x2="195" y2="212" stroke="#000" stroke-width="1.8" />
+
+    <!-- REALIZA A PEDIDO -->
+    <path d="M 335 205 L 440 205" class="linea" />
+    <!-- Pata de gallo en Pedido -->
+    <line x1="440" y1="205" x2="425" y2="197" stroke="#000" stroke-width="1.8" />
+    <line x1="440" y1="205" x2="425" y2="213" stroke="#000" stroke-width="1.8" />
+    <line x1="420" y1="198" x2="420" y2="212" stroke="#000" stroke-width="1.8" />
+
+    <!-- PEDIDO A ATRIBUTOS -->
+    <path d="M 470 180 L 470 125 L 430 125" class="linea" />
+    <path d="M 520 180 L 520 125 L 560 125" class="linea" />
+    <path d="M 540 205 L 610 205 L 610 165" class="linea" />
+
+    <!-- PEDIDO A SE COMPONE -->
+    <path d="M 500 230 L 500 320 L 615 320" class="linea" />
+    <line x1="500" y1="250" x2="512" y2="250" stroke="#000" stroke-width="1.8" />
+
+    <!-- SE COMPONE A CANTIDAD Y PRECIO -->
+    <path d="M 670 345 L 670 410 L 630 410" class="linea" />
+    <path d="M 670 345 L 670 410 L 730 410" class="linea" />
+
+    <!-- SE COMPONE A PRODUCTO -->
+    <path d="M 670 295 L 670 255 L 750 255 L 750 320" class="linea" />
+    <!-- Pata de gallo en Producto -->
+    <line x1="750" y1="320" x2="742" y2="305" stroke="#000" stroke-width="1.8" />
+    <line x1="750" y1="320" x2="758" y2="305" stroke="#000" stroke-width="1.8" />
+    <line x1="742" y1="300" x2="758" y2="300" stroke="#000" stroke-width="1.8" />
+
+    <!-- PRODUCTO A ATRIBUTOS -->
+    <path d="M 750 370 L 750 435" class="linea" />
+    <path d="M 800 345 L 840 345" class="linea" />
+
+    <!-- PRODUCTO A CATEGORIA -->
+    <path d="M 700 345 L 545 345 L 545 440 L 440 440" class="linea" />
+    <!-- Pata de gallo en Producto -->
+    <line x1="700" y1="345" x2="685" y2="337" stroke="#000" stroke-width="1.8" />
+    <line x1="700" y1="345" x2="685" y2="353" stroke="#000" stroke-width="1.8" />
+    <!-- Barra en Categoría -->
+    <line x1="455" y1="433" x2="455" y2="447" stroke="#000" stroke-width="1.8" />
+
+    <!-- CATEGORIA A ATRIBUTOS -->
+    <path d="M 390 465 L 390 515 L 330 515" class="linea" />
+    <path d="M 390 465 L 390 515 L 450 515" class="linea" />
+
+    <!-- USUARIO A PEDIDO -->
+    <path d="M 235 345 L 285 345 L 285 230 L 440 230" class="linea" />
+    <line x1="250" y1="338" x2="250" y2="352" stroke="#000" stroke-width="1.8" />
+    <line x1="440" y1="230" x2="425" y2="222" stroke="#000" stroke-width="1.8" />
+    <line x1="440" y1="230" x2="425" y2="238" stroke="#000" stroke-width="1.8" />
+
+    <!-- USUARIO A ATRIBUTOS -->
+    <path d="M 180 370 L 180 430" class="linea" />
+
+    <!-- ================= ENTIDADES (RECTÁNGULOS) ================= -->
+    <rect x="70" y="180" width="100" height="50" class="entidad" />
+    <text x="120" y="205" class="texto-entidad">Cliente</text>
+
+    <rect x="440" y="180" width="100" height="50" class="entidad" />
+    <text x="490" y="205" class="texto-entidad">Pedido</text>
+
+    <rect x="700" y="320" width="100" height="50" class="entidad" />
+    <text x="750" y="345" class="texto-entidad">Producto</text>
+
+    <rect x="340" y="415" width="100" height="50" class="entidad" />
+    <text x="390" y="440" class="texto-entidad">Categoría</text>
+
+    <rect x="135" y="320" width="100" height="50" class="entidad" />
+    <text x="185" y="345" class="texto-entidad">Usuario</text>
+
+    <!-- ================= RELACIONES (ROMBOS) ================= -->
+    <polygon points="285,180 335,205 285,230 235,205" class="rombo" />
+    <text x="285" y="205" class="texto-rombo">Realiza</text>
+
+    <polygon points="670,295 720,320 670,345 620,320" class="rombo" />
+    <text x="670" y="320" class="texto-rombo">Se compone</text>
+
+    <!-- ================= ATRIBUTOS (ÓVALOS) ================= -->
+    <rect x="70" y="110" width="100" height="35" class="atributo" />
+    <text x="120" y="127" class="texto-atributo">id_cliente</text>
+
+    <rect x="5" y="270" width="80" height="35" class="atributo" />
+    <text x="45" y="287" class="texto-atributo">ci_rif</text>
+
+    <rect x="380" y="105" width="95" height="35" class="atributo" />
+    <text x="427" y="122" class="texto-atributo">id_pedido</text>
+
+    <rect x="515" y="105" width="90" height="35" class="atributo" />
+    <text x="560" y="122" class="texto-atributo">Fecha</text>
+
+    <rect x="565" y="150" width="90" height="35" class="atributo" />
+    <text x="610" y="167" class="texto-atributo">Total</text>
+
+    <rect x="585" y="390" width="90" height="35" class="atributo" />
+    <text x="630" y="407" class="texto-atributo">Cantidad</text>
+
+    <rect x="685" y="390" width="95" height="35" class="atributo" />
+    <text x="732" y="407" class="texto-atributo">Precio</text>
+
+    <rect x="700" y="435" width="100" height="35" class="atributo" />
+    <text x="750" y="452" class="texto-atributo">id_producto</text>
+
+    <rect x="840" y="328" width="90" height="35" class="atributo" />
+    <text x="885" y="345" class="texto-atributo">Nombre</text>
+
+    <rect x="280" y="495" width="100" height="35" class="atributo" />
+    <text x="330" y="512" class="texto-atributo">id_categoria</text>
+
+    <rect x="400" y="495" width="100" height="35" class="atributo" />
+    <text x="450" y="512" class="texto-atributo">Nombre</text>
+
+    <rect x="135" y="430" width="95" height="35" class="atributo" />
+    <text x="182" y="447" class="texto-atributo">id_usuario</text>
+</svg>

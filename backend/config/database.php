@@ -25,7 +25,8 @@ class Database {
                 ]
             );
         } catch (PDOException $e) {
-            echo "Error de conexión: " . $e->getMessage();
+            error_log("Error de conexión BD: " . $e->getMessage());
+            $this->conn = null;
         }
         return $this->conn;
     }

@@ -1,3 +1,20 @@
+/* Eliminación total de scrollbar lateral manteniendo sticky navbar funcional */
+html {
+    overflow-x: clip;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+body {
+    overflow-x: clip;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
 /* ============================================
    INVERSIONES DURI C.A - Premium Design
    Inspired by modern SaaS + corporate sites
@@ -98,7 +115,7 @@ img { max-width:100%; height:auto; }
 .hero { min-height:calc(100vh - 115px); display:flex; align-items:center; position:relative; overflow:hidden; background:var(--dark); padding:24px 0 36px; }
 .hero-bg { position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1600&q=80') center/cover no-repeat; opacity:0.35; }
 .hero-overlay { position:absolute; inset:0; background:linear-gradient(135deg, rgba(26,15,46,0.92) 0%, rgba(26,15,46,0.7) 40%, rgba(232,93,38,0.3) 100%); }
-.hero-shapes { position:absolute; inset:0; pointer-events:none; }
+.hero-shapes { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
 .shape { position:absolute; border-radius:50%; }
 .shape-1 { width:600px; height:600px; background:radial-gradient(circle, rgba(232,93,38,0.15) 0%, transparent 70%); top:-200px; right:-200px; }
 .shape-2 { width:400px; height:400px; background:radial-gradient(circle, rgba(245,197,66,0.08) 0%, transparent 70%); bottom:-100px; left:-100px; }
@@ -282,7 +299,7 @@ img { max-width:100%; height:auto; }
 .about-list li i { color:#E85D26; font-size:1.15rem; flex-shrink:0; }
 
 /* ==========================================================
-   NUEVA ARQUITECTURA MODERNA BENTO: MISIÓN, VISIÓN Y VALORES
+   NUEVA ARQUITECTURA MODERNA BENTO: MISI├ôN, VISI├ôN Y VALORES
    ========================================================== */
 .pilar-hero-badge {
     display: inline-flex;
@@ -411,7 +428,7 @@ img { max-width:100%; height:auto; }
     box-shadow: 0 8px 20px rgba(22, 163, 74, 0.15);
 }
 
-/* Descripción */
+/* Descripci├│n */
 .pilar-desc {
     color: #475569;
     font-size: 0.98rem;
@@ -425,7 +442,7 @@ img { max-width:100%; height:auto; }
     font-weight: 700;
 }
 
-/* Píldora inferior de compromiso */
+/* P├¡ldora inferior de compromiso */
 .pilar-footer-pill {
     display: inline-flex;
     align-items: center;
@@ -440,12 +457,12 @@ img { max-width:100%; height:auto; }
     width: fit-content;
 }
 
-/* Tarjeta Misión */
+/* Tarjeta Misi├│n */
 .pilar-card-mision:hover {
     border-color: rgba(232, 93, 38, 0.45);
 }
 
-/* Tarjeta Visión */
+/* Tarjeta Visi├│n */
 .pilar-card-vision:hover {
     border-color: rgba(217, 119, 6, 0.45);
 }
@@ -540,7 +557,7 @@ img { max-width:100%; height:auto; }
     line-height: 1.45;
 }
 
-/* Responsividad para móviles y tablets */
+/* Responsividad para m├│viles y tablets */
 @media (max-width: 992px) {
     .pilar-valores-chips-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -1006,7 +1023,7 @@ img { max-width:100%; height:auto; }
 .icon-purple { background: linear-gradient(135deg, #faf5ff, #f3e8ff); color: #9333ea; border: 1px solid rgba(147, 51, 234, 0.25); box-shadow: 0 8px 18px rgba(147, 51, 234, 0.15); }
 .icon-rose { background: linear-gradient(135deg, #fff1f2, #ffe4e6); color: #e11d48; border: 1px solid rgba(225, 29, 72, 0.25); box-shadow: 0 8px 18px rgba(225, 29, 72, 0.15); }
 
-/* Títulos y Párrafos */
+/* T├¡tulos y P├írrafos */
 .service-card h3 {
     font-size: 1.22rem;
     font-weight: 800;
@@ -1047,7 +1064,7 @@ img { max-width:100%; height:auto; }
     flex-shrink: 0;
 }
 
-/* Botones de Acción dentro de la tarjeta */
+/* Botones de Acci├│n dentro de la tarjeta */
 .service-action-btn {
     display: inline-flex;
     align-items: center;
@@ -1104,7 +1121,7 @@ img { max-width:100%; height:auto; }
     flex-wrap: wrap;
 }
 
-/* Compatibilidad para elementos clásicos */
+/* Compatibilidad para elementos cl├ísicos */
 .service-icon { width:58px; height:58px; border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:1.5rem; background:var(--accent-subtle); color:var(--accent); }
 .service-icon.yellow { background:var(--yellow-light); color:var(--yellow); }
 .service-icon.brown { background:var(--border-light); color:var(--text-primary); }
@@ -2702,7 +2719,7 @@ img { max-width:100%; height:auto; }
     transform: translateY(-50%) translateX(-4px);
 }
 
-/* Ventana de Conversación */
+/* Ventana de Conversaci├│n */
 .duribot-window {
     position: fixed;
     bottom: 90px;
@@ -2812,7 +2829,7 @@ img { max-width:100%; height:auto; }
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Área de Mensajes */
+/* ├ürea de Mensajes */
 .duribot-body {
     flex: 1;
     overflow-y: auto;
@@ -2871,7 +2888,7 @@ img { max-width:100%; height:auto; }
     text-align: right;
 }
 
-/* Chips de respuestas rápidas */
+/* Chips de respuestas r├ípidas */
 .duribot-chips {
     display: flex;
     flex-wrap: wrap;
@@ -3056,7 +3073,7 @@ img { max-width:100%; height:auto; }
     margin: 0;
 }
 
-/* Responsive para Móviles */
+/* Responsive para M├│viles */
 @media (max-width: 768px) {
     .duribot-float {
         bottom: 78px;
@@ -3118,7 +3135,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   BUSCADOR PREDICTIVO EN CATÁLOGO
+   BUSCADOR PREDICTIVO EN CAT├üLOGO
    ============================================ */
 .catalog-search-wrap {
     margin-bottom: 22px;
@@ -3299,7 +3316,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   TARJETA DE PAGO MÓVIL (COPIAR CON 1 CLIC)
+   TARJETA DE PAGO M├ôVIL (COPIAR CON 1 CLIC)
    ============================================ */
 .pago-movil-card {
     background: linear-gradient(135deg, #fdfbf7, #fff8f5);
@@ -3672,7 +3689,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   SISTEMA DE FACTURACIÓN Y REGISTRO OFICIAL
+   SISTEMA DE FACTURACI├ôN Y REGISTRO OFICIAL
    Inversiones Duri C.A.
    ============================================ */
 
@@ -4206,7 +4223,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   REGLAS PARA IMPRESIÓN Y PDF (@media print)
+   REGLAS PARA IMPRESI├ôN Y PDF (@media print)
    ============================================ */
 
 @media print {
@@ -4222,7 +4239,7 @@ img { max-width:100%; height:auto; }
         visibility: hidden !important;
     }
 
-    /* Mostrar únicamente el área de impresión activa (factura individual, reporte o lote) */
+    /* Mostrar ├║nicamente el ├írea de impresi├│n activa (factura individual, reporte o lote) */
     #facturaPrintArea,
     #facturaPrintArea *,
     #reportePrintArea,
@@ -4318,7 +4335,7 @@ img { max-width:100%; height:auto; }
     }
 }
 
-/* Responsive para pantallas pequeñas */
+/* Responsive para pantallas peque├▒as */
 @media (max-width: 640px) {
     .modal-factura-overlay {
         padding: 8px 6px;
@@ -4463,7 +4480,7 @@ img { max-width:100%; height:auto; }
     }
 }
 
-/* Alerta y animación para inputs numéricos con error */
+/* Alerta y animaci├│n para inputs num├®ricos con error */
 @keyframes inputShakeError {
     0%, 100% { transform: translateX(0); }
     20%, 60% { transform: translateX(-5px); }
@@ -4476,7 +4493,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   MODAL DE ENVÍO DE FACTURA POR CORREO
+   MODAL DE ENV├ìO DE FACTURA POR CORREO
    ============================================ */
 .mail-modal-overlay {
     position: fixed;
@@ -4699,7 +4716,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   MODAL DE CONFIRMACIÓN CORPORATIVO (REEMPLAZO DE CONFIRM NATIVO)
+   MODAL DE CONFIRMACI├ôN CORPORATIVO (REEMPLAZO DE CONFIRM NATIVO)
    ============================================ */
 .confirm-modal-overlay {
     position: fixed;
@@ -4925,7 +4942,7 @@ img { max-width:100%; height:auto; }
 }
 
 /* ============================================
-   TOAST INTERACTIVO CON BOTÓN DE DESHACER
+   TOAST INTERACTIVO CON BOT├ôN DE DESHACER
    ============================================ */
 .duri-toast-undo {
     position: fixed;
@@ -5459,7 +5476,7 @@ img { max-width:100%; height:auto; }
 
 /* ============================================
    MODAL DE IMPORTAR PRODUCTOS DESDE EXCEL / CSV
-   (Idéntico al estilo elegante de Papelera)
+   (Id├®ntico al estilo elegante de Papelera)
    ============================================ */
 .import-modal-card {
     background: #ffffff;
@@ -6095,7 +6112,7 @@ html {
     scroll-behavior: smooth;
 }
 
-/* 3. Navbar Efecto Dinámico al Bajar */
+/* 3. Navbar Efecto Din├ímico al Bajar */
 .navbar {
     transition: background 0.35s ease, backdrop-filter 0.35s ease, box-shadow 0.35s ease, height 0.35s ease, border-color 0.35s ease !important;
 }
@@ -6108,7 +6125,7 @@ html {
     border-bottom: 1px solid rgba(232, 230, 225, 0.7) !important;
 }
 
-/* 4. Clases de Revelación y Transición en Scroll */
+/* 4. Clases de Revelaci├│n y Transici├│n en Scroll */
 .reveal {
     opacity: 0;
     transform: translate3d(0, 36px, 0);
@@ -6165,7 +6182,7 @@ html {
     opacity: 1 !important;
 }
 
-/* Estado Post-Transición: Remueve transform para liberar memoria GPU y asegurar hover effects */
+/* Estado Post-Transici├│n: Remueve transform para liberar memoria GPU y asegurar hover effects */
 .reveal.revealed,
 .reveal-left.revealed,
 .reveal-right.revealed,
@@ -6175,7 +6192,7 @@ html {
     will-change: auto !important;
 }
 
-/* 5. Micro-efectos para íconos y tarjetas al activarse */
+/* 5. Micro-efectos para ├¡conos y tarjetas al activarse */
 .icon-item.reveal .icon-circle {
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.5s ease;
     transition-delay: calc(var(--stagger-delay, 0s) + 0.1s);
@@ -6195,7 +6212,7 @@ html {
     transform: none;
 }
 
-/* 6. Botón Flotante "Volver Arriba" (Back to Top estilo ABDO77) */
+/* 6. Bot├│n Flotante "Volver Arriba" (Back to Top estilo ABDO77) */
 .back-to-top-btn {
     position: fixed;
     bottom: 84px;
@@ -6259,7 +6276,7 @@ html {
     }
 }
 
-/* 7. Accesibilidad: Respeta las preferencias de reducción de movimiento */
+/* 7. Accesibilidad: Respeta las preferencias de reducci├│n de movimiento */
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;
@@ -6274,7 +6291,6 @@ html {
         transition: none !important;
     }
 }
-
 
 
 

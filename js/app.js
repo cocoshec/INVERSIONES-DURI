@@ -24,6 +24,34 @@ function saveCart() {
     try { sessionStorage.setItem('cartDuri', JSON.stringify(cart)); } catch(e) {}
 }
 
+function safeLocalStorageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (err) {
+        console.warn(`[Storage] QuotaExceeded or error saving ${key}:`, err);
+        try {
+            let data = JSON.parse(value);
+            if (Array.isArray(data)) {
+                // Comprimir / compactar elementos antiguos que contengan base64 excesivo
+                data = data.slice(0, 50).map((item, idx) => {
+                    if (idx > 10 && item.imagen && item.imagen.startsWith('data:image')) {
+                        const copy = { ...item };
+                        delete copy.imagen;
+                        return copy;
+                    }
+                    return item;
+                });
+                localStorage.setItem(key, JSON.stringify(data));
+                return true;
+            }
+        } catch (innerErr) {
+            console.error('[Storage] Fallback save failed:', innerErr);
+        }
+        return false;
+    }
+}
+
 function handleCartPanelCheckout(e) {
     if (e) e.preventDefault();
     const safeCart = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : [];
@@ -1190,23 +1218,43 @@ function showInventoryLink() {
     const nav = document.querySelector('.nav-menu');
     if (!nav || !user) return;
     
-    // Agregar link de inventario solo para super_usuario
+    const isInPages = window.location.pathname.includes('/pages/');
+
+    // 1. Agregar link de inventario para super_usuario y admin/operador
+    if (user.rol === 'super_usuario' || user.rol === 'admin' || user.rol === 'operador') {
+        let invLi = document.getElementById('invNavLink');
+        if (!invLi) {
+            invLi = document.createElement('li');
+            invLi.id = 'invNavLink';
+            const a = document.createElement('a');
+            a.href = isInPages ? 'inventario.html' : 'pages/inventario.html';
+            a.className = 'nav-link';
+            a.innerHTML = '<i class="fas fa-warehouse"></i> Inventario';
+            if (window.location.pathname.includes('inventario')) a.classList.add('active');
+            invLi.appendChild(a);
+            const pedidosLink = nav.querySelector('a[href*="pedidos"]');
+            if (pedidosLink) pedidosLink.parentElement.after(invLi);
+            else nav.appendChild(invLi);
+        }
+    }
+
+    // 2. Agregar link de Usuarios y Auditoría SOLO para super_usuario
     if (user.rol === 'super_usuario') {
-        const existing = document.getElementById('invNavLink');
-        if (existing) return;
-        const isInPages = window.location.pathname.includes('/pages/');
-        const li = document.createElement('li');
-        li.id = 'invNavLink';
-        const a = document.createElement('a');
-        a.href = isInPages ? 'inventario.html' : 'pages/inventario.html';
-        a.className = 'nav-link';
-        a.innerHTML = '<i class="fas fa-warehouse"></i> Inventario';
-        if (window.location.pathname.includes('inventario')) a.classList.add('active');
-        li.appendChild(a);
-        // Insertar después de Pedidos
-        const pedidosLink = nav.querySelector('a[href*="pedidos"]');
-        if (pedidosLink) pedidosLink.parentElement.after(li);
-        else nav.appendChild(li);
+        let userLi = document.getElementById('usuariosNavLink');
+        if (!userLi) {
+            userLi = document.createElement('li');
+            userLi.id = 'usuariosNavLink';
+            const aUser = document.createElement('a');
+            aUser.href = isInPages ? 'usuarios.html' : 'pages/usuarios.html';
+            aUser.className = 'nav-link';
+            aUser.innerHTML = '<i class="fas fa-user-shield"></i> Usuarios';
+            if (window.location.pathname.includes('usuarios')) aUser.classList.add('active');
+            userLi.appendChild(aUser);
+
+            const invLi = document.getElementById('invNavLink');
+            if (invLi) invLi.after(userLi);
+            else nav.appendChild(userLi);
+        }
     }
 }
 
@@ -2806,7 +2854,7 @@ async function saveEditProduct() {
                 stock_minimo: parseInt(stockMin),
                 imagen: imagenFinal
             };
-            localStorage.setItem('duri_products_custom', JSON.stringify(currentList));
+            safeLocalStorageSet('duri_products_custom', JSON.stringify(currentList));
             _cachedInventory = currentList;
             saved = true;
         }
@@ -2986,15 +3034,30 @@ async function ejecutarEliminacionProducto(id) {
     let targetProd = null;
     try {
         const cat = (window._allCatalogProducts && window._allCatalogProducts.length) ? window._allCatalogProducts : (window._catalogProducts || []);
-        targetProd = cat.find(p => p && String(p.id) === String(id));
+        targetProd = cat.find(p => p && (String(p.id) === String(id) || String(p.codigo) === String(id)));
         if (!targetProd && typeof _cachedInventory !== 'undefined' && Array.isArray(_cachedInventory)) {
-            targetProd = _cachedInventory.find(p => p && String(p.id) === String(id));
+            targetProd = _cachedInventory.find(p => p && (String(p.id) === String(id) || String(p.codigo) === String(id)));
         }
         if (!targetProd) {
             const customProds = JSON.parse(localStorage.getItem('duri_products_custom') || '[]');
-            targetProd = customProds.find(p => p && String(p.id) === String(id));
+            targetProd = customProds.find(p => p && (String(p.id) === String(id) || String(p.codigo) === String(id)));
+        }
+        if (!targetProd && typeof getFallbackProducts === 'function') {
+            const fallbackList = await getFallbackProducts();
+            targetProd = fallbackList.find(p => p && (String(p.id) === String(id) || String(p.codigo) === String(id)));
         }
     } catch (e) {}
+
+    // Respaldo garantizado para que nunca se pierda en la papelera
+    if (!targetProd) {
+        targetProd = {
+            id: id,
+            nombre: `Producto #${id}`,
+            categoria_nombre: 'General',
+            precio_venta: 0,
+            stock_actual: 0
+        };
+    }
 
     if (!isGH) {
         try {
@@ -3008,23 +3071,21 @@ async function ejecutarEliminacionProducto(id) {
         }
     }
 
-    // 1. Guardar en papelera de reciclaje local para deshacer inmediato
-    if (targetProd) {
-        try {
-            let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-            trash = trash.filter(item => String(item.id) !== String(id));
-            trash.unshift({ ...targetProd, deleted_at: new Date().toISOString() });
-            localStorage.setItem('duri_papelera', JSON.stringify(trash.slice(0, 50)));
-            updateTrashBadges();
-        } catch (e) {}
-    }
+    // 1. Guardar en papelera de reciclaje local para deshacer inmediato y consulta en papelera
+    try {
+        let trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        trash = trash.filter(item => String(item.id) !== String(id) && String(item.codigo) !== String(id));
+        trash.unshift({ ...targetProd, deleted_at: new Date().toISOString() });
+        safeLocalStorageSet('duri_papelera', JSON.stringify(trash.slice(0, 50)));
+        updateTrashBadges();
+    } catch (e) {}
 
     // 2. Remover de duri_products_custom en localStorage
     try {
         let customProds = await getBaseProductsForStorage();
         if (Array.isArray(customProds)) {
             customProds = customProds.filter(item => item && String(item.id) !== String(id));
-            localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+            safeLocalStorageSet('duri_products_custom', JSON.stringify(customProds));
             deleted = true;
         }
     } catch (e) {}
@@ -3172,36 +3233,44 @@ async function cargarContenidoPapelera() {
     const btnVaciar = document.getElementById('btnVaciarPapelera');
     if (!container) return;
 
-    let eliminados = [];
-    const isGH = window.location.hostname.includes('github.io');
+    const eliminadosMap = new Map();
 
-    // 1. Consultar a la API PHP si no estamos en GH Pages
+    // 1. Cargar lo que tengamos en localStorage primero
+    try {
+        const localTrash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+        if (Array.isArray(localTrash)) {
+            localTrash.forEach(item => {
+                if (item && (item.id || item.codigo)) {
+                    eliminadosMap.set(String(item.id || item.codigo), item);
+                }
+            });
+        }
+    } catch(e) {}
+
+    // 2. Si no estamos en GitHub Pages, consultar también la API PHP
+    const isGH = window.location.hostname.includes('github.io');
     if (!isGH) {
         try {
             const res = await fetch(`${API_BASE}/productos.php?papelera=1`);
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.status === 'success' && Array.isArray(data.data)) {
-                    eliminados = data.data;
-                    // Sincronizar localStorage con el estado real de la base de datos
-                    if (eliminados.length === 0) {
-                        try { localStorage.removeItem('duri_papelera'); } catch(e) {}
-                    } else {
-                        try { localStorage.setItem('duri_papelera', JSON.stringify(eliminados)); } catch(e) {}
-                    }
+                    data.data.forEach(item => {
+                        if (item && (item.id || item.codigo)) {
+                            eliminadosMap.set(String(item.id || item.codigo), item);
+                        }
+                    });
                 }
             }
         } catch (e) {
             console.warn('API papelera no disponible:', e);
-            try {
-                eliminados = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-            } catch(e) {}
         }
-    } else {
-        try {
-            eliminados = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-        } catch(e) {}
     }
+
+    const eliminados = Array.from(eliminadosMap.values());
+    try {
+        safeLocalStorageSet('duri_papelera', JSON.stringify(eliminados));
+    } catch(e) {}
 
     if (!eliminados.length) {
         if (countLabel) countLabel.textContent = '0 artículos en papelera';
@@ -3459,8 +3528,13 @@ async function vaciarPapeleraDefinitiva() {
 window.vaciarPapeleraDefinitiva = vaciarPapeleraDefinitiva;
 
 async function updateTrashBadges() {
+    let localTrash = [];
+    try {
+        localTrash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
+    } catch(e) {}
+
+    let count = Array.isArray(localTrash) ? localTrash.length : 0;
     const isGH = window.location.hostname.includes('github.io');
-    let count = 0;
 
     if (!isGH) {
         try {
@@ -3468,23 +3542,16 @@ async function updateTrashBadges() {
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.status === 'success' && Array.isArray(data.data)) {
-                    count = data.data.length;
-                    if (count === 0) {
-                        try { localStorage.removeItem('duri_papelera'); } catch(e) {}
-                    }
+                    const ids = new Set((localTrash || []).map(p => String(p.id || p.codigo)));
+                    data.data.forEach(p => {
+                        if (p && (p.id || p.codigo)) ids.add(String(p.id || p.codigo));
+                    });
+                    count = ids.size;
                 }
             }
         } catch (e) {
-            try {
-                const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-                count = trash.length;
-            } catch(err) {}
+            count = Array.isArray(localTrash) ? localTrash.length : 0;
         }
-    } else {
-        try {
-            const trash = JSON.parse(localStorage.getItem('duri_papelera') || '[]');
-            count = trash.length;
-        } catch(e) {}
     }
 
     const b1 = document.getElementById('trashBadgeProductos');
@@ -3829,7 +3896,7 @@ async function guardarNuevoProducto() {
         if (!Array.isArray(customProds)) customProds = [];
         customProds = customProds.filter(p => String(p.id) !== String(localItem.id) && (p.codigo || '').toLowerCase() !== (localItem.codigo || '').toLowerCase());
         customProds.unshift(localItem);
-        localStorage.setItem('duri_products_custom', JSON.stringify(customProds));
+        safeLocalStorageSet('duri_products_custom', JSON.stringify(customProds));
     } catch(e) {}
 
     showToast(`¡Producto "${nombre}" publicado exitosamente!`, 'success');
@@ -7232,7 +7299,63 @@ function setupNumericInputValidation(input, errorNoticeId, fieldName) {
     });
 }
 
+window.validarLetrasKey = function(e, input, errorNoticeId, fieldName) {
+    const allowed = ['Backspace', 'Tab', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Home', 'End'];
+    if (allowed.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key && e.key.length === 1 && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-\.]$/.test(e.key)) {
+        e.preventDefault();
+        window.mostrarErrorNumero(input, errorNoticeId, '⚠️ En ' + fieldName + ' solo se permiten letras (no números ni símbolos).');
+    }
+};
+
+window.validarLetrasInput = function(input, errorNoticeId, fieldName) {
+    if (/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-\.]/.test(input.value)) {
+        input.value = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-\.]/g, '');
+        window.mostrarErrorNumero(input, errorNoticeId, '⚠️ En ' + fieldName + ' solo se permiten letras (no números ni símbolos).');
+    } else if (input.value.length > 0) {
+        const errorNotice = errorNoticeId ? document.getElementById(errorNoticeId) : null;
+        if (errorNotice) errorNotice.style.display = 'none';
+        input.classList.remove('shake-input-error');
+        input.style.borderColor = '';
+    }
+};
+
+window.validarLetrasPaste = function(e, input, errorNoticeId, fieldName) {
+    const pasteData = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+    if (/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-\.]/.test(pasteData)) {
+        window.mostrarErrorNumero(input, errorNoticeId, '⚠️ En ' + fieldName + ' solo se permiten letras (se eliminaron los números/símbolos).');
+    }
+};
+
+window.validarEmailInput = function() {};
+window.validarEmailBlur = function() {};
+
 function initNumericInputs() {
+    const nameInput = document.getElementById('newClientName');
+    if (nameInput && !nameInput._lettersBound) {
+        nameInput._lettersBound = true;
+        nameInput.addEventListener('keydown', function(e) {
+            window.validarLetrasKey(e, nameInput, 'nameErrorNotice', 'el Nombre');
+        });
+        nameInput.addEventListener('input', function() {
+            window.validarLetrasInput(nameInput, 'nameErrorNotice', 'el Nombre');
+        });
+        nameInput.addEventListener('paste', function(e) {
+            window.validarLetrasPaste(e, nameInput, 'nameErrorNotice', 'el Nombre');
+        });
+    }
+
+    const emailInput = document.getElementById('newClientEmail');
+    if (emailInput && !emailInput._emailBound) {
+        emailInput._emailBound = true;
+        // Limpiar mensaje de error si el usuario empieza a editar
+        emailInput.addEventListener('input', function() {
+            const err = document.getElementById('emailErrorNotice');
+            if (err) err.style.display = 'none';
+            emailInput.style.borderColor = '';
+        });
+    }
+
     const ciInput = document.getElementById('newClientCi');
     if (ciInput && !ciInput._numericBound) {
         ciInput._numericBound = true;
@@ -7246,6 +7369,7 @@ function initNumericInputs() {
 }
 window.initNumericInputs = initNumericInputs;
 
+window.submitOrder = submitOrder;
 async function submitOrder() {
     const clientSelect = document.getElementById('clientSelect');
     const address = document.getElementById('deliveryAddress');
@@ -7270,7 +7394,25 @@ async function submitOrder() {
         return;
     }
     
-    if (!newName || !newName.value.trim()) { showToast('Por favor escribe tu nombre completo', 'error'); return; }
+    if (!newName || !newName.value.trim()) { 
+        showToast('Por favor escribe tu nombre completo', 'error'); 
+        if (newName) newName.focus();
+        return; 
+    }
+    
+    // Validación de solo letras en el nombre
+    if (/[0-9]/.test(newName.value)) {
+        showToast('⚠️ El Nombre no puede contener números, solo letras', 'error');
+        window.mostrarErrorNumero(newName, 'nameErrorNotice', '⚠️ En el Nombre solo se permiten letras (no números ni símbolos).');
+        newName.focus();
+        return;
+    }
+    if (/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-\.]/.test(newName.value.trim())) {
+        showToast('⚠️ El Nombre solo debe contener letras', 'error');
+        window.mostrarErrorNumero(newName, 'nameErrorNotice', '⚠️ En el Nombre solo se permiten letras.');
+        newName.focus();
+        return;
+    }
     
     if (!newCi || !newCi.value.trim()) { showToast('Por favor ingresa tu número de Cédula', 'error'); return; }
     if (/[^0-9]/.test(newCi.value)) {
@@ -7281,15 +7423,47 @@ async function submitOrder() {
     const clientCi = newCi.value.replace(/[^0-9]/g, '');
     if (clientCi.length < 6) { showToast('La Cédula debe contener solo números (mínimo 6 dígitos)', 'error'); return; }
     
-    if (!newPhone || !newPhone.value.trim()) { showToast('Por favor ingresa tu número de teléfono', 'error'); return; }
-    if (/[^0-9]/.test(newPhone.value)) {
-        showToast('⚠️ El Teléfono solo debe tener números, nada de letras ni símbolos', 'error');
-        newPhone.focus();
+    // Validación de correo electrónico (Solo se valida al enviar el pedido)
+    if (newEmail && newEmail.value && newEmail.value.trim()) {
+        const rawEmail = newEmail.value.trim();
+        const emailErrDiv = document.getElementById('emailErrorNotice');
+        
+        if (!rawEmail.includes('@')) {
+            showToast('⚠️ Correo inválido: debe contener el símbolo "@" (ejemplo: usuario@gmail.com)', 'error');
+            if (emailErrDiv) {
+                emailErrDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Correo inválido: debe contener el símbolo "@" (ejemplo: usuario@gmail.com).';
+                emailErrDiv.style.display = 'block';
+            }
+            newEmail.style.borderColor = '#dc2626';
+            newEmail.focus();
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(rawEmail)) {
+            showToast('⚠️ Correo inválido: debe tener un formato válido con "@" y dominio (ej: usuario@gmail.com)', 'error');
+            if (emailErrDiv) {
+                emailErrDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Correo inválido: incluye "@" y un dominio válido (ej: usuario@gmail.com).';
+                emailErrDiv.style.display = 'block';
+            }
+            newEmail.style.borderColor = '#dc2626';
+            newEmail.focus();
+            return;
+        }
+    }
+
+    if (!newPhone || !newPhone.value.trim()) {
+        showToast('Por favor ingresa tu número de teléfono', 'error');
+        if (newPhone) newPhone.focus();
         return;
     }
     const clientPhone = newPhone.value.replace(/[^0-9]/g, '');
-    if (clientPhone.length < 10) { showToast('El Teléfono debe contener al menos 10 dígitos numéricos (ej: 04243657447)', 'error'); return; }
-    
+    if (clientPhone.length < 10) {
+        showToast('El teléfono debe contener al menos 10 dígitos (ej: 04243657447)', 'error');
+        newPhone.focus();
+        return;
+    }
+
     const clientName = newName.value.trim();
     const clientEmail = (newEmail && newEmail.value) ? newEmail.value.trim().toLowerCase() : '';
     
@@ -7919,7 +8093,16 @@ async function _procesarEnvioFacturaCorreo(p, email) {
             return { ok: true };
         }
 
-        const res = await fetch(`${API_BASE}/pedidos.php?action=enviar_factura`, {
+        // Resolver URL robusta tanto si la URL actual tiene espacios ("/inversiones duri/") como si es "/inversiones-duri/"
+        const currentPath = window.location.pathname;
+        let endpoint = `${API_BASE}/pedidos.php?action=enviar_factura`;
+        if (currentPath.includes('/inversiones duri/')) {
+            endpoint = '/inversiones duri/backend/api/pedidos.php?action=enviar_factura';
+        } else if (currentPath.includes('/inversiones-duri/')) {
+            endpoint = '/inversiones-duri/backend/api/pedidos.php?action=enviar_factura';
+        }
+
+        const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -7934,14 +8117,30 @@ async function _procesarEnvioFacturaCorreo(p, email) {
             })
         });
 
-        const data = await res.json();
-        if (res.ok && data.status === 'success') {
+        const textResponse = await res.text();
+        let data = null;
+        try {
+            data = JSON.parse(textResponse);
+        } catch(jsonErr) {
+            console.error('Respuesta no JSON del servidor al enviar factura:', textResponse);
+            const cleanSnippet = (textResponse || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 160);
+            return { 
+                ok: false, 
+                message: cleanSnippet ? cleanSnippet : 'Error al conectar con el servidor PHP.' 
+            };
+        }
+
+        if (res.ok && data && data.status === 'success') {
             return { ok: true };
         }
-        return { ok: false, message: data.message || 'No se pudo enviar el correo.' };
+        return { ok: false, message: (data && data.message) ? data.message : 'No se pudo enviar el correo.' };
     } catch(err) {
         console.error('Error enviando factura por correo:', err);
-        return { ok: false, message: 'Error de conexión con el servidor. Verifica tu internet e inténtalo de nuevo.' };
+        const errMsg = (err && err.message) ? err.message : '';
+        return { 
+            ok: false, 
+            message: errMsg ? ('Detalle del error: ' + errMsg) : 'Error de conexión con el servidor. Verifica que Laragon (Apache) esté iniciado.' 
+        };
     }
 }
 

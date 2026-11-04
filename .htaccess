@@ -73,3 +73,24 @@
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+# 4. Proteger archivos y extensiones sensibles (OWASP Security)
+<FilesMatch "(\.sql|\.log|\.env|\.git|\.ini|\.bak|\.lock)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 5. Evitar listado de carpetas
+Options -Indexes
+
+# 6. Proteger directorio de configuración backend
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^backend/config/.*$ - [F,L]
+</IfModule>
+

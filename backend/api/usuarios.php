@@ -4,24 +4,72 @@
 // Inversiones Duri C.A
 // ============================================
 
+header('Content-Type: application/json; charset=UTF-8');
+header('X-Content-Type-Options: nosniff');
+
 if (!class_exists('Database')) {
-    $dbPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\database.php';
-    if (!@file_exists($dbPath)) {
-        $dbPath = __DIR__ . '/../config/database.php';
+    class Database {
+        private $host = "127.0.0.1";
+        private $db_name = "inversiones_duri";
+        private $username = "root";
+        private $password = "";
+        private $conn;
+
+        public function getConnection() {
+            $this->conn = null;
+            try {
+                $this->conn = new PDO(
+                    "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4",
+                    $this->username,
+                    $this->password,
+                    [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                        PDO::ATTR_EMULATE_PREPARES => false
+                    ]
+                );
+            } catch(PDOException $exception) {
+                error_log("Connection error: " . $exception->getMessage());
+            }
+            return $this->conn;
+        }
     }
-    include $dbPath;
 }
 
-$mailInitPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php';
-if (!@file_exists($mailInitPath)) {
-    $mailInitPath = __DIR__ . '/../config/mail.php';
-}
-if (@file_exists($mailInitPath)) {
-    include $mailInitPath;
+$db = null;
+if (class_exists('Database')) {
+    $database = new Database();
+    $db = $database->getConnection();
 }
 
-$database = new Database();
-$db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode(["status" => "error", "message" => "Base de datos no disponible temporalmente"]);
+    exit();
+}
+
+// Auto-creación de tablas y columnas necesarias para seguridad y auditoría
+try {
+    $db->exec("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS intentos_fallidos INT DEFAULT 0");
+    $db->exec("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS bloqueado TINYINT(1) DEFAULT 0");
+    $db->exec("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ultimo_acceso DATETIME NULL");
+    $db->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ip_address VARCHAR(45) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        exitoso TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $db->exec("CREATE TABLE IF NOT EXISTS log_actividad (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NULL,
+        accion VARCHAR(100) NOT NULL,
+        ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+        user_agent TEXT NULL,
+        detalles TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch(Exception ) {}
 
 $action = $_GET['action'] ?? null;
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -194,9 +242,9 @@ if ($action === 'login' && $method === 'POST') {
 // ============================================
 function enviarCodigoRecuperacionDirecto($to, $nombre, $codigo) {
     $mailPaths = [
-        'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php',
         __DIR__ . '/../config/mail.php',
         dirname(__DIR__) . '/config/mail.php',
+        'C:\\laragon\\www\\inversiones-duri\\backend\\config\\mail.php',
         ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/backend/config/mail.php',
         ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/inversiones-duri/backend/config/mail.php'
     ];
@@ -215,9 +263,9 @@ function enviarCodigoRecuperacionDirecto($to, $nombre, $codigo) {
 
     $host = defined('MAIL_HOST') ? MAIL_HOST : 'smtp.gmail.com';
     $port = defined('MAIL_PORT') ? MAIL_PORT : 465;
-    $user = defined('MAIL_USER') ? MAIL_USER : (getenv('MAIL_USER') ?: '');
-    $pass = defined('MAIL_PASS') ? str_replace(' ', '', MAIL_PASS) : (getenv('MAIL_PASS') ?: '');
-    $from = $user ?: 'inversionesdurica@gmail.com';
+    $user = defined('MAIL_USER') ? MAIL_USER : (getenv('MAIL_USER') ?: 'gomezjrafael11@gmail.com');
+    $pass = defined('MAIL_PASS') ? str_replace(' ', '', MAIL_PASS) : (getenv('MAIL_PASS') ?: 'cclcogdsfcskjpxv');
+    $from = $user ?: 'gomezjrafael11@gmail.com';
     $fromName = defined('MAIL_FROM_NAME') ? MAIL_FROM_NAME : 'Inversiones Duri C.A';
 
     // Protección: no enviar correos a dominios ficticios o de prueba
@@ -698,10 +746,37 @@ if ($method === 'DELETE') {
 }
 
 // ============================================
-// LOG DE ACTIVIDAD
+// LOG DE ACTIVIDAD Y PISTAS DE AUDITORÍA (SOLO SU)
 // ============================================
 if ($action === 'log') {
-    $stmt = $db->query("SELECT la.*, u.nombre as usuario_nombre FROM log_actividad la LEFT JOIN usuarios u ON la.usuario_id = u.id ORDER BY la.created_at DESC LIMIT 100");
+    // Asegurar que la tabla exista
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS log_actividad (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            usuario_id INT NULL,
+            accion VARCHAR(100) NOT NULL,
+            ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+            user_agent TEXT NULL,
+            detalles TEXT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+        )");
+        $db->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            ip_address VARCHAR(45) NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            exitoso TINYINT(1) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $e) {}
+
+    $limite = isset($_GET['limit']) ? (int)$_GET['limit'] : 150;
+    if ($limite <= 0 || $limite > 500) $limite = 150;
+
+    $stmt = $db->query("SELECT la.*, u.nombre as usuario_nombre, u.email as usuario_email, u.rol as usuario_rol 
+                       FROM log_actividad la 
+                       LEFT JOIN usuarios u ON la.usuario_id = u.id 
+                       ORDER BY la.created_at DESC LIMIT {$limite}");
     $logs = $stmt->fetchAll();
     echo json_encode(["status" => "success", "data" => $logs]);
     exit;

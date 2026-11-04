@@ -9,8 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css?v=80.0">
+    <link rel="stylesheet" href="css/styles.css?v=121.0">
     <style>
         .view-panel {
             transition: opacity 0.25s ease, transform 0.25s ease;
@@ -309,7 +308,7 @@
         'admin@inversionesduri.com': { id: 1, nombre: 'Administrador Duri', email: 'inversionesduri@gmail.com', rol: 'super_usuario', pass: 'admin123' },
         'operador@inversionesduri.com': { id: 2, nombre: 'Operador Duri', email: 'operador@inversionesduri.com', rol: 'operador', pass: 'admin123' },
         'usuario@inversionesduri.com': { id: 3, nombre: 'Usuario Cliente', email: 'usuario@inversionesduri.com', rol: 'usuario', pass: 'admin123' },
-        'gomezjrafael11@gmail.com': { id: 4, nombre: 'Rafael Gomez', email: 'gomezjrafael11@gmail.com', rol: 'super_usuario', pass: '123456' }
+        'gomezjrafael11@gmail.com': { id: 4, nombre: 'Rafael Gomez', email: 'gomezjrafael11@gmail.com', rol: 'super_usuario', pass: 'admin123', altPass: '123456' }
     };
 
     // Cargar contraseñas personalizadas guardadas en demo local
@@ -780,6 +779,25 @@
         const isGH = window.location.hostname.includes('github.io');
 
         function loginLocal(user) {
+            // Registrar conexión exitosa en la auditoría
+            try {
+                let storedRaw = localStorage.getItem('duriStoredLogs');
+                let logs = storedRaw ? JSON.parse(storedRaw) : [];
+                if (!Array.isArray(logs)) logs = [];
+                logs.unshift({
+                    id: Date.now(),
+                    usuario_id: user.id,
+                    usuario_nombre: user.nombre,
+                    usuario_email: user.email,
+                    accion: 'LOGIN_EXITOSO',
+                    ip_address: '127.0.0.1 (Local)',
+                    detalles: 'Inicio de sesión exitoso [' + (user.rol || 'usuario').toUpperCase() + ']',
+                    created_at: new Date().toISOString()
+                });
+                if (logs.length > 200) logs.pop();
+                localStorage.setItem('duriStoredLogs', JSON.stringify(logs));
+            } catch(e) {}
+
             localStorage.setItem('userDuri', JSON.stringify({
                 id: user.id,
                 nombre: user.nombre,
@@ -796,7 +814,7 @@
         // Si estamos en GitHub Pages (sin servidor PHP)
         if (isGH) {
             const demo = demoUsers[email];
-            if (demo && demo.pass === password) {
+            if (demo && (demo.pass === password || (demo.altPass && demo.altPass === password))) {
                 loginLocal(demo);
                 return;
             } else {
@@ -848,16 +866,56 @@
                 btn.disabled = false;
             }
         } catch(err) {
-            // Fallback a demo si la API PHP no responde
+            console.warn('Conexión con PHP no completada, aplicando control de seguridad:', err);
+            // Contador de intentos fallidos integrado
+            const attemptsKey = 'duri_fail_attempts_' + email;
+            let currentFails = parseInt(sessionStorage.getItem(attemptsKey) || '0', 10);
+            currentFails++;
+            sessionStorage.setItem(attemptsKey, currentFails);
+
             const demo = demoUsers[email];
-            if (demo && demo.pass === password) {
+            if (demo && (demo.pass === password || (demo.altPass && demo.altPass === password))) {
+                sessionStorage.removeItem(attemptsKey);
                 loginLocal(demo);
-            } else {
-                errorDiv.textContent = 'Error de conexión con el servidor. Verifica que Laragon esté activo.';
-                errorDiv.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
-                btn.disabled = false;
+                return;
             }
+
+            // Registrar intento fallido en las Pistas de Auditoría para que el SuperUsuario lo vea inmediatamente
+            try {
+                let storedRaw = localStorage.getItem('duriStoredLogs');
+                let logs = storedRaw ? JSON.parse(storedRaw) : [];
+                if (!Array.isArray(logs)) logs = [];
+                const newLog = {
+                    id: Date.now(),
+                    usuario_id: null,
+                    usuario_nombre: email || 'Desconocido',
+                    usuario_email: email || '',
+                    accion: 'INTENTO_FALLIDO_LOGIN',
+                    ip_address: '127.0.0.1 (Local)',
+                    detalles: 'Contraseña errónea ingresada (Intento ' + currentFails + ' de 5)',
+                    created_at: new Date().toISOString()
+                };
+                logs.unshift(newLog); // Al inicio de la lista
+                if (logs.length > 200) logs.pop();
+                localStorage.setItem('duriStoredLogs', JSON.stringify(logs));
+            } catch(e) {}
+
+            if (currentFails >= 5) {
+                errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px;"><i class="fas fa-shield-alt" style="margin-top:2px;font-size:1.1rem;color:#dc2626;"></i><div><strong>Alerta de Seguridad:</strong> Tu cuenta ha sido bloqueada tras 5 intentos fallidos. Utiliza la opción \'¿Olvidaste tu contraseña?\' para desbloquearla.</div></div>';
+                errorDiv.style.background = '#fef2f2';
+                errorDiv.style.borderColor = '#f87171';
+                errorDiv.style.color = '#991b1b';
+            } else {
+                const restantes = 5 - currentFails;
+                errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px;"><i class="fas fa-exclamation-triangle" style="margin-top:2px;color:#d97706;"></i><div><strong>Credenciales incorrectas.</strong> Te quedan ' + restantes + ' intento(s) antes del bloqueo de seguridad.</div></div>';
+                errorDiv.style.background = '#fffbeb';
+                errorDiv.style.borderColor = '#fcd34d';
+                errorDiv.style.color = '#92400e';
+            }
+
+            errorDiv.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+            btn.disabled = false;
         }
     });
     

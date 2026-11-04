@@ -4,16 +4,50 @@
 // Inversiones Duri C.A
 // ============================================
 
+header('Content-Type: application/json; charset=UTF-8');
+header('X-Content-Type-Options: nosniff');
+
 if (!class_exists('Database')) {
-    $dbPath = 'C:\\laragon\\www\\inversiones-duri\\backend\\config\\database.php';
-    if (!@file_exists($dbPath)) {
-        $dbPath = __DIR__ . '/../config/database.php';
+    class Database {
+        private $host = "127.0.0.1";
+        private $db_name = "inversiones_duri";
+        private $username = "root";
+        private $password = "";
+        private $conn;
+
+        public function getConnection() {
+            $this->conn = null;
+            try {
+                $this->conn = new PDO(
+                    "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8mb4",
+                    $this->username,
+                    $this->password,
+                    [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                        PDO::ATTR_EMULATE_PREPARES => false
+                    ]
+                );
+            } catch(PDOException $exception) {
+                error_log("Connection error: " . $exception->getMessage());
+            }
+            return $this->conn;
+        }
     }
-    include $dbPath;
+}
+    
+
+$db = null;
+if (class_exists('Database')) {
+    $database = new Database();
+    $db = $database->getConnection();
 }
 
-$database = new Database();
-$db = $database->getConnection();
+if (!$db) {
+    http_response_code(503);
+    echo json_encode(["status" => "error", "message" => "Base de datos no disponible temporalmente"]);
+    exit();
+}
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
@@ -68,8 +102,8 @@ switch ($method) {
                 $db->query("UPDATE productos SET activo = 1 WHERE activo = 0");
                 echo json_encode(["status" => "success", "message" => "Todos los productos han sido restaurados"]);
             } elseif ($restoreId) {
-                $stmt = $db->prepare("UPDATE productos SET activo = 1 WHERE id = ?");
-                $stmt->execute([$restoreId]);
+                $stmt = $db->prepare("UPDATE productos SET activo = 1 WHERE id = ? OR codigo = ?");
+                $stmt->execute([$restoreId, $restoreId]);
                 echo json_encode(["status" => "success", "message" => "Producto restaurado con éxito"]);
             } else {
                 http_response_code(400);
@@ -274,13 +308,13 @@ switch ($method) {
 
         if ($permanent) {
             // Eliminación física definitiva de la base de datos (de por vida)
-            $stmt = $db->prepare("DELETE FROM productos WHERE id = ?");
-            $stmt->execute([$id]);
+            $stmt = $db->prepare("DELETE FROM productos WHERE id = ? OR codigo = ?");
+            $stmt->execute([$id, $id]);
             echo json_encode(["status" => "success", "message" => "Producto eliminado de por vida"]);
         } else {
             // Soft delete (papelera)
-            $stmt = $db->prepare("UPDATE productos SET activo = 0 WHERE id = ?");
-            $stmt->execute([$id]);
+            $stmt = $db->prepare("UPDATE productos SET activo = 0 WHERE id = ? OR codigo = ?");
+            $stmt->execute([$id, $id]);
             echo json_encode(["status" => "success", "message" => "Producto movido a la papelera"]);
         }
         break;

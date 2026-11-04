@@ -1,4 +1,4 @@
--- ============================================
+﻿-- ============================================
 -- BASE DE DATOS: Inversiones Duri C.A
 -- Sistema de Gestión de Pedidos e Inventario
 -- ============================================
@@ -137,6 +137,31 @@ CREATE TABLE IF NOT EXISTS password_resets (
     usado TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- ============================================
+-- TABLA: log_actividad (Pistas de Auditoría y Conexión para SuperUsuario)
+-- ============================================
+CREATE TABLE IF NOT EXISTS log_actividad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    accion VARCHAR(100) NOT NULL,
+    ip_address VARCHAR(45) DEFAULT '127.0.0.1',
+    user_agent TEXT NULL,
+    detalles TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+-- ============================================
+-- TABLA: login_attempts (Control Anti-Fuerza Bruta)
+-- ============================================
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    exitoso TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ============================================
