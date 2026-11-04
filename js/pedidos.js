@@ -278,22 +278,24 @@ const CIUDADES_VE = {
     caracas: { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zoom: 13, zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
 };
 
-const MAPBOX_ACCESS_TOKEN = atob('cGsuZXlKMUlqb2lhbWh2Y21kbFpXVWlMQ0poSWpvaVkyMTJabXh5ZW5CeU1ETmhZVE0wY0hwcWF6RnhNR0ZoWmlKOS5jUFYzXzdJeVIxYy1qY2RFNnBTMEt3');
+const googlePinIcon = (typeof L !== 'undefined') ? L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+}) : null;
 
 function moverMapaYMarcador(lat, lon, zoom = 16) {
     const latNum = parseFloat(lat);
     const lonNum = parseFloat(lon);
     if (!isNaN(latNum) && !isNaN(lonNum)) {
         if (gmap) {
-            gmap.flyTo({
-                center: [lonNum, latNum],
-                zoom: zoom,
-                essential: true,
-                speed: 1.2
-            });
+            gmap.flyTo([latNum, lonNum], zoom, { animate: true, duration: 1.0 });
         }
         if (gmarker) {
-            gmarker.setLngLat([lonNum, latNum]);
+            gmarker.setLatLng([latNum, lonNum]);
         }
     }
 }
@@ -359,7 +361,9 @@ function reverseGeocodeReal(lat, lon, callback) {
     } catch(e) {}
 }
 
-let currentMapStyleMode = 'sat';
+let mapTileLayerRoad = null;
+let mapTileLayerSat = null;
+let currentMapTileMode = 'road';
 
 function cambiarCapaMapa(tipo) {
     if (!gmap) return;
@@ -367,70 +371,86 @@ function cambiarCapaMapa(tipo) {
     const btnSat = document.getElementById('btnMapStyleSat');
 
     if (tipo === 'sat') {
-        gmap.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
-        currentMapStyleMode = 'sat';
+        if (mapTileLayerRoad && gmap.hasLayer(mapTileLayerRoad)) {
+            gmap.removeLayer(mapTileLayerRoad);
+        }
+        if (!mapTileLayerSat) {
+            mapTileLayerSat = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '&copy; Google Maps Satelital'
+            });
+        }
+        mapTileLayerSat.addTo(gmap);
+        currentMapTileMode = 'sat';
         if (btnRoad) { btnRoad.style.background = '#f1f3f4'; btnRoad.style.color = '#3c4043'; }
-        if (btnSat) { btnSat.style.background = '#e85d26'; btnSat.style.color = '#fff'; }
+        if (btnSat) { btnSat.style.background = '#ea4335'; btnSat.style.color = '#fff'; }
     } else {
-        gmap.setStyle('mapbox://styles/mapbox/streets-v12');
-        currentMapStyleMode = 'streets';
-        if (btnRoad) { btnRoad.style.background = '#e85d26'; btnRoad.style.color = '#fff'; }
+        if (mapTileLayerSat && gmap.hasLayer(mapTileLayerSat)) {
+            gmap.removeLayer(mapTileLayerSat);
+        }
+        if (mapTileLayerRoad && !gmap.hasLayer(mapTileLayerRoad)) {
+            mapTileLayerRoad.addTo(gmap);
+        }
+        currentMapTileMode = 'road';
+        if (btnRoad) { btnRoad.style.background = '#1a73e8'; btnRoad.style.color = '#fff'; }
         if (btnSat) { btnSat.style.background = '#f1f3f4'; btnSat.style.color = '#3c4043'; }
     }
 }
 
-function initGoogleMap(coords = DEFAULT_COORD, zoom = 16) {
-    const container = document.getElementById('gmapsCanvas');
-    if (!container || typeof mapboxgl === 'undefined') return;
-
-    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
-    const lat = coords[0];
-    const lon = coords[1];
-
+function initGoogleMap(coords = DEFAULT_COORD, zoom = 15) {
     if (gmap) {
-        moverMapaYMarcador(lat, lon, zoom);
-        actualizarPuntoSeleccionado(lat, lon);
-        setTimeout(() => { if (gmap) gmap.resize(); }, 150);
+        gmap.setView(coords, zoom);
+        if (gmarker) gmarker.setLatLng(coords);
+        actualizarPuntoSeleccionado(coords[0], coords[1]);
+        setTimeout(() => gmap.invalidateSize(), 250);
         return;
     }
 
-    gmap = new mapboxgl.Map({
-        container: 'gmapsCanvas',
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        center: [lon, lat],
-        zoom: zoom
+    const container = document.getElementById('gmapsCanvas');
+    if (!container || typeof L === 'undefined') return;
+
+    gmap = L.map('gmapsCanvas', {
+        zoomControl: true
+    }).setView(coords, zoom);
+
+    // Capa oficial de Calles de Google Maps
+    mapTileLayerRoad = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+    }).addTo(gmap);
+
+    const iconOpts = googlePinIcon || L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
     });
 
-    gmap.on('load', () => {
-        gmap.resize();
-    });
-
-    // Controles de zoom y orientación
-    gmap.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-left');
-
-    // Marcador corporativo Duri (naranja #e85d26) arrastrable
-    gmarker = new mapboxgl.Marker({
+    // Marcador rojo arrastrable
+    gmarker = L.marker(coords, {
         draggable: true,
-        color: '#e85d26'
-    })
-    .setLngLat([lon, lat])
-    .addTo(gmap);
+        icon: iconOpts,
+        autoPan: true
+    }).addTo(gmap);
 
-    // Evento al arrastrar el marcador (donde yo deje la marca)
-    gmarker.on('dragend', function() {
-        const pos = gmarker.getLngLat();
+    // Evento al arrastrar el marcador
+    gmarker.on('dragend', function(e) {
+        const pos = e.target.getLatLng();
         actualizarPuntoSeleccionado(pos.lat, pos.lng);
     });
 
     // Evento al hacer clic o tocar en cualquier parte del mapa
     gmap.on('click', function(e) {
-        const { lng, lat: clickLat } = e.lngLat;
-        if (gmarker) gmarker.setLngLat([lng, clickLat]);
-        actualizarPuntoSeleccionado(clickLat, lng);
+        if (gmarker) gmarker.setLatLng(e.latlng);
+        actualizarPuntoSeleccionado(e.latlng.lat, e.latlng.lng);
     });
 
-    actualizarPuntoSeleccionado(lat, lon);
-    setTimeout(() => { if (gmap) gmap.resize(); }, 250);
+    actualizarPuntoSeleccionado(coords[0], coords[1]);
+    setTimeout(() => { if (gmap) gmap.invalidateSize(); }, 250);
 }
 
 function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
@@ -601,29 +621,7 @@ function aplicarUbicacionFijada(lat, lon, texto = '') {
 }
 
 let gpsWatchTrackerId = null;
-
-function createGeoJSONCircle(center, radiusInMeters, points = 48) {
-    const [lng, lat] = center;
-    const km = radiusInMeters / 1000;
-    const ret = [];
-    const distanceX = km / (111.320 * Math.cos(lat * Math.PI / 180));
-    const distanceY = km / 110.574;
-
-    for (let i = 0; i < points; i++) {
-        const theta = (i / points) * (2 * Math.PI);
-        const x = distanceX * Math.cos(theta);
-        const y = distanceY * Math.sin(theta);
-        ret.push([lng + x, lat + y]);
-    }
-    ret.push(ret[0]);
-    return {
-        type: 'Feature',
-        geometry: {
-            type: 'Polygon',
-            coordinates: [ret]
-        }
-    };
-}
+let gpsAccuracyCircle = null;
 
 function detenerRastreoGps() {
     if (gpsWatchTrackerId !== null) {
@@ -633,38 +631,20 @@ function detenerRastreoGps() {
 }
 
 function dibujarCirculoPrecision(lat, lon, accuracy) {
-    if (!gmap) return;
-    const radius = Math.min(accuracy || 30, 250);
-    const circleData = createGeoJSONCircle([lon, lat], radius);
-    try {
-        if (gmap.getSource('gps-accuracy-source')) {
-            gmap.getSource('gps-accuracy-source').setData(circleData);
-        } else if (gmap.isStyleLoaded()) {
-            gmap.addSource('gps-accuracy-source', {
-                type: 'geojson',
-                data: circleData
-            });
-            gmap.addLayer({
-                id: 'gps-accuracy-layer-fill',
-                type: 'fill',
-                source: 'gps-accuracy-source',
-                paint: {
-                    'fill-color': '#e85d26',
-                    'fill-opacity': 0.15
-                }
-            });
-            gmap.addLayer({
-                id: 'gps-accuracy-layer-line',
-                type: 'line',
-                source: 'gps-accuracy-source',
-                paint: {
-                    'line-color': '#e85d26',
-                    'line-width': 1.5,
-                    'line-dasharray': [2, 2]
-                }
-            });
-        }
-    } catch(e) {}
+    if (!gmap || typeof L === 'undefined') return;
+    if (gpsAccuracyCircle) {
+        try { gmap.removeLayer(gpsAccuracyCircle); } catch(e) {}
+        gpsAccuracyCircle = null;
+    }
+    if (accuracy && accuracy < 2000) {
+        gpsAccuracyCircle = L.circle([lat, lon], {
+            radius: Math.min(accuracy, 250),
+            color: '#1a73e8',
+            fillColor: '#1a73e8',
+            fillOpacity: 0.15,
+            weight: 1.5
+        }).addTo(gmap);
+    }
 }
 
 let yaIntentoConPermiso = false;
@@ -944,7 +924,7 @@ function abrirModalMapa(usarGpsAutomatico = false, mensajeAlerta = false) {
         extModalBtn.href = `https://www.google.com/maps/search/?api=1&query=${coordsToUse[0]},${coordsToUse[1]}`;
     }
     setTimeout(() => {
-        if (gmap) gmap.resize();
+        if (gmap && typeof gmap.invalidateSize === 'function') gmap.invalidateSize();
     }, 200);
 
     if (typeof sincronizarMontosUbicacion === 'function') {

@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/all.min.css">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <link rel="stylesheet" href="../css/styles.css?v=130.0">
@@ -114,7 +114,7 @@
                             </select>
                         </div>
 
-                        <!-- Selector de Modalidad de Entrega (Retiro en Tienda o Delivery) -->
+                        <!-- Selector de Modalidad de Entrega (Retiro en Tienda o ¡Delivery) -->
                         <div class="form-group" style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:16px;">
                             <label style="font-size:0.92rem; font-weight:700; color:#0f172a; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
                                 <i class="fas fa-truck-moving" style="color:#ff6600;"></i> Modalidad de Entrega <span style="color:#dc3545">*</span>
@@ -125,58 +125,58 @@
                                 <div id="btnModalidadRetiro" onclick="seleccionarModalidadEntrega('retiro')" style="border:2px solid #ff6600; background:#fff7ed; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
                                     <i class="fas fa-store" style="font-size:1.4rem; color:#ff6600;"></i>
                                     <strong style="font-size:0.86rem; color:#0f172a;">Retiro en Local</strong>
-                                    <span style="font-size:0.75rem; color:#059669; font-weight:700; background:#ecfdf5; padding:2px 8px; border-radius:10px;">�GRATIS ($0.00)!</span>
+                                    <span style="font-size:0.75rem; color:#059669; font-weight:700; background:#ecfdf5; padding:2px 8px; border-radius:10px;">¡GRATIS ($0.00)!</span>
                                 </div>
                                 
-                                <div id="btnModalidadDelivery" onclick="seleccionarModalidadEntrega('delivery')" style="border:2px solid #cbd5e1; background:#ffffff; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
+                                <div id="btnModalidad¡Delivery" onclick="seleccionarModalidadEntrega('delivery')" style="border:2px solid #cbd5e1; background:#ffffff; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
                                     <i class="fas fa-motorcycle" style="font-size:1.4rem; color:#64748b;"></i>
-                                    <strong style="font-size:0.86rem; color:#0f172a;">Delivery a Domicilio</strong>
-                                    <span style="font-size:0.75rem; color:#64748b; font-weight:600;">Centro Gratis / For�neo</span>
+                                    <strong style="font-size:0.86rem; color:#0f172a;">¡Delivery a Domicilio</strong>
+                                    <span style="font-size:0.75rem; color:#64748b; font-weight:600;">Centro Gratis / Foráneo</span>
                                 </div>
                             </div>
                             <input type="hidden" id="modalidadEntrega" value="retiro">
-                            <input type="hidden" id="costoDeliveryActual" value="0">
+                            <input type="hidden" id="costo¡DeliveryActual" value="0">
 
                             <!-- Tarjeta informativa de Retiro en Sede -->
                             <div id="infoRetiroLocal" style="background:#ffffff; border:1px solid #fed7aa; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#9a3412; display:flex; align-items:flex-start; gap:8px;">
                                 <i class="fas fa-map-marker-alt" style="color:#ea580c; font-size:1.1rem; margin-top:2px; flex-shrink:0;"></i>
                                 <div style="line-height:1.4;">
-                                    <strong>Retiro en Tienda:</strong> Sede Comercial Inversiones Duri (Av. Bol�var Oeste, Maracay). Sin costo adicional. Te notificaremos al estar listo para retirar.
+                                    <strong>Retiro en Tienda:</strong> Sede Comercial Inversiones Duri (Av. Bolívar Oeste, Maracay). Sin costo adicional. Te notificaremos al estar listo para retirar.
                                 </div>
                             </div>
 
-                            <!-- Selector de Zonas de Delivery -->
-                            <div id="seccionDeliveryOpciones" style="display:none; margin-top:10px;">
+                            <!-- Selector de Zonas de ¡Delivery -->
+                            <div id="seccion¡DeliveryOpciones" style="display:none; margin-top:10px;">
                                 <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:9px 12px; margin-bottom:8px; font-size:0.8rem; color:#1e40af; display:flex; align-items:flex-start; gap:8px; line-height:1.4;">
                                     <i class="fas fa-route" style="color:#2563eb; font-size:1.1rem; margin-top:2px; flex-shrink:0;"></i>
                                     <div>
-                                        <strong>Sistema de Tarifa Progresiva por Distancia:</strong> A mayor distancia de nuestra sede en el <strong>Centro de Maracay</strong>, mayor es el costo de delivery. �Centro de Maracay es <strong>100% GRATIS</strong>! <em>(Solo Estado Aragua)</em>.
+                                        <strong>Sistema de Tarifa Progresiva por Distancia:</strong> A mayor distancia de nuestra sede en el <strong>¡Centro de Maracay</strong>, mayor es el costo de delivery. ¡Centro de Maracay es <strong>100% GRATIS</strong>! <em>(Solo Estado Aragua)</em>.
                                     </div>
                                 </div>
                                 <label style="font-size:0.84rem; font-weight:700; color:#334155; margin-bottom:6px; display:block;">
                                     <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona o Rango de Distancia:
                                 </label>
-                                <select id="selectZonaDelivery" onchange="cambiarZonaDelivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
-                                    <option value="centro" data-costo="0" data-dist="0 - 2.5 km" selected>?Y"? Centro de Maracay (0 a 2.5 km de la sede) ??" �GRATIS ($0.00)!</option>
-                                    <option value="cercanas" data-costo="2" data-dist="2.5 - 6 km">?Y"? Maracay Urbano Cercano (2.5 a 6 km: Delicias, Soledad, San Jacinto, Pi�onal, Ca�a de Az�car, etc.) ??" +$2.00 USD</option>
-                                    <option value="limon" data-costo="3" data-dist="6 - 10 km">?Y"? El Lim�n / MBI / Arsenal / Candelaria (6 a 10 km) ??" +$3.00 USD</option>
-                                    <option value="turmero" data-costo="5" data-dist="10 - 16 km">?Y"? Turmero / Palo Negro / Santa Rita / La Morita (10 a 16 km) ??" +$5.00 USD</option>
-                                    <option value="cagua" data-costo="6" data-dist="16 - 24 km">?Y"? Cagua / La Encrucijada / San Mateo (16 a 24 km) ??" +$6.00 USD</option>
-                                    <option value="villadecura" data-costo="8" data-dist="24 - 32 km">?Y"? Villa de Cura / Zamora / Bella Vista (24 a 32 km) ??" +$8.00 USD</option>
-                                    <option value="victoria" data-costo="10" data-dist="32 - 42 km">?Y"? La Victoria / Magdaleno / Tocor�n (32 a 42 km) ??" +$10.00 USD</option>
-                                    <option value="lejana" data-costo="12" data-dist="42 - 55 km">?Y"? Zonas For�neas de Aragua (42 a 55 km: Las Tejer�as, San Casimiro, San Sebasti�n) ??" +$12.00 USD</option>
-                                    <option value="otra" data-costo="3" data-dist="Variable">?Y"? Otra Zona dentro de Aragua (Tarifa calculada seg�n km de distancia)</option>
-                                    <option value="fuera_aragua" data-costo="-1" data-bloqueado="true" style="color:#dc2626; font-weight:700;">?Ys? Fuera del Estado Aragua (> 55 km / Carabobo, Valencia, Caracas, etc.) ??" NO DISPONIBLE</option>
+                                <select id="selectZona¡Delivery" onchange="cambiarZona¡Delivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
+                                    <option value="centro" data-costo="0" data-dist="0 - 2.5 km" selected>📍 ¡Centro de Maracay (0 a 2.5 km de la sede) — ¡GRATIS ($0.00)!</option>
+                                    <option value="cercanas" data-costo="2" data-dist="2.5 - 6 km">📍 Maracay Urbano Cercano (2.5 a 6 km: Delicias, Soledad, San Jacinto, Piñonal, Caña de Azúcar, etc.) — +$2.00 USD</option>
+                                    <option value="limon" data-costo="3" data-dist="6 - 10 km">📍 El Limón / MBI / Arsenal / Candelaria (6 a 10 km) — +$3.00 USD</option>
+                                    <option value="turmero" data-costo="5" data-dist="10 - 16 km">📍 Turmero / Palo Negro / Santa Rita / La Morita (10 a 16 km) — +$5.00 USD</option>
+                                    <option value="cagua" data-costo="6" data-dist="16 - 24 km">📍 Cagua / La Encrucijada / San Mateo (16 a 24 km) — +$6.00 USD</option>
+                                    <option value="villadecura" data-costo="8" data-dist="24 - 32 km">📍 Villa de Cura / Zamora / Bella Vista (24 a 32 km) — +$8.00 USD</option>
+                                    <option value="victoria" data-costo="10" data-dist="32 - 42 km">📍 La Victoria / Magdaleno / Tocorón (32 a 42 km) — +$10.00 USD</option>
+                                    <option value="lejana" data-costo="12" data-dist="42 - 55 km">📍 Zonas Foráneas de Aragua (42 a 55 km: Las Tejerías, San Casimiro, San Sebastián) — +$12.00 USD</option>
+                                    <option value="otra" data-costo="3" data-dist="Variable">📍 Otra Zona dentro de Aragua (Tarifa calculada según km de distancia)</option>
+                                    <option value="fuera_aragua" data-costo="-1" data-bloqueado="true" style="color:#dc2626; font-weight:700;">🚫 Fuera del Estado Aragua (> 55 km / Carabobo, Valencia, Caracas, etc.) — NO DISPONIBLE</option>
                                 </select>
-                                <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-gift"></i> <span>�Delivery en todo el Centro de Maracay es COMPLETAMENTE GRATIS!</span>
+                                <div id="badgeTarifa¡Delivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-gift"></i> <span>¡Delivery en todo el ¡Centro de Maracay es COMPLETAMENTE GRATIS!</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Contenedor de Direcci�n de Entrega (Se activa al elegir Delivery) -->
+                        <!-- Contenedor de Dirección de Entrega (Se activa al elegir ¡Delivery) -->
                         <div id="contenedorDireccionDespacho" style="display:none;" class="form-group">
-                            <label><i class="fas fa-map-marker-alt"></i> Direcci�n Exacta de Despacho <span style="color:#dc3545">*</span></label>
+                            <label><i class="fas fa-map-marker-alt"></i> Dirección Exacta de Despacho <span style="color:#dc3545">*</span></label>
                             
                             <!-- Botones: Abrir Mapa, Mi GPS y Sede Duri -->
                             <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:8px; margin-bottom:10px;">
@@ -191,12 +191,12 @@
                                 </a>
                             </div>
 
-                            <!-- Tarjeta de Confirmaci�n de Ubicación fijada con GPS -->
+                            <!-- Tarjeta de Confirmación de Ubicación fijada con GPS -->
                             <div id="ubicacionConfirmadaCard" style="display:none; margin-bottom:8px; padding:10px 12px; background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:8px; font-size:0.82rem; color:#2e7d32; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
                                     <i class="fas fa-check-circle" style="font-size:1.3rem; color:#28a745;"></i>
                                     <div>
-                                        <strong>�Ubicación fijada con �xito!</strong>
+                                        <strong>¡Ubicación fijada con éxito!</strong>
                                         <span id="ubicacionConfirmadaCoords" style="display:block; font-size:0.75rem; color:#555;"></span>
                                         <span id="ubicacionConfirmadaPrecio" style="display:block; font-size:0.8rem; font-weight:700; color:#1e40af; margin-top:2px;"></span>
                                     </div>
@@ -226,15 +226,15 @@
                                 </span>
                             </div>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:0.8rem; color:#475569; margin-bottom:8px; border-bottom:1px dashed #cbd5e1; padding-bottom:8px;">
-                                <div>?Y>? <strong>Delivery a tu ubicaci�n:</strong></div>
-                                <div id="montoDeliveryUbicacion" style="text-align:right; font-weight:700; color:#059669;">�GRATIS ($0.00)!</div>
-                                <div>?Y"? <strong>Total Productos + IVA:</strong></div>
+                                <div>🛵 <strong>¡Delivery a tu ubicación:</strong></div>
+                                <div id="monto¡DeliveryUbicacion" style="text-align:right; font-weight:700; color:#059669;">¡GRATIS ($0.00)!</div>
+                                <div>📍 <strong>Total Productos + IVA:</strong></div>
                                 <div id="montoProductosUbicacion" style="text-align:right; font-weight:700; color:#334155;">$0.00</div>
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
                                 <div>
                                     <div style="font-size:0.78rem; font-weight:800; color:#0f172a; text-transform:uppercase;">TOTAL A PAGAR:</div>
-                                    <div id="totalBsUbicacion" style="font-size:0.78rem; color:#64748b; font-weight:600;">(??^ Bs. 0.00 a tasa BCV)</div>
+                                    <div id="totalBsUbicacion" style="font-size:0.78rem; color:#64748b; font-weight:600;">(≈ Bs. 0.00 a tasa BCV)</div>
                                 </div>
                                 <div id="totalUsdUbicacion" style="font-size:1.35rem; font-weight:900; color:#2563eb;">
                                     $0.00 USD
@@ -259,10 +259,10 @@
                     <div class="order-items" id="orderItems">
                         <div class="empty-cart" style="text-align:center; padding:32px 16px;">
                             <i class="fas fa-shopping-basket" style="font-size:2.4rem; color:#cbd5e1; margin-bottom:12px; display:block;"></i>
-                            <p style="font-weight:600; font-size:1.05rem; margin-bottom:6px; color:#475569;">Tu pedido esté vac�o</p>
-                            <span style="display:block; margin-bottom:16px; font-size:0.88rem; color:#94a3b8;">A�n no has agregado productos a tu orden</span>
+                            <p style="font-weight:600; font-size:1.05rem; margin-bottom:6px; color:#475569;">Tu pedido está vacío</p>
+                            <span style="display:block; margin-bottom:16px; font-size:0.88rem; color:#94a3b8;">Aún no has agregado productos a tu orden</span>
                             <a href="productos.html" class="btn btn-primary" style="border-radius:100px; padding:10px 22px; font-size:0.9rem; display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
-                                <i class="fas fa-store"></i> Explorar Cat�logo de Productos
+                                <i class="fas fa-store"></i> Explorar Catálogo de Productos
                             </a>
                         </div>
                     </div>
@@ -278,8 +278,8 @@
                             <strong id="cartIva">$0.00</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#0284c7; font-weight:700;">
-                            <span id="labelDeliveryResumen"><i class="fas fa-store"></i> Retiro en Local:</span>
-                            <strong id="costoDeliveryResumen" style="color:#059669;">�GRATIS ($0.00)!</strong>
+                            <span id="label¡DeliveryResumen"><i class="fas fa-store"></i> Retiro en Local:</span>
+                            <strong id="costo¡DeliveryResumen" style="color:#059669;">¡GRATIS ($0.00)!</strong>
                         </div>
                     </div>
 
@@ -296,7 +296,7 @@
             <!-- Panel de Pedidos Recientes (Solo para Superusuario) -->
             <div class="order-card" id="adminOrdersCard" style="margin-top: 24px; display: none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-                    <h3 style="margin:0"><i class="fas fa-user-shield" style="color:var(--orange,#FF6600);"></i> Panel de Superusuario: Verificaci�n de Pagos</h3>
+                    <h3 style="margin:0"><i class="fas fa-user-shield" style="color:var(--orange,#FF6600);"></i> Panel de Superusuario: Verificación de Pagos</h3>
                     <span style="font-size:0.85rem; color:var(--gray)"><i class="fas fa-lock"></i> Exclusivo para Superusuario</span>
                 </div>
                 <div id="recentOrders">
@@ -314,20 +314,20 @@
         </div>
     </footer>
 
-    <!-- MODAL DE SELECCI?"N DE DIRECCI?"N GOOGLE MAPS (RESPONSIVO PARA M?"VIL Y PC) -->
+    <!-- MODAL DE SELECCIÓN DE DIRECCIÓN GOOGLE MAPS (RESPONSIVO PARA MÓVIL Y PC) -->
     <div id="modalGoogleMaps" style="display:none; position:fixed; inset:0; width:100%; height:100%; height:100dvh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); padding:max(6px,env(safe-area-inset-top,6px)) 8px max(8px,env(safe-area-inset-bottom,8px)); box-sizing:border-box; overflow-y:auto;">
         <div style="background:#fff; width:680px; max-width:100%; max-height:min(94dvh,640px); height:min(94dvh,640px); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; margin:auto;">
             <!-- Header Modal -->
             <div style="background:#fff; border-bottom:1px solid #e0e0e0; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
                 <div style="display:flex; align-items:center; gap:9px;">
-                    <i class="fas fa-map-marked-alt" style="color:#e85d26; font-size:1.25rem;"></i>
+                    <i class="fab fa-google" style="color:#ea4335; font-size:1.15rem;"></i>
                     <div>
-                        <strong style="font-size:0.95rem; color:#1e293b; display:block; line-height:1.2;">Mapa Satelital Interactivo</strong>
-                        <span style="font-size:0.7rem; color:#64748b;">Mueve el marcador naranja o toca donde deseas recibir tu pedido</span>
+                        <strong style="font-size:0.92rem; color:#202124; display:block; line-height:1.2;">Google Maps Interactivo</strong>
+                        <span style="font-size:0.68rem; color:#5f6368;">Mueve el marcador rojo a tu casa o punto de entrega</span>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <!-- Bot�n para ver en Google Maps externo si el usuario lo desea -->
+                    <!-- Botón para ver en Google Maps externo si el usuario lo desea -->
                     <a id="btnGmapsExternalView" href="https://maps.google.com" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:#1a73e8; text-decoration:none; font-weight:700; display:flex; align-items:center; gap:4px; background:#eff6ff; border:1px solid #bfdbfe; padding:5px 9px; border-radius:7px;" title="Ver punto en Google Maps">
                         <i class="fab fa-google"></i> Google Maps
                     </a>
@@ -335,87 +335,87 @@
                 </div>
             </div>
 
-            <!-- Banner de confirmaci�n e instrucciones claras -->
+            <!-- Banner de confirmación e instrucciones claras -->
             <div id="gmapsPromptNotice" style="display:flex; background:#fff7ed; border-bottom:1px solid #fed7aa; padding:6px 12px; font-size:0.76rem; color:#9a3412; align-items:center; gap:6px; flex-shrink:0;">
                 <i class="fas fa-map-pin" style="color:#e85d26; font-size:0.9rem;"></i>
-                <span><b>Toca o arrastra en el mapa:</b> Donde dejes el marcador naranja, esa ubicaci�n exacta se fija en tu pedido.</span>
+                <span><b>Toca o arrastra en el mapa:</b> Donde dejes el marcador rojo, esa ubicación exacta se fija en tu pedido.</span>
             </div>
 
-            <!-- Buscador r�pido de sector / ciudad / avenida en toda Venezuela -->
+            <!-- Buscador rápido de sector / ciudad / avenida en toda Venezuela -->
             <div style="background:#f8f9fa; border-bottom:1px solid #e0e0e0; padding:6px 12px; display:flex; flex-direction:column; gap:5px; flex-shrink:0;">
                 <div style="display:flex; gap:6px; background:#fff; border:1.5px solid #d0d7de; border-radius:8px; padding:2px 6px; align-items:center;">
                     <i class="fas fa-search" style="color:#5f6368; padding-left:4px; font-size:0.8rem;"></i>
-                    <input type="text" id="mapSearchInput" placeholder="?Y"? Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Lim�n)..." style="flex:1; border:none; background:transparent; padding:5px 6px; font-size:0.8rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
+                    <input type="text" id="mapSearchInput" placeholder="📍 Escribe tu sector, calle o avenida (ej: Las Delicias, San Jacinto, El Limón)..." style="flex:1; border:none; background:transparent; padding:5px 6px; font-size:0.8rem; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarSectorEnMapa();}">
                     <button type="button" onclick="buscarSectorEnMapa()" style="background:#e85d26; color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer;">Buscar</button>
                 </div>
-                <!-- Botones r�pidos con scroll horizontal para ahorrar espacio vertical -->
+                <!-- Botones rápidos con scroll horizontal para ahorrar espacio vertical -->
                 <div style="display:flex; gap:5px; align-items:center; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:thin;">
                     <span style="font-size:0.7rem; color:#475569; font-weight:800; white-space:nowrap; flex-shrink:0;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Zonas:</span>
                     <button type="button" onclick="centrarEnCiudad('duri')" style="white-space:nowrap; flex-shrink:0; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y?? Sede Duri ($0)
+                        🏢 Sede Duri ($0)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('maracay')" style="white-space:nowrap; flex-shrink:0; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Centro Maracay (Gratis)
+                        📍 Centro Maracay (Gratis)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('delicias')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Las Delicias (+$2.00)
+                        📍 Las Delicias (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? San Jacinto (+$2.00)
+                        📍 San Jacinto (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('coromoto')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? La Coromoto (+$2.00)
+                        📍 La Coromoto (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('canadeazucar')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Ca�a de Az�car (+$2.00)
+                        📍 Caña de Azúcar (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('limon')" style="white-space:nowrap; flex-shrink:0; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? El Lim�n (+$3.00)
+                        📍 El Limón (+$3.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('turmero')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Turmero / Palo Negro (+$5.00)
+                        📍 Turmero / Palo Negro (+$5.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('cagua')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Cagua (+$6.00)
+                        📍 Cagua (+$6.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('magdaleno')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Magdaleno / Zamora (+$8.00)
+                        📍 Magdaleno / Zamora (+$8.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('mariara')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? Mariara / Carabobo (+$8.00)
+                        📍 Mariara / Carabobo (+$8.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('victoria')" style="white-space:nowrap; flex-shrink:0; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        ?Y"? La Victoria / Lejanas (+$8.00)
+                        📍 La Victoria / Lejanas (+$8.00)
                     </button>
                 </div>
             </div>
 
-            <!-- Mapa con Cartograf�a de Mapbox GL JS HD -->
+            <!-- Mapa con Cartografía de Google Maps -->
             <div style="flex:1; min-height:130px; position:relative; width:100%;">
                 <div id="gmapsCanvas" style="width:100%; height:100%; min-height:130px; z-index:1;"></div>
                 
-                <!-- Selector flotante de capas Calles / Sat�lite HD -->
-                <div style="position:absolute; top:10px; right:10px; z-index:9; display:flex; gap:4px; background:rgba(255,255,255,0.95); padding:4px; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.18); border:1px solid #e2e8f0; backdrop-filter:blur(6px);">
-                    <button type="button" id="btnMapStyleSat" onclick="cambiarCapaMapa('sat')" style="border:none; background:#e85d26; color:#fff; font-size:0.74rem; font-weight:700; padding:5px 10px; border-radius:7px; cursor:pointer; transition:all 0.2s ease;">
-                        ?Y>?? Sat�lite HD
+                <!-- Selector flotante de capas Calles / Satélite -->
+                <div style="position:absolute; top:10px; right:10px; z-index:999; display:flex; gap:3px; background:rgba(255,255,255,0.92); padding:3px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.2); border:1px solid #dadce0;">
+                    <button type="button" id="btnMapStyleRoad" onclick="cambiarCapaMapa('road')" style="border:none; background:#1a73e8; color:#fff; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                        🗺️ Calles
                     </button>
-                    <button type="button" id="btnMapStyleRoad" onclick="cambiarCapaMapa('road')" style="border:none; background:#f1f3f4; color:#3c4043; font-size:0.74rem; font-weight:700; padding:5px 10px; border-radius:7px; cursor:pointer; transition:all 0.2s ease;">
-                        ?Y-?? Calles HD
+                    <button type="button" id="btnMapStyleSat" onclick="cambiarCapaMapa('sat')" style="border:none; background:#f1f3f4; color:#3c4043; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer;">
+                        🛰️ Satélite
                     </button>
                 </div>
 
-                <!-- Bot�n flotante para recentrar con GPS del tel�fono -->
-                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:14px; right:14px; z-index:9; background:#fff; border:1px solid #e2e8f0; width:42px; height:42px; border-radius:50%; box-shadow:0 4px 14px rgba(0,0,0,0.22); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#e85d26; font-size:1.15rem; transition:transform 0.15s ease;" title="Mi ubicaci�n GPS">
+                <!-- Botón flotante para recentrar con GPS del teléfono -->
+                <button type="button" id="btnGpsInsideModal" onclick="centrarGpsModal()" style="position:absolute; bottom:10px; right:10px; z-index:999; background:#fff; border:1px solid #dadce0; width:40px; height:40px; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.3); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-size:1.1rem;" title="Mi ubicación GPS">
                     <i class="fas fa-crosshairs"></i>
                 </button>
             </div>
 
-            <!-- Footer con Direcci�n Detectada y Bot�n Aceptar (Siempre 100% visible) -->
+            <!-- Footer con Dirección Detectada y Botón Aceptar (Siempre 100% visible) -->
             <div style="background:#fff; border-top:1px solid #e0e0e0; padding:8px 12px 10px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; box-shadow:0 -4px 12px rgba(0,0,0,0.05);">
                 <div style="display:flex; align-items:flex-start; gap:6px;">
                     <i class="fas fa-map-pin" style="color:#ea4335; font-size:0.95rem; margin-top:2px;"></i>
                     <div style="flex:1; min-width:0;">
-                        <span style="font-size:0.68rem; color:#64748b; text-transform:uppercase; font-weight:700; display:block; line-height:1;">Direcci�n detectada en el mapa:</span>
+                        <span style="font-size:0.68rem; color:#64748b; text-transform:uppercase; font-weight:700; display:block; line-height:1;">Dirección detectada en el mapa:</span>
                         <div id="gmapsDetectedAddress" style="font-size:0.82rem; font-weight:700; color:#1e293b; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Mueve el marcador rojo a tu casa...</div>
                     </div>
                 </div>
@@ -424,16 +424,16 @@
                 <div id="gmapsPaymentPreviewBox" style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
                     <div style="min-width:0;">
                         <div style="font-size:0.7rem; font-weight:800; color:#166534; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-                            <i class="fas fa-motorcycle" style="color:#059669;"></i> Tarifa a esta ubicaci�n:
+                            <i class="fas fa-motorcycle" style="color:#059669;"></i> Tarifa a esta ubicación:
                         </div>
                         <div id="gmapsDetectedZoneLabel" style="font-size:0.8rem; font-weight:700; color:#0f172a; margin-top:1px;">
-                            Centro de Maracay ??" �DELIVERY GRATIS ($0.00)!
+                            Centro de Maracay — ¡DELIVERY GRATIS ($0.00)!
                         </div>
                     </div>
                     <div style="text-align:right;">
                         <span id="gmapsTotalPagarTitle" style="font-size:0.68rem; color:#64748b; font-weight:700; display:block; line-height:1;">Total de tu Pedido:</span>
                         <span id="gmapsTotalPagarPreview" style="font-size:1.05rem; font-weight:900; color:#15803d; line-height:1.15;">$0.00 USD</span>
-                        <small id="gmapsTotalBsPreview" style="font-size:0.68rem; color:#475569; display:block; font-weight:600; line-height:1;">(??^ Bs. 0.00)</small>
+                        <small id="gmapsTotalBsPreview" style="font-size:0.68rem; color:#475569; display:block; font-weight:600; line-height:1;">(≈ Bs. 0.00)</small>
                     </div>
                 </div>
 
@@ -442,20 +442,20 @@
                         Cancelar
                     </button>
                     <button type="button" id="btnConfirmarUbicacion" onclick="confirmarUbicacionDesdeModal()" style="min-height:38px; padding:7px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:800; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 3px 10px rgba(40,167,69,0.35);">
-                        <i class="fas fa-check-circle"></i> Aceptar y Usar Direcci�n
+                        <i class="fas fa-check-circle"></i> Aceptar y Usar Dirección
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL PARA PEDIR AL USUARIO QUE ENCIENDA LA UBICACI?"N / GPS -->
+    <!-- MODAL PARA PEDIR AL USUARIO QUE ENCIENDA LA UBICACIÓN / GPS -->
     <div id="modalPedirPermisoGps" style="display:none; position:fixed; inset:0; width:100%; height:100%; height:100dvh; background:rgba(0,0,0,0.7); z-index:100000; align-items:center; justify-content:center; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); padding:max(12px,env(safe-area-inset-top,12px)) 12px max(12px,env(safe-area-inset-bottom,12px)); box-sizing:border-box; overflow-y:auto;">
         <div style="background:#fff; width:440px; max-width:100%; max-height:min(90dvh,calc(100vh - 24px)); border-radius:18px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:20px 18px; text-align:center; box-shadow:0 24px 64px rgba(0,0,0,0.35); margin:auto;">
             <div style="width:56px; height:56px; background:#fee8e7; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
                 <i class="fas fa-location-arrow" style="font-size:1.6rem; color:#ea4335;"></i>
             </div>
-            <h3 style="margin:0 0 6px; font-size:1.15rem; color:#202124; font-weight:700;">�Permiso de Ubicación requerido!</h3>
+            <h3 style="margin:0 0 6px; font-size:1.15rem; color:#202124; font-weight:700;">¡Permiso de Ubicación requerido!</h3>
             <p style="font-size:0.83rem; color:#5f6368; line-height:1.45; margin:0 0 12px;">
                 Por seguridad de Apple (iOS), una página web no puede activar el GPS de tu iPhone automáticamente. Para que Safari te ubique:
             </p>
@@ -471,7 +471,7 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:flex-start;">
                     <i class="fas fa-map-pin" style="color:#28a745; font-size:1.15rem; margin-top:2px; flex-shrink:0;"></i>
-                    <span><strong>�Sin dar permiso?</strong> No te preocupes, puedes tocar el botón gris abajo y <b>marcar tu casa en el mapa con 1 solo toque</b>.</span>
+                    <span><strong>¿Sin dar permiso?</strong> No te preocupes, puedes tocar el botón gris abajo y <b>marcar tu casa en el mapa con 1 solo toque</b>.</span>
                 </div>
             </div>
 
@@ -487,7 +487,7 @@
     </div>
 
     <!-- Scripts Modulares -->
-    <script src="../js/app.js?v=130.0"></script>
-    <script src="../js/pedidos.js?v=130.0"></script>
+    <script src="../js/app.js?v=132.0"></script>
+    <script src="../js/pedidos.js?v=132.0"></script>
 </body>
 </html>
