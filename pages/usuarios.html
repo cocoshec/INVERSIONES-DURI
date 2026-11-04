@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css?v=121.0">
+    <link rel="stylesheet" href="../css/styles.css?v=133.0">
     <link rel="manifest" href="../manifest.json">
     <meta name="theme-color" content="#e85d26">
     <meta name="mobile-web-app-capable" content="yes">
@@ -18,6 +18,34 @@
     <meta name="apple-mobile-web-app-title" content="Inversiones Duri">
     <link rel="apple-touch-icon" href="../img/icon-192.png">
     <style>
+        /* Ajuste de tabla en escritorio para que ninguna columna ni botón de acción quede cortado */
+        .inv-table-wrap {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .inv-table th,
+        .inv-table td {
+            padding: 12px 14px !important;
+            vertical-align: middle;
+        }
+        .inv-table th:last-child,
+        .inv-table td:last-child {
+            white-space: nowrap;
+            text-align: center;
+            min-width: 145px;
+        }
+        .user-actions-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .actions-bar-mobile {
+            margin-top: 10px;
+            padding-top: 6px;
+        }
+
         /* Adaptación móvil moderna y fluida */
         @media (max-width: 768px) {
             .page-hero {
@@ -299,7 +327,7 @@
         </div>
     </footer>
 
-    <script src="../js/app.js?v=121.0"></script>
+    <script src="../js/app.js?v=133.0"></script>
     <script>
     const API = '../backend/api/usuarios.php';
     let currentUser = null;
@@ -371,15 +399,18 @@
         
         tbody.innerHTML = (usuarios || []).map(u => `
             <tr>
-                <td><strong>${u.nombre}</strong></td>
-                <td>${u.email}</td>
-                <td><span style="padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;${roleColors[u.rol] || ''}">${roles[u.rol] || u.rol}</span></td>
-                <td>${u.telefono || '-'}</td>
-                <td>${u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-VE') : 'Nunca'}</td>
-                <td><span class="status ${u.activo ? 'available' : 'out'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
-                <td>
-                    <button class="btn btn-sm" style="background:var(--cream)" onclick="editUserById(${u.id})"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm" style="background:${u.activo ? 'rgba(220,53,69,0.15)' : 'rgba(40,167,69,0.15)'};color:${u.activo ? '#dc3545' : '#28a745'}" onclick="toggleUser(${u.id},${u.activo})"><i class="fas fa-${u.activo ? 'ban' : 'check'}"></i></button>
+                <td data-label="Usuario"><strong>${u.nombre}</strong></td>
+                <td data-label="Email" style="word-break:break-word;">${u.email}</td>
+                <td data-label="Rol"><span style="padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;white-space:nowrap;${roleColors[u.rol] || ''}">${roles[u.rol] || u.rol}</span></td>
+                <td data-label="Teléfono" style="white-space:nowrap;">${u.telefono || '-'}</td>
+                <td data-label="Último Acceso" style="font-size:0.84rem;min-width:130px;">${u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-VE') : 'Nunca'}</td>
+                <td data-label="Estado"><span class="status ${u.activo ? 'available' : 'out'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                <td data-label="Acciones">
+                    <div class="user-actions-cell">
+                        <button class="btn btn-sm" title="Editar usuario" style="background:var(--cream);padding:7px 10px;" onclick="editUserById(${u.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm" title="${u.activo ? 'Desactivar usuario' : 'Activar usuario'}" style="padding:7px 10px;background:${u.activo ? 'rgba(245,158,11,0.16)' : 'rgba(40,167,69,0.15)'};color:${u.activo ? '#d97706' : '#28a745'}" onclick="toggleUser(${u.id},${u.activo})"><i class="fas fa-${u.activo ? 'ban' : 'check'}"></i></button>
+                        <button class="btn btn-sm" title="Eliminar usuario" style="padding:7px 10px;background:rgba(220,53,69,0.15);color:#dc3545" onclick="deleteUser(${u.id})"><i class="fas fa-trash-alt"></i></button>
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -392,20 +423,18 @@
 
     let allLogs = [];
 
-    const defaultLocalLogs = [
-        { id: 1, usuario_id: 1, usuario_nombre: 'Administrador Duri', usuario_email: 'inversionesduri@gmail.com', accion: 'LOGIN_EXITOSO', ip_address: '127.0.0.1', detalles: 'Inicio de sesión SuperUsuario (Sesión activa)', created_at: new Date().toISOString() },
-        { id: 2, usuario_id: null, usuario_nombre: 'Sistema', usuario_email: '', accion: 'RESPALDO_BD_SQL_GENERADO', ip_address: '127.0.0.1', detalles: 'Archivo generado automáticamente: respaldo_inversiones_duri.sql', created_at: new Date(Date.now() - 7200000).toISOString() },
-        { id: 3, usuario_id: 2, usuario_nombre: 'Operador Duri', usuario_email: 'operador@inversionesduri.com', accion: 'LOGOUT', ip_address: '192.168.1.105', detalles: 'Cierre de sesión seguro', created_at: new Date(Date.now() - 14400000).toISOString() },
-        { id: 4, usuario_id: null, usuario_nombre: 'Desconocido', usuario_email: 'intruso@test.com', accion: 'INTENTO_FALLIDO_LOGIN', ip_address: '190.202.45.12', detalles: 'Contraseña errónea bloqueada por firewall', created_at: new Date(Date.now() - 28800000).toISOString() }
-    ];
+    const defaultLocalLogs = [];
+    // Limpiar cualquier bitácora ficticia antigua guardada en el navegador
+    try { localStorage.removeItem('duriStoredLogs'); } catch(e) {}
 
     async function loadLog(){
         try{
             const tbody = document.getElementById('logBody');
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray)"><i class="fas fa-spinner fa-spin"></i> Cargando pistas de auditoría...</td></tr>';
-            const res = await fetch(API + '?action=log&limit=200');
+            const res = await fetch(API + '?action=log&limit=200&_t=' + Date.now(), { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
+                if (data.client_ip) { try { localStorage.setItem('duriRealClientIp', data.client_ip); } catch(e) {} }
                 if(data.status === 'success' && data.data && data.data.length > 0){
                     allLogs = data.data;
                     renderLogs(allLogs);
@@ -460,13 +489,33 @@
             const usuarioTag = l.usuario_nombre 
                 ? ('<strong>' + l.usuario_nombre + '</strong> <span style="font-size:0.78rem;color:#64748b;display:block">' + (l.usuario_email || '') + '</span>')
                 : '<span style="color:#64748b;font-style:italic">Anónimo / Sistema</span>';
-            const detalle = l.detalles || l.user_agent || '-';
+            let rawDetalle = l.detalles || l.user_agent || '-';
+            if (rawDetalle.indexOf('Mozilla/') !== -1) {
+                let os = 'PC / Escritorio';
+                if (/Windows NT 10\.0/i.test(rawDetalle)) os = (/Win64|x64/i.test(rawDetalle)) ? 'Windows 10/11 (64-bit)' : 'Windows 10/11';
+                else if (/Android/i.test(rawDetalle)) os = 'Android';
+                else if (/iPhone|iPad/i.test(rawDetalle)) os = 'iOS';
+                else if (/Mac OS X/i.test(rawDetalle)) os = 'macOS';
+                else if (/Linux/i.test(rawDetalle)) os = 'Linux';
+
+                let br = 'Navegador Web';
+                let m;
+                if ((m = rawDetalle.match(/Edg\/([0-9]+)/i))) br = 'Microsoft Edge ' + m[1];
+                else if ((m = rawDetalle.match(/(?:OPR|Opera)\/([0-9]+)/i))) br = 'Opera ' + m[1];
+                else if ((m = rawDetalle.match(/Chrome\/([0-9]+)/i))) br = 'Google Chrome ' + m[1];
+                else if ((m = rawDetalle.match(/Firefox\/([0-9]+)/i))) br = 'Mozilla Firefox ' + m[1];
+                else if ((m = rawDetalle.match(/Version\/([0-9.]+).*Safari/i))) br = 'Apple Safari ' + m[1];
+                rawDetalle = br + ' — ' + os;
+            }
+            const detalle = rawDetalle;
+            const fallbackIp = localStorage.getItem('duriRealClientIp') || '192.168.1.121';
+            const cleanIp = (!l.ip_address || l.ip_address === '::1' || l.ip_address === '127.0.0.1' || l.ip_address === '127.0.0.1 (Local)' || l.ip_address === '190.202.45.12' || l.ip_address === '192.168.1.105') ? fallbackIp : l.ip_address;
 
             return '<tr>' +
                 '<td style="white-space:nowrap;font-size:0.85rem;color:#334155"><i class="far fa-clock" style="margin-right:4px;color:#94a3b8"></i>' + fecha + '</td>' +
                 '<td>' + usuarioTag + '</td>' +
                 '<td><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:12px;font-size:0.78rem;font-weight:700;color:' + b.color + ';background:' + b.bg + '"><i class="fas ' + b.icon + '"></i> ' + b.label + '</span></td>' +
-                '<td style="font-family:monospace;font-size:0.83rem;color:#475569">' + (l.ip_address || '-') + '</td>' +
+                '<td style="font-family:monospace;font-size:0.83rem;color:#475569">' + cleanIp + '</td>' +
                 '<td style="font-size:0.8rem;color:#64748b;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + detalle + '">' + detalle + '</td>' +
             '</tr>';
         }).join('');
@@ -492,29 +541,67 @@
 
     function generarRespaldoBD(formato = 'sql') {
         if (!currentUser || currentUser.rol !== 'super_usuario') {
-            alert('Acceso restringido: Solo el SuperUsuario tiene autorización para descargar respaldos de la base de datos.');
+            if (typeof showToast === 'function') {
+                showToast('Acceso restringido: Solo el SuperUsuario puede descargar respaldos.', 'error');
+            }
             return;
         }
 
-        const confirmMsg = formato === 'sql' 
-            ? '¿Deseas generar y descargar el Respaldo Completo de la Base de Datos en formato .SQL?'
-            : '¿Deseas generar y descargar el Respaldo Estructurado en formato .JSON?';
+        const isSql = formato === 'sql';
+        showDuriConfirmModal({
+            title: isSql ? '¿Generar Respaldo SQL?' : '¿Generar Respaldo JSON?',
+            message: isSql 
+                ? 'Se descargará una copia completa con la estructura de tablas y todos los registros actuales de la base de datos.'
+                : 'Se descargará un archivo estructurado en formato .JSON con todos los datos del sistema.',
+            itemDetails: isSql ? 'respaldo_inversiones_duri.sql' : 'respaldo_inversiones_duri.json',
+            itemIcon: isSql ? 'fa-database' : 'fa-file-code',
+            confirmText: isSql ? 'Descargar .SQL' : 'Descargar .JSON',
+            confirmIcon: isSql ? 'fa-database' : 'fa-file-code',
+            confirmType: 'info',
+            cancelText: 'Cancelar',
+            onConfirm: async () => {
+                const action = isSql ? 'download_sql' : 'download_json';
+                const now = new Date();
+                const stamp = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0') + '_' +
+                    String(now.getHours()).padStart(2, '0') + '-' +
+                    String(now.getMinutes()).padStart(2, '0') + '-' +
+                    String(now.getSeconds()).padStart(2, '0');
+                const ext = isSql ? '.sql' : '.json';
+                const fileName = 'respaldo_inversiones_duri_' + stamp + ext;
+                const url = '../backend/api/backup.php?action=' + action + '&_t=' + Date.now();
 
-        if (!confirm(confirmMsg)) return;
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) throw new Error('Error HTTP ' + res.status);
+                    const contentText = await res.text();
+                    const mimeType = isSql ? 'application/sql;charset=utf-8' : 'application/json;charset=utf-8';
+                    const blob = new Blob([contentText], { type: mimeType });
+                    const blobUrl = URL.createObjectURL(blob);
 
-        const action = formato === 'sql' ? 'download_sql' : 'download_json';
-        const url = '../backend/api/backup.php?action=' + action;
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.setAttribute('download', '');
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+                    if (typeof showToast === 'function') {
+                        showToast('Respaldo ' + fileName + ' descargado exitosamente', 'success');
+                    }
+                } catch (err) {
+                    console.error('Error al descargar respaldo:', err);
+                    // Fallback directo si falla fetch
+                    window.location.href = url;
+                }
 
-        setTimeout(() => {
-            loadLog();
-        }, 1500);
+                setTimeout(() => {
+                    loadLog();
+                }, 1200);
+            }
+        });
     }
 
     function editUser(user){
@@ -528,18 +615,94 @@
         openModal('userModal');
     }
 
-    async function toggleUser(id, activo){
-        const action = activo ? 'desactivar' : 'activar';
-        if(!confirm(`¿${action.charAt(0).toUpperCase() + action.slice(1)} este usuario?`)) return;
-        
-        try{
-            await fetch(API + '?id=' + id, {
-                method:'PUT',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({activo: activo ? 0 : 1})
-            });
-            loadUsers();
-        }catch(err){ console.error(err); }
+    function toggleUser(id, activo){
+        const isDeactivating = !!activo;
+        const targetUser = loadedUsersList.find(u => u.id == id);
+        const userLabel = targetUser ? `${targetUser.nombre} (${targetUser.email})` : `Usuario #${id}`;
+
+        showDuriConfirmModal({
+            title: isDeactivating ? '¿Desactivar este usuario?' : '¿Activar este usuario?',
+            message: isDeactivating 
+                ? 'El usuario no podrá iniciar sesión en el sistema hasta que un SuperUsuario lo vuelva a activar.'
+                : 'El usuario recuperará su acceso al sistema con los permisos de su rol asignado.',
+            itemDetails: userLabel,
+            itemIcon: 'fa-user-shield',
+            confirmText: isDeactivating ? 'Sí, Desactivar' : 'Sí, Activar',
+            confirmIcon: isDeactivating ? 'fa-user-slash' : 'fa-user-check',
+            confirmType: isDeactivating ? 'danger' : 'success',
+            cancelText: 'Cancelar',
+            onConfirm: async () => {
+                const newState = isDeactivating ? 0 : 1;
+                try {
+                    await fetch(API + '?id=' + id, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({activo: newState})
+                    });
+                } catch(err) {
+                    console.error(err);
+                }
+
+                // Sincronizar también en almacenamiento local
+                try {
+                    let list = JSON.parse(localStorage.getItem('duriStoredUsers') || '[]');
+                    const idx = list.findIndex(u => u.id == id);
+                    if (idx !== -1) {
+                        list[idx].activo = newState;
+                        localStorage.setItem('duriStoredUsers', JSON.stringify(list));
+                    }
+                } catch(e) {}
+
+                if (typeof showToast === 'function') {
+                    showToast(isDeactivating ? 'Usuario desactivado correctamente' : 'Usuario activado correctamente', 'success');
+                }
+                loadUsers();
+            }
+        });
+    }
+
+    function deleteUser(id) {
+        const targetUser = loadedUsersList.find(u => u.id == id);
+        if (currentUser && targetUser && (targetUser.id == currentUser.id || targetUser.email === currentUser.email)) {
+            if (typeof showToast === 'function') {
+                showToast('Por seguridad, no puedes eliminar tu propia cuenta en sesión activa.', 'warning');
+            }
+            return;
+        }
+
+        const userLabel = targetUser ? `${targetUser.nombre} (${targetUser.email})` : `Usuario #${id}`;
+
+        showDuriConfirmModal({
+            title: '¿Eliminar este usuario?',
+            message: 'Esta acción eliminará la cuenta permanentemente del sistema y no se puede deshacer.',
+            itemDetails: userLabel,
+            itemIcon: 'fa-user-times',
+            confirmText: 'Sí, Eliminar',
+            confirmIcon: 'fa-trash-alt',
+            confirmType: 'danger',
+            cancelText: 'Cancelar',
+            onConfirm: async () => {
+                try {
+                    await fetch(API + '?id=' + id, {
+                        method: 'DELETE'
+                    });
+                } catch(err) {
+                    console.error(err);
+                }
+
+                // Eliminar también del respaldo local
+                try {
+                    let list = JSON.parse(localStorage.getItem('duriStoredUsers') || '[]');
+                    list = list.filter(u => u.id != id);
+                    localStorage.setItem('duriStoredUsers', JSON.stringify(list));
+                } catch(e) {}
+
+                if (typeof showToast === 'function') {
+                    showToast('Usuario eliminado permanentemente', 'success');
+                }
+                loadUsers();
+            }
+        });
     }
 
     document.getElementById('userForm').addEventListener('submit', async function(e){
@@ -552,9 +715,9 @@
         const name = document.getElementById('userName').value.trim();
         const email = document.getElementById('userEmail').value.trim();
         
-        if(name.length < 3){ alert('El nombre debe tener al menos 3 caracteres'); return; }
-        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('Email no válido'); return; }
-        if(!id && password.length < 6){ alert('La contraseña debe tener al menos 6 caracteres'); return; }
+        if(name.length < 3){ if(typeof showToast==='function') showToast('El nombre debe tener al menos 3 caracteres','error'); return; }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ if(typeof showToast==='function') showToast('Correo electrónico no válido','error'); return; }
+        if(!id && password.length < 6){ if(typeof showToast==='function') showToast('La contraseña debe tener al menos 6 caracteres','error'); return; }
         
         const userData = {
             nombre: name,

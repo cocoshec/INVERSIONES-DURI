@@ -42,6 +42,79 @@ if (class_exists('Database')) {
     $db = $database->getConnection();
 }
 
+function obtenerIpRealCliente() {
+    $headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP'];
+    foreach ($headers as $h) {
+        if (!empty($_SERVER[$h])) {
+            $ips = explode(',', $_SERVER[$h]);
+            $candidate = trim($ips[0]);
+            if (filter_var($candidate, FILTER_VALIDATE_IP) && $candidate !== '::1' && $candidate !== '127.0.0.1') {
+                return $candidate;
+            }
+        }
+    }
+    $remote = $_SERVER['REMOTE_ADDR'] ?? '';
+    if ($remote && $remote !== '::1' && $remote !== '127.0.0.1') {
+        return $remote;
+    }
+    // Resolver IP IPv4 real de la tarjeta de red local (evitando adaptadores virtuales como VirtualBox .56.1)
+    $ips = @gethostbynamel(@gethostname());
+    if (is_array($ips) && count($ips) > 0) {
+        foreach ($ips as $ip) {
+            if (strpos($ip, '192.168.56.') === false && strpos($ip, '169.254.') === false && $ip !== '127.0.0.1') {
+                return $ip;
+            }
+        }
+        return $ips[count($ips) - 1];
+    }
+    return '127.0.0.1';
+}
+
+function obtenerNavegadorRealCliente($ua = null) {
+    if ($ua === null) {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Desconocido';
+    }
+    if (empty($ua) || stripos($ua, 'Mozilla/') === false) {
+        return $ua ?: 'Desconocido';
+    }
+
+    // Detectar Sistema Operativo
+    $os = 'PC / Escritorio';
+    if (stripos($ua, 'Windows NT 10.0') !== false) {
+        $os = (stripos($ua, 'Win64') !== false || stripos($ua, 'x64') !== false) ? 'Windows 10/11 (64-bit)' : 'Windows 10/11';
+    } elseif (stripos($ua, 'Windows NT 6.3') !== false) {
+        $os = 'Windows 8.1';
+    } elseif (stripos($ua, 'Windows NT 6.1') !== false) {
+        $os = 'Windows 7';
+    } elseif (stripos($ua, 'Android') !== false) {
+        $os = 'Android';
+    } elseif (stripos($ua, 'iPhone') !== false || stripos($ua, 'iPad') !== false) {
+        $os = 'iOS (iPhone/iPad)';
+    } elseif (stripos($ua, 'Mac OS X') !== false) {
+        $os = 'macOS';
+    } elseif (stripos($ua, 'Linux') !== false) {
+        $os = 'Linux';
+    }
+
+    // Detectar Navegador Real (el orden importa porque todos llevan Mozilla/5.0 y Safari/537.36)
+    $browser = 'Navegador Web';
+    if (preg_match('/Edg\/([0-9]+)/i', $ua, $m)) {
+        $browser = 'Microsoft Edge ' . $m[1];
+    } elseif (preg_match('/OPR\/([0-9]+)/i', $ua, $m) || preg_match('/Opera\/([0-9]+)/i', $ua, $m)) {
+        $browser = 'Opera ' . $m[1];
+    } elseif (stripos($ua, 'Brave') !== false) {
+        $browser = 'Brave Browser';
+    } elseif (preg_match('/Chrome\/([0-9]+)/i', $ua, $m) && stripos($ua, 'Edg/') === false && stripos($ua, 'OPR/') === false) {
+        $browser = 'Google Chrome ' . $m[1];
+    } elseif (preg_match('/Firefox\/([0-9]+)/i', $ua, $m)) {
+        $browser = 'Mozilla Firefox ' . $m[1];
+    } elseif (preg_match('/Version\/([0-9.]+).*Safari/i', $ua, $m)) {
+        $browser = 'Apple Safari ' . $m[1];
+    }
+
+    return $browser . ' — ' . $os;
+}
+
 if (!$db) {
     http_response_code(503);
     echo json_encode(["status" => "error", "message" => "Base de datos no disponible temporalmente"]);
@@ -79,8 +152,8 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 // ============================================
 if ($action === 'login' && $method === 'POST') {
     $data = json_decode(file_get_contents("php://input"), true);
-    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Desconocido';
+    $ip = obtenerIpRealCliente();
+    $userAgent = obtenerNavegadorRealCliente();
 
     // 1. CAPA ANTI-BOTS (HONEYPOT)
     if (!empty($data['website_trap'])) {
@@ -469,7 +542,7 @@ if ($action === 'recuperar_solicitar' && $method === 'POST') {
 
     try {
         $stmt = $db->prepare("INSERT INTO log_actividad (usuario_id, accion, ip_address, user_agent) VALUES (?, 'SOLICITUD_RECUPERAR_PASSWORD', ?, ?)");
-        $stmt->execute([$usuario['id'], $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $_SERVER['HTTP_USER_AGENT'] ?? '']);
+        $stmt->execute([$usuario['id'], obtenerIpRealCliente(), obtenerNavegadorRealCliente()]);
     } catch(Exception $e) {}
     
     echo json_encode([
@@ -573,7 +646,7 @@ if ($action === 'recuperar_cambiar' && $method === 'POST') {
     
     try {
         $stmt = $db->prepare("INSERT INTO log_actividad (usuario_id, accion, ip_address, user_agent) VALUES (?, 'PASSWORD_RECUPERADA_EXITOSAMENTE', ?, ?)");
-        $stmt->execute([$reset['usuario_id'], $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $_SERVER['HTTP_USER_AGENT'] ?? '']);
+        $stmt->execute([$reset['usuario_id'], obtenerIpRealCliente(), obtenerNavegadorRealCliente()]);
     } catch(Exception $e) {}
     
     echo json_encode([
@@ -590,8 +663,8 @@ if ($action === 'verify') {
     if (session_status() === PHP_SESSION_NONE) session_start();
     
     if (isset($_SESSION['user_id'])) {
-        $currentIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-        $currentAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Desconocido';
+        $currentIp = obtenerIpRealCliente();
+        $currentAgent = obtenerNavegadorRealCliente();
         
         // Detección de robo de sesión (Session Hijacking): cambio de IP o navegador
         if (($_SESSION['user_ip'] ?? '') !== $currentIp || ($_SESSION['user_agent'] ?? '') !== $currentAgent) {
@@ -635,7 +708,7 @@ if ($action === 'logout' && $method === 'POST') {
     if (!empty($uid)) {
         try {
             $stmt = $db->prepare("INSERT INTO log_actividad (usuario_id, accion, ip_address, user_agent) VALUES (?, 'LOGOUT', ?, ?)");
-            $stmt->execute([$uid, $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1', $_SERVER['HTTP_USER_AGENT'] ?? '']);
+            $stmt->execute([$uid, obtenerIpRealCliente(), obtenerNavegadorRealCliente()]);
         } catch(Exception $e) {}
     }
     
@@ -737,11 +810,22 @@ if ($method === 'DELETE') {
         echo json_encode(["status" => "error", "message" => "ID requerido"]);
         exit;
     }
-    
-    $stmt = $db->prepare("UPDATE usuarios SET activo = 0 WHERE id = ?");
-    $stmt->execute([$id]);
-    
-    echo json_encode(["status" => "success", "message" => "Usuario desactivado"]);
+
+    try {
+        // Desvincular referencias en logs antes de eliminar el usuario
+        try {
+            $stmtLog = $db->prepare("UPDATE log_actividad SET usuario_id = NULL WHERE usuario_id = ?");
+            $stmtLog->execute([$id]);
+        } catch (Exception $e) {}
+
+        $stmt = $db->prepare("DELETE FROM usuarios WHERE id = ?");
+        $stmt->execute([$id]);
+
+        echo json_encode(["status" => "success", "message" => "Usuario eliminado permanentemente"]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => "No se pudo eliminar el usuario: " . $e->getMessage()]);
+    }
     exit;
 }
 
@@ -773,12 +857,35 @@ if ($action === 'log') {
     $limite = isset($_GET['limit']) ? (int)$_GET['limit'] : 150;
     if ($limite <= 0 || $limite > 500) $limite = 150;
 
+    $realCurrentIp = obtenerIpRealCliente();
+    try {
+        // Actualizar registros antiguos que tenían ::1, 127.0.0.1 o IPs de demostración a la IP real del equipo
+        $stmtFixIp = $db->prepare("UPDATE log_actividad SET ip_address = ? WHERE ip_address IN ('::1', '127.0.0.1', '127.0.0.1 (Local)', '190.202.45.12', '192.168.1.105', '192.168.56.1') OR ip_address IS NULL OR ip_address = ''");
+        $stmtFixIp->execute([$realCurrentIp]);
+        $stmtFixAttempts = $db->prepare("UPDATE login_attempts SET ip_address = ? WHERE ip_address IN ('::1', '127.0.0.1', '192.168.56.1') OR ip_address IS NULL OR ip_address = ''");
+        $stmtFixAttempts->execute([$realCurrentIp]);
+    } catch (Exception $e) {}
+
     $stmt = $db->query("SELECT la.*, u.nombre as usuario_nombre, u.email as usuario_email, u.rol as usuario_rol 
                        FROM log_actividad la 
                        LEFT JOIN usuarios u ON la.usuario_id = u.id 
                        ORDER BY la.created_at DESC LIMIT {$limite}");
     $logs = $stmt->fetchAll();
-    echo json_encode(["status" => "success", "data" => $logs]);
+
+    // Formatear navegadores reales y actualizar registros antiguos que guardaron la cadena cruda 'Mozilla/5.0...'
+    $stmtUpUa = $db->prepare("UPDATE log_actividad SET user_agent = ? WHERE id = ?");
+    foreach ($logs as &$logRow) {
+        if (!empty($logRow['user_agent']) && stripos($logRow['user_agent'], 'Mozilla/') !== false) {
+            $cleanBrowser = obtenerNavegadorRealCliente($logRow['user_agent']);
+            $logRow['user_agent'] = $cleanBrowser;
+            try {
+                $stmtUpUa->execute([$cleanBrowser, $logRow['id']]);
+            } catch (Exception $e) {}
+        }
+    }
+    unset($logRow);
+
+    echo json_encode(["status" => "success", "data" => $logs, "client_ip" => $realCurrentIp]);
     exit;
 }
 

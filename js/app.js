@@ -2886,6 +2886,7 @@ function showDuriConfirmModal({
     title = '¿Estás seguro?',
     message = 'Esta acción no se puede deshacer.',
     itemDetails = null,
+    itemIcon = 'fa-box-open',
     confirmText = 'Eliminar',
     confirmIcon = 'fa-trash-alt',
     confirmType = 'danger',
@@ -2918,7 +2919,7 @@ function showDuriConfirmModal({
             <p class="confirm-modal-msg">${safeMsg}</p>
             ${safeItem ? `
                 <div class="confirm-modal-item">
-                    <i class="fas fa-box-open" style="color:#ef4444;font-size:1.15rem;"></i>
+                    <i class="fas ${itemIcon}" style="color:${confirmType === 'success' ? '#16a34a' : (confirmType === 'info' ? '#2563eb' : '#ef4444')};font-size:1.15rem;"></i>
                     <span>${safeItem}</span>
                 </div>` : ''}
             <div class="confirm-modal-actions">

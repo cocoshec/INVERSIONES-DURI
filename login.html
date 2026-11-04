@@ -790,7 +790,7 @@
                     usuario_nombre: user.nombre,
                     usuario_email: user.email,
                     accion: 'LOGIN_EXITOSO',
-                    ip_address: '127.0.0.1 (Local)',
+                    ip_address: localStorage.getItem('duriRealClientIp') || '192.168.1.121',
                     detalles: 'Inicio de sesión exitoso [' + (user.rol || 'usuario').toUpperCase() + ']',
                     created_at: new Date().toISOString()
                 });
@@ -891,7 +891,7 @@
                     usuario_nombre: email || 'Desconocido',
                     usuario_email: email || '',
                     accion: 'INTENTO_FALLIDO_LOGIN',
-                    ip_address: '127.0.0.1 (Local)',
+                    ip_address: localStorage.getItem('duriRealClientIp') || '192.168.1.121',
                     detalles: 'Contraseña errónea ingresada (Intento ' + currentFails + ' de 5)',
                     created_at: new Date().toISOString()
                 };

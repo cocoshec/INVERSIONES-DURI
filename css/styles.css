@@ -1279,7 +1279,7 @@ img { max-width:100%; height:auto; }
 /* ============================================
    INVENTORY TABLE
    ============================================ */
-.inv-table-wrap { background:var(--bg-white); border-radius:var(--radius); border:1px solid var(--border-light); overflow:hidden; }
+.inv-table-wrap { background:var(--bg-white); border-radius:var(--radius); border:1px solid var(--border-light); overflow-x:auto; overflow-y:hidden; }
 .inv-table-header { padding:18px 22px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-light); }
 .inv-table-header h3 { display:flex; align-items:center; gap:8px; font-size:1.05rem; font-weight:600; }
 .inv-table-header h3 i { color:var(--accent); font-size:0.85rem; }
@@ -4844,6 +4844,11 @@ img { max-width:100%; height:auto; }
     color: #0284c7;
     box-shadow: 0 0 0 8px rgba(2, 132, 199, 0.14);
 }
+.confirm-modal-icon.success {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    color: #16a34a;
+    box-shadow: 0 0 0 8px rgba(22, 163, 74, 0.14);
+}
 
 .confirm-modal-title {
     font-size: 1.4rem;
@@ -4922,6 +4927,28 @@ img { max-width:100%; height:auto; }
 .confirm-modal-btn-action.btn-danger:hover {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
     box-shadow: 0 8px 24px rgba(220, 38, 38, 0.5);
+    transform: translateY(-1px);
+}
+.confirm-modal-btn-action.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35);
+}
+.confirm-modal-btn-action.btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 8px 24px rgba(5, 150, 105, 0.5);
+    transform: translateY(-1px);
+}
+.confirm-modal-btn-action.btn-info {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+}
+.confirm-modal-btn-action.btn-info:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.5);
     transform: translateY(-1px);
 }
 
