@@ -27,12 +27,13 @@
         .inv-table td {
             padding: 12px 14px !important;
             vertical-align: middle;
+            white-space: nowrap;
         }
         .inv-table th:last-child,
         .inv-table td:last-child {
             white-space: nowrap;
             text-align: center;
-            min-width: 145px;
+            min-width: 135px;
         }
         .user-actions-cell {
             display: inline-flex;
@@ -399,11 +400,11 @@
         
         tbody.innerHTML = (usuarios || []).map(u => `
             <tr>
-                <td data-label="Usuario"><strong>${u.nombre}</strong></td>
-                <td data-label="Email" style="word-break:break-word;">${u.email}</td>
+                <td data-label="Usuario" style="white-space:nowrap;"><strong>${u.nombre}</strong></td>
+                <td data-label="Email" style="white-space:nowrap;">${u.email}</td>
                 <td data-label="Rol"><span style="padding:5px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;white-space:nowrap;${roleColors[u.rol] || ''}">${roles[u.rol] || u.rol}</span></td>
                 <td data-label="Teléfono" style="white-space:nowrap;">${u.telefono || '-'}</td>
-                <td data-label="Último Acceso" style="font-size:0.84rem;min-width:130px;">${u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-VE') : 'Nunca'}</td>
+                <td data-label="Último Acceso" style="font-size:0.84rem;white-space:nowrap;">${u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-VE') : 'Nunca'}</td>
                 <td data-label="Estado"><span class="status ${u.activo ? 'available' : 'out'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td data-label="Acciones">
                     <div class="user-actions-cell">

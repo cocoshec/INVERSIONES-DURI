@@ -128,14 +128,14 @@
                                     <span style="font-size:0.75rem; color:#059669; font-weight:700; background:#ecfdf5; padding:2px 8px; border-radius:10px;">¡GRATIS ($0.00)!</span>
                                 </div>
                                 
-                                <div id="btnModalidad¡Delivery" onclick="seleccionarModalidadEntrega('delivery')" style="border:2px solid #cbd5e1; background:#ffffff; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
+                                <div id="btnModalidadDelivery" onclick="seleccionarModalidadEntrega('delivery')" style="border:2px solid #cbd5e1; background:#ffffff; border-radius:10px; padding:12px 10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; transition:all 0.2s;">
                                     <i class="fas fa-motorcycle" style="font-size:1.4rem; color:#64748b;"></i>
-                                    <strong style="font-size:0.86rem; color:#0f172a;">¡Delivery a Domicilio</strong>
+                                    <strong style="font-size:0.86rem; color:#0f172a;">Delivery a Domicilio</strong>
                                     <span style="font-size:0.75rem; color:#64748b; font-weight:600;">Centro Gratis / Foráneo</span>
                                 </div>
                             </div>
                             <input type="hidden" id="modalidadEntrega" value="retiro">
-                            <input type="hidden" id="costo¡DeliveryActual" value="0">
+                            <input type="hidden" id="costoDeliveryActual" value="0">
 
                             <!-- Tarjeta informativa de Retiro en Sede -->
                             <div id="infoRetiroLocal" style="background:#ffffff; border:1px solid #fed7aa; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#9a3412; display:flex; align-items:flex-start; gap:8px;">
@@ -145,31 +145,33 @@
                                 </div>
                             </div>
 
-                            <!-- Selector de Zonas de ¡Delivery -->
-                            <div id="seccion¡DeliveryOpciones" style="display:none; margin-top:10px;">
+                            <!-- Selector de Zonas de Delivery -->
+                            <div id="seccionDeliveryOpciones" style="display:none; margin-top:10px;">
                                 <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:9px 12px; margin-bottom:8px; font-size:0.8rem; color:#1e40af; display:flex; align-items:flex-start; gap:8px; line-height:1.4;">
                                     <i class="fas fa-route" style="color:#2563eb; font-size:1.1rem; margin-top:2px; flex-shrink:0;"></i>
                                     <div>
-                                        <strong>Sistema de Tarifa Progresiva por Distancia:</strong> A mayor distancia de nuestra sede en el <strong>¡Centro de Maracay</strong>, mayor es el costo de delivery. ¡Centro de Maracay es <strong>100% GRATIS</strong>! <em>(Solo Estado Aragua)</em>.
+                                        <strong>Sistema de Tarifa Progresiva por Distancia:</strong> A mayor distancia de nuestra sede en el <strong>Centro de Maracay</strong>, mayor es el costo de delivery. ¡El Centro de Maracay es <strong>100% GRATIS</strong>! <em>(Solo Estado Aragua)</em>.
                                     </div>
                                 </div>
                                 <label style="font-size:0.84rem; font-weight:700; color:#334155; margin-bottom:6px; display:block;">
                                     <i class="fas fa-map-marked-alt" style="color:#0284c7;"></i> Selecciona tu Zona o Rango de Distancia:
                                 </label>
-                                <select id="selectZona¡Delivery" onchange="cambiarZona¡Delivery()" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
-                                    <option value="centro" data-costo="0" data-dist="0 - 2.5 km" selected>📍 ¡Centro de Maracay (0 a 2.5 km de la sede) — ¡GRATIS ($0.00)!</option>
-                                    <option value="cercanas" data-costo="2" data-dist="2.5 - 6 km">📍 Maracay Urbano Cercano (2.5 a 6 km: Delicias, Soledad, San Jacinto, Piñonal, Caña de Azúcar, etc.) — +$2.00 USD</option>
-                                    <option value="limon" data-costo="3" data-dist="6 - 10 km">📍 El Limón / MBI / Arsenal / Candelaria (6 a 10 km) — +$3.00 USD</option>
-                                    <option value="turmero" data-costo="5" data-dist="10 - 16 km">📍 Turmero / Palo Negro / Santa Rita / La Morita (10 a 16 km) — +$5.00 USD</option>
-                                    <option value="cagua" data-costo="6" data-dist="16 - 24 km">📍 Cagua / La Encrucijada / San Mateo (16 a 24 km) — +$6.00 USD</option>
-                                    <option value="villadecura" data-costo="8" data-dist="24 - 32 km">📍 Villa de Cura / Zamora / Bella Vista (24 a 32 km) — +$8.00 USD</option>
-                                    <option value="victoria" data-costo="10" data-dist="32 - 42 km">📍 La Victoria / Magdaleno / Tocorón (32 a 42 km) — +$10.00 USD</option>
-                                    <option value="lejana" data-costo="12" data-dist="42 - 55 km">📍 Zonas Foráneas de Aragua (42 a 55 km: Las Tejerías, San Casimiro, San Sebastián) — +$12.00 USD</option>
-                                    <option value="otra" data-costo="3" data-dist="Variable">📍 Otra Zona dentro de Aragua (Tarifa calculada según km de distancia)</option>
+                                <select id="selectZonaDelivery" onchange="cambiarZonaDelivery(true)" style="width:100%; min-height:44px; padding:8px 12px; border:1.5px solid #cbd5e1; border-radius:8px; font-size:0.85rem; background:#ffffff; font-weight:600; color:#1e293b; outline:none;">
+                                    <option value="centro" data-costo="0" data-dist="0 - 1.5 km" selected>📍 Centro de Maracay (0 a 1.5 km: Casco Central, Calicanto, La Barraca, San Isidro, La Floresta) — ¡GRATIS ($0.00)!</option>
+                                    <option value="cercanas_15" data-costo="1.5" data-dist="1.5 - 3.0 km">📍 Barrios Cercanos Tramo 1 (1.5 a 3 km: La Soledad, Base Aragua, Parque Aragua, El Bosque, San José, Las Acacias, Santa Ana, Andrés Bello, Los Olivos, La Romana, El Hipódromo, Barrio Sucre, San Agustín) — +$1.50 USD</option>
+                                    <option value="cercanas" data-costo="2" data-dist="3.0 - 5.5 km">📍 Barrios Urbanos Tramo 2 (3 a 5.5 km: Las Delicias, San Jacinto, Piñonal, La Coromoto, 23 de Enero, Santa Rosa, Los Samanes, Campo Alegre, San Carlos, La Cooperativa, Caña de Azúcar S1-6, Guasimal, Montaña Fresca) — +$2.00 USD</option>
+                                    <option value="limon" data-costo="3" data-dist="5.5 - 9.5 km">📍 Barrios Periféricos Tramo 3 (5.5 a 9.5 km: El Limón, Caña de Azúcar S7-13, La Candelaria, Arsenal, Base Sucre, El Castaño, San Vicente, Brisas del Lago, La Morita I y II, Samán de Güere, Santa Inés) — +$3.00 USD</option>
+                                    <option value="santa_rita" data-costo="4" data-dist="9.5 - 14.0 km">📍 Eje Metropolitano Tramo 4 (9.5 a 14 km: Santa Rita, Francisco de Miranda, Coropo, La Ovallera, Los Hornos, Paraparal, Intercomunal Turmero) — +$4.00 USD</option>
+                                    <option value="turmero" data-costo="5" data-dist="14.0 - 19.0 km">📍 Turmero / Palo Negro / Santa Cruz Tramo 5 (14 a 19 km: Turmero Centro, Valle Lindo, Rosario de Paya, Palo Negro, Las Vegas, BAEL, Santa Cruz) — +$5.00 USD</option>
+                                    <option value="cagua" data-costo="6" data-dist="19.0 - 25.0 km">📍 Cagua / La Encrucijada / San Mateo Tramo 6 (19 a 25 km: Cagua Centro, Corinsa, La Segundera, Bella Vista, San Mateo) — +$6.00 USD</option>
+                                    <option value="villadecura" data-costo="8" data-dist="25.0 - 33.0 km">📍 Villa de Cura / Magdaleno / Tocorón Tramo 7 (25 a 33 km: San Francisco de Asís, Magdaleno, Tocorón, Villa de Cura) — +$8.00 USD</option>
+                                    <option value="victoria" data-costo="10" data-dist="33.0 - 43.0 km">📍 La Victoria / El Consejo / Zuata Tramo 8 (33 a 43 km: La Victoria, La Mora, Soco, Zuata, El Consejo) — +$10.00 USD</option>
+                                    <option value="lejana" data-costo="12" data-dist="43.0 - 55.0 km">📍 Zonas Foráneas de Aragua Tramo 9 (43 a 55 km: Las Tejerías, Colonia Tovar, Choroní, Ocumare, San Casimiro, San Sebastián) — +$12.00 USD</option>
+                                    <option value="otra" data-costo="2.5" data-dist="> 1.5 km">📍 Otro Barrio en Aragua (Tarifa progresiva a partir de 1.5 km)</option>
                                     <option value="fuera_aragua" data-costo="-1" data-bloqueado="true" style="color:#dc2626; font-weight:700;">🚫 Fuera del Estado Aragua (> 55 km / Carabobo, Valencia, Caracas, etc.) — NO DISPONIBLE</option>
                                 </select>
-                                <div id="badgeTarifa¡Delivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
-                                    <i class="fas fa-gift"></i> <span>¡Delivery en todo el ¡Centro de Maracay es COMPLETAMENTE GRATIS!</span>
+                                <div id="badgeTarifaDelivery" style="margin-top:8px; font-size:0.82rem; color:#059669; font-weight:700; display:flex; align-items:center; gap:6px;">
+                                    <i class="fas fa-gift"></i> <span>¡Delivery en el Centro de Maracay (0 a 1.5 km) es COMPLETAMENTE GRATIS! A partir de 1.5 km aplica tarifa progresiva por barrio.</span>
                                 </div>
                             </div>
                         </div>
@@ -226,8 +228,8 @@
                                 </span>
                             </div>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:0.8rem; color:#475569; margin-bottom:8px; border-bottom:1px dashed #cbd5e1; padding-bottom:8px;">
-                                <div>🛵 <strong>¡Delivery a tu ubicación:</strong></div>
-                                <div id="monto¡DeliveryUbicacion" style="text-align:right; font-weight:700; color:#059669;">¡GRATIS ($0.00)!</div>
+                                <div>🛵 <strong>Delivery a tu ubicación:</strong></div>
+                                <div id="montoDeliveryUbicacion" style="text-align:right; font-weight:700; color:#059669;">¡GRATIS ($0.00)!</div>
                                 <div>📍 <strong>Total Productos + IVA:</strong></div>
                                 <div id="montoProductosUbicacion" style="text-align:right; font-weight:700; color:#334155;">$0.00</div>
                             </div>
@@ -278,8 +280,8 @@
                             <strong id="cartIva">$0.00</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#0284c7; font-weight:700;">
-                            <span id="label¡DeliveryResumen"><i class="fas fa-store"></i> Retiro en Local:</span>
-                            <strong id="costo¡DeliveryResumen" style="color:#059669;">¡GRATIS ($0.00)!</strong>
+                            <span id="labelDeliveryResumen"><i class="fas fa-store"></i> Retiro en Local:</span>
+                            <strong id="costoDeliveryResumen" style="color:#059669;">¡GRATIS ($0.00)!</strong>
                         </div>
                     </div>
 
@@ -350,42 +352,60 @@
                 </div>
                 <!-- Botones rápidos con scroll horizontal para ahorrar espacio vertical -->
                 <div style="display:flex; gap:5px; align-items:center; overflow-x:auto; flex-wrap:nowrap; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:thin;">
-                    <span style="font-size:0.7rem; color:#475569; font-weight:800; white-space:nowrap; flex-shrink:0;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Zonas:</span>
+                    <span style="font-size:0.7rem; color:#475569; font-weight:800; white-space:nowrap; flex-shrink:0;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Barrios:</span>
                     <button type="button" onclick="centrarEnCiudad('duri')" style="white-space:nowrap; flex-shrink:0; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        🏢 Sede Duri ($0)
+                        🏢 Sede Duri (0 km • $0)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('maracay')" style="white-space:nowrap; flex-shrink:0; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 Centro Maracay (Gratis)
+                        📍 Centro / Calicanto (&lt;1.5km • Gratis)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('soledad')" style="white-space:nowrap; flex-shrink:0; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 La Soledad / Base Aragua (+$1.50)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('acacias')" style="white-space:nowrap; flex-shrink:0; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Las Acacias / San José (+$1.50)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('olivos')" style="white-space:nowrap; flex-shrink:0; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Los Olivos / La Romana (+$1.50)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('delicias')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 Las Delicias (+$2.00)
+                        📍 Las Delicias / Cooperativa (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('sanjacinto')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 San Jacinto (+$2.00)
+                        📍 San Jacinto / Piñonal (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('coromoto')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 La Coromoto (+$2.00)
+                        📍 La Coromoto / 23 de Enero (+$2.00)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('samanes')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Los Samanes / Campo Alegre (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('canadeazucar')" style="white-space:nowrap; flex-shrink:0; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 Caña de Azúcar (+$2.00)
+                        📍 Caña de Azúcar / Guasimal (+$2.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('limon')" style="white-space:nowrap; flex-shrink:0; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 El Limón (+$3.00)
+                        📍 El Limón / Candelaria (+$3.00)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('morita')" style="white-space:nowrap; flex-shrink:0; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 La Morita / El Castaño (+$3.00)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('santarita')" style="white-space:nowrap; flex-shrink:0; background:#ffedd5; color:#9a3412; border:1px solid #fed7aa; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Santa Rita / Coropo (+$4.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('turmero')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
                         📍 Turmero / Palo Negro (+$5.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('cagua')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 Cagua (+$6.00)
+                        📍 Cagua / San Mateo (+$6.00)
                     </button>
-                    <button type="button" onclick="centrarEnCiudad('magdaleno')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 Magdaleno / Zamora (+$8.00)
-                    </button>
-                    <button type="button" onclick="centrarEnCiudad('mariara')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 Mariara / Carabobo (+$8.00)
+                    <button type="button" onclick="centrarEnCiudad('villadecura')" style="white-space:nowrap; flex-shrink:0; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Villa de Cura / Magdaleno (+$8.00)
                     </button>
                     <button type="button" onclick="centrarEnCiudad('victoria')" style="white-space:nowrap; flex-shrink:0; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
-                        📍 La Victoria / Lejanas (+$8.00)
+                        📍 La Victoria / El Consejo (+$10.00)
+                    </button>
+                    <button type="button" onclick="centrarEnCiudad('tejerias')" style="white-space:nowrap; flex-shrink:0; background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:12px; padding:2px 8px; font-size:0.72rem; font-weight:700; cursor:pointer;">
+                        📍 Las Tejerías / Colonia Tovar (+$12.00)
                     </button>
                 </div>
             </div>
@@ -487,7 +507,7 @@
     </div>
 
     <!-- Scripts Modulares -->
-    <script src="../js/app.js?v=132.0"></script>
-    <script src="../js/pedidos.js?v=132.0"></script>
+    <script src="../js/app.js?v=134.0"></script>
+    <script src="../js/pedidos.js?v=134.0"></script>
 </body>
 </html>

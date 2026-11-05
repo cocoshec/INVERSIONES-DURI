@@ -152,128 +152,237 @@ let selectedCoords = null;
 let selectedAddressText = '';
 const DEFAULT_COORD = [10.2502976, -67.5961389]; // Feria Escolar Inversiones Duri, Maracay
 const SECTORES_MARACAY = {
-    'duri': { nombre: 'Sede Inversiones Duri', coords: [10.2502976, -67.5961389], zona: 'centro', tarifa: 0 },
-    'centro': { nombre: 'Maracay Centro (Casco Central)', coords: [10.2469, -67.5958], zona: 'centro', tarifa: 0 },
-    'calicanto': { nombre: 'Calicanto, Maracay', coords: [10.2492, -67.5912], zona: 'centro', tarifa: 0 },
-    'floresta': { nombre: 'La Floresta, Maracay', coords: [10.2554, -67.5901], zona: 'centro', tarifa: 0 },
-    'san isidro': { nombre: 'San Isidro, Maracay', coords: [10.2515, -67.5852], zona: 'centro', tarifa: 0 },
-    'parque aragua': { nombre: 'Parque Aragua, Maracay', coords: [10.2471, -67.5815], zona: 'centro', tarifa: 0 },
-    'bolivar oeste': { nombre: 'Av. Bolívar Oeste, Maracay', coords: [10.2485, -67.6080], zona: 'centro', tarifa: 0 },
-    'bolívar oeste': { nombre: 'Av. Bolívar Oeste, Maracay', coords: [10.2485, -67.6080], zona: 'centro', tarifa: 0 },
-    'miranda': { nombre: 'Av. Miranda / Centro', coords: [10.2475, -67.5975], zona: 'centro', tarifa: 0 },
-    'constitucion': { nombre: 'Av. Constitución / Centro', coords: [10.2440, -67.5980], zona: 'centro', tarifa: 0 },
-    'constitución': { nombre: 'Av. Constitución / Centro', coords: [10.2440, -67.5980], zona: 'centro', tarifa: 0 },
-    'santos michelena': { nombre: 'Santos Michelena, Maracay', coords: [10.2480, -67.5930], zona: 'centro', tarifa: 0 },
+    // =========================================================================
+    // TRAMO 0: 0 a 1.5 km de la Sede Central — ¡DELIVERY GRATIS ($0.00)!
+    // =========================================================================
+    'duri': { nombre: 'Sede Inversiones Duri (Centro)', coords: [10.2502976, -67.5961389], zona: 'centro', tarifa: 0 },
+    'centro': { nombre: 'Casco Central de Maracay', coords: [10.2469, -67.5958], zona: 'centro', tarifa: 0 },
+    'casco central': { nombre: 'Casco Central de Maracay', coords: [10.2469, -67.5958], zona: 'centro', tarifa: 0 },
+    'plaza bolivar': { nombre: 'Plaza Bolívar / Centro, Maracay', coords: [10.2465, -67.5955], zona: 'centro', tarifa: 0 },
+    'plaza bolívar': { nombre: 'Plaza Bolívar / Centro, Maracay', coords: [10.2465, -67.5955], zona: 'centro', tarifa: 0 },
+    'plaza girardot': { nombre: 'Plaza Girardot / Catedral, Maracay', coords: [10.2468, -67.5988], zona: 'centro', tarifa: 0 },
+    'calicanto': { nombre: 'Urb. Calicanto, Maracay (0.8 km)', coords: [10.2492, -67.5912], zona: 'centro', tarifa: 0 },
+    'floresta': { nombre: 'Urb. La Floresta, Maracay (1.0 km)', coords: [10.2554, -67.5901], zona: 'centro', tarifa: 0 },
+    'san isidro': { nombre: 'Urb. San Isidro, Maracay (1.2 km)', coords: [10.2515, -67.5852], zona: 'centro', tarifa: 0 },
+    'barraca': { nombre: 'Barrio La Barraca, Maracay (1.1 km)', coords: [10.2465, -67.5882], zona: 'centro', tarifa: 0 },
+    'miranda': { nombre: 'Av. Miranda, Centro de Maracay (0.5 km)', coords: [10.2475, -67.5975], zona: 'centro', tarifa: 0 },
+    'constitucion': { nombre: 'Av. Constitución Centro, Maracay (0.7 km)', coords: [10.2440, -67.5980], zona: 'centro', tarifa: 0 },
+    'constitución': { nombre: 'Av. Constitución Centro, Maracay (0.7 km)', coords: [10.2440, -67.5980], zona: 'centro', tarifa: 0 },
+    'santos michelena': { nombre: 'Calle Santos Michelena, Maracay (0.6 km)', coords: [10.2480, -67.5930], zona: 'centro', tarifa: 0 },
+    'pichincha': { nombre: 'Calle Pichincha / Páez, Centro (0.8 km)', coords: [10.2455, -67.5960], zona: 'centro', tarifa: 0 },
+    'bolivar oeste': { nombre: 'Av. Bolívar Centro-Oeste, Maracay (1.3 km)', coords: [10.2485, -67.6065], zona: 'centro', tarifa: 0 },
+    'bolívar oeste': { nombre: 'Av. Bolívar Centro-Oeste, Maracay (1.3 km)', coords: [10.2485, -67.6065], zona: 'centro', tarifa: 0 },
 
-    // Zonas Urbanas Cercanas ($2.00)
-    'delicias': { nombre: 'Las Delicias, Maracay', coords: [10.2721, -67.6015], zona: 'cercanas', tarifa: 2 },
-    'soledad': { nombre: 'La Soledad, Maracay', coords: [10.2612, -67.5968], zona: 'cercanas', tarifa: 2 },
-    'base aragua': { nombre: 'Base Aragua, Maracay', coords: [10.2575, -67.5895], zona: 'cercanas', tarifa: 2 },
-    'bosque': { nombre: 'El Bosque, Maracay', coords: [10.2625, -67.5902], zona: 'cercanas', tarifa: 2 },
-    'arboleda': { nombre: 'La Arboleda, Maracay', coords: [10.2589, -67.5950], zona: 'cercanas', tarifa: 2 },
-    'san jacinto': { nombre: 'San Jacinto, Maracay', coords: [10.2395, -67.5685], zona: 'cercanas', tarifa: 2 },
-    'montaña fresca': { nombre: 'Montaña Fresca, Maracay', coords: [10.2442, -67.5521], zona: 'cercanas', tarifa: 2 },
-    'piñonal': { nombre: 'Piñonal, Maracay', coords: [10.2351, -67.5862], zona: 'cercanas', tarifa: 2 },
-    'san jose': { nombre: 'San José, Maracay', coords: [10.2401, -67.6025], zona: 'cercanas', tarifa: 2 },
-    'san josé': { nombre: 'San José, Maracay', coords: [10.2401, -67.6025], zona: 'cercanas', tarifa: 2 },
-    'barraca': { nombre: 'La Barraca, Maracay', coords: [10.2465, -67.5882], zona: 'cercanas', tarifa: 2 },
-    'samanes': { nombre: 'Los Samanes, Maracay', coords: [10.2185, -67.5912], zona: 'cercanas', tarifa: 2 },
-    'campo alegre': { nombre: 'Campo Alegre, Maracay', coords: [10.2241, -67.6052], zona: 'cercanas', tarifa: 2 },
-    '23 de enero': { nombre: '23 de Enero, Maracay', coords: [10.2425, -67.6152], zona: 'cercanas', tarifa: 2 },
-    'san vicente': { nombre: 'San Vicente, Maracay', coords: [10.2312, -67.6415], zona: 'cercanas', tarifa: 2 },
-    'coromoto': { nombre: 'La Coromoto, Maracay', coords: [10.2520, -67.6180], zona: 'cercanas', tarifa: 2 },
-    'caña de azucar': { nombre: 'Caña de Azúcar, Maracay', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
-    'azucar': { nombre: 'Caña de Azúcar, Maracay', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
-    'azúcar': { nombre: 'Caña de Azúcar, Maracay', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
-    'guasimal': { nombre: 'Guasimal, Maracay', coords: [10.2315, -67.5452], zona: 'cercanas', tarifa: 2 },
-    'castaño': { nombre: 'El Castaño, Maracay', coords: [10.2985, -67.6012], zona: 'cercanas', tarifa: 2 },
-    'andres bello': { nombre: 'Andrés Bello, Maracay', coords: [10.2675, -67.5985], zona: 'cercanas', tarifa: 2 },
-    'andrés bello': { nombre: 'Andrés Bello, Maracay', coords: [10.2675, -67.5985], zona: 'cercanas', tarifa: 2 },
-    'acacias': { nombre: 'Las Acacias, Maracay', coords: [10.2370, -67.5960], zona: 'cercanas', tarifa: 2 },
-    'cooperativa': { nombre: 'La Cooperativa, Maracay', coords: [10.2690, -67.5880], zona: 'cercanas', tarifa: 2 },
-    'olivos': { nombre: 'Los Olivos, Maracay', coords: [10.2705, -67.5815], zona: 'cercanas', tarifa: 2 },
-    'san ignacio': { nombre: 'San Ignacio, Maracay', coords: [10.2335, -67.6010], zona: 'cercanas', tarifa: 2 },
-    'santa ana': { nombre: 'Santa Ana, Maracay', coords: [10.2420, -67.5875], zona: 'cercanas', tarifa: 2 },
-    'hipodromo': { nombre: 'El Hipódromo, Maracay', coords: [10.2360, -67.6080], zona: 'cercanas', tarifa: 2 },
-    'hipódromo': { nombre: 'El Hipódromo, Maracay', coords: [10.2360, -67.6080], zona: 'cercanas', tarifa: 2 },
-    'barrio sucre': { nombre: 'Barrio Sucre, Maracay', coords: [10.2530, -67.6085], zona: 'cercanas', tarifa: 2 },
-    'milagro': { nombre: 'El Milagro, Maracay', coords: [10.2505, -67.6250], zona: 'cercanas', tarifa: 2 },
-    'madre maria': { nombre: 'Madre María / San José', coords: [10.2415, -67.5990], zona: 'cercanas', tarifa: 2 },
-    'madre maría': { nombre: 'Madre María / San José', coords: [10.2415, -67.5990], zona: 'cercanas', tarifa: 2 },
-    'san agustin': { nombre: 'San Agustín, Maracay', coords: [10.2470, -67.5800], zona: 'cercanas', tarifa: 2 },
-    'san agustín': { nombre: 'San Agustín, Maracay', coords: [10.2470, -67.5800], zona: 'cercanas', tarifa: 2 },
-    'san carlos': { nombre: 'San Carlos, Maracay', coords: [10.2280, -67.6080], zona: 'cercanas', tarifa: 2 },
-    'romana': { nombre: 'La Romana, Maracay', coords: [10.2550, -67.6150], zona: 'cercanas', tarifa: 2 },
-    'santa rosa': { nombre: 'Santa Rosa, Maracay', coords: [10.2380, -67.6150], zona: 'cercanas', tarifa: 2 },
-    '12 de febrero': { nombre: '12 de Febrero, Maracay', coords: [10.2410, -67.6210], zona: 'cercanas', tarifa: 2 },
+    // =========================================================================
+    // TRAMO 1: 1.5 a 3.0 km — Barrios Cercanos al Centro (+$1.50 USD)
+    // =========================================================================
+    'soledad': { nombre: 'Urb. La Soledad, Maracay (1.6 km)', coords: [10.2612, -67.5968], zona: 'cercanas_15', tarifa: 1.5 },
+    'base aragua': { nombre: 'Urb. Base Aragua, Maracay (1.7 km)', coords: [10.2575, -67.5895], zona: 'cercanas_15', tarifa: 1.5 },
+    'parque aragua': { nombre: 'Parque Aragua, Maracay (1.7 km)', coords: [10.2471, -67.5815], zona: 'cercanas_15', tarifa: 1.5 },
+    'bosque': { nombre: 'Urb. El Bosque, Maracay (1.8 km)', coords: [10.2625, -67.5902], zona: 'cercanas_15', tarifa: 1.5 },
+    'arboleda': { nombre: 'Urb. La Arboleda, Maracay (1.8 km)', coords: [10.2589, -67.5950], zona: 'cercanas_15', tarifa: 1.5 },
+    'barrio sucre': { nombre: 'Barrio Sucre, Maracay (1.6 km)', coords: [10.2530, -67.6085], zona: 'cercanas_15', tarifa: 1.5 },
+    'san jose': { nombre: 'Barrio San José, Maracay (1.7 km)', coords: [10.2401, -67.6025], zona: 'cercanas_15', tarifa: 1.5 },
+    'san josé': { nombre: 'Barrio San José, Maracay (1.7 km)', coords: [10.2401, -67.6025], zona: 'cercanas_15', tarifa: 1.5 },
+    'madre maria': { nombre: 'Urb. Madre María de San José (1.8 km)', coords: [10.2415, -67.5990], zona: 'cercanas_15', tarifa: 1.5 },
+    'madre maría': { nombre: 'Urb. Madre María de San José (1.8 km)', coords: [10.2415, -67.5990], zona: 'cercanas_15', tarifa: 1.5 },
+    'santa ana': { nombre: 'Barrio Santa Ana, Maracay (1.7 km)', coords: [10.2420, -67.5875], zona: 'cercanas_15', tarifa: 1.5 },
+    'acacias': { nombre: 'Urb. Las Acacias, Maracay (1.9 km)', coords: [10.2370, -67.5960], zona: 'cercanas_15', tarifa: 1.5 },
+    'san ignacio': { nombre: 'Barrio San Ignacio, Maracay (2.1 km)', coords: [10.2335, -67.6010], zona: 'cercanas_15', tarifa: 1.5 },
+    'hipodromo': { nombre: 'Urb. El Hipódromo, Maracay (2.2 km)', coords: [10.2360, -67.6080], zona: 'cercanas_15', tarifa: 1.5 },
+    'hipódromo': { nombre: 'Urb. El Hipódromo, Maracay (2.2 km)', coords: [10.2360, -67.6080], zona: 'cercanas_15', tarifa: 1.5 },
+    'andres bello': { nombre: 'Urb. Andrés Bello, Maracay (2.1 km)', coords: [10.2675, -67.5985], zona: 'cercanas_15', tarifa: 1.5 },
+    'andrés bello': { nombre: 'Urb. Andrés Bello, Maracay (2.1 km)', coords: [10.2675, -67.5985], zona: 'cercanas_15', tarifa: 1.5 },
+    'olivos': { nombre: 'Los Olivos Nuevos / Viejos, Maracay (2.4 km)', coords: [10.2705, -67.5815], zona: 'cercanas_15', tarifa: 1.5 },
+    'san agustin': { nombre: 'Barrio San Agustín, Maracay (2.0 km)', coords: [10.2470, -67.5800], zona: 'cercanas_15', tarifa: 1.5 },
+    'san agustín': { nombre: 'Barrio San Agustín, Maracay (2.0 km)', coords: [10.2470, -67.5800], zona: 'cercanas_15', tarifa: 1.5 },
+    'los caobos': { nombre: 'Urb. Los Caobos, Maracay (2.2 km)', coords: [10.2495, -67.5775], zona: 'cercanas_15', tarifa: 1.5 },
+    'caobos': { nombre: 'Urb. Los Caobos, Maracay (2.2 km)', coords: [10.2495, -67.5775], zona: 'cercanas_15', tarifa: 1.5 },
+    'fundacion mendoza': { nombre: 'Urb. Fundación Mendoza, Maracay (2.5 km)', coords: [10.2445, -67.5760], zona: 'cercanas_15', tarifa: 1.5 },
+    'fundación mendoza': { nombre: 'Urb. Fundación Mendoza, Maracay (2.5 km)', coords: [10.2445, -67.5760], zona: 'cercanas_15', tarifa: 1.5 },
+    'romana': { nombre: 'La Romana, Maracay (2.2 km)', coords: [10.2550, -67.6150], zona: 'cercanas_15', tarifa: 1.5 },
+    'lourdes': { nombre: 'Barrio Lourdes, Maracay (1.8 km)', coords: [10.2450, -67.6050], zona: 'cercanas_15', tarifa: 1.5 },
+    'el carmen': { nombre: 'Barrio El Carmen, Maracay (1.8 km)', coords: [10.2430, -67.6040], zona: 'cercanas_15', tarifa: 1.5 },
+    'libertad': { nombre: 'Barrio La Libertad, Maracay (2.0 km)', coords: [10.2410, -67.6060], zona: 'cercanas_15', tarifa: 1.5 },
+    'el trebol': { nombre: 'Urb. El Trébol, Maracay (2.4 km)', coords: [10.2330, -67.5990], zona: 'cercanas_15', tarifa: 1.5 },
+    'el trébol': { nombre: 'Urb. El Trébol, Maracay (2.4 km)', coords: [10.2330, -67.5990], zona: 'cercanas_15', tarifa: 1.5 },
+    'centro hispano': { nombre: 'Zona Centro Hispano / Av. Aragua (2.6 km)', coords: [10.2375, -67.5790], zona: 'cercanas_15', tarifa: 1.5 },
 
-    // El Limón / MBI ($3.00)
-    'limon': { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zona: 'limon', tarifa: 3 },
-    'limón': { nombre: 'El Limón, Mario B. Iragorry', coords: [10.2798, -67.6322], zona: 'limon', tarifa: 3 },
-    'arsenal': { nombre: 'Arsenal, Mario B. Iragorry', coords: [10.2715, -67.6425], zona: 'limon', tarifa: 3 },
-    'candelaria': { nombre: 'La Candelaria, MBI', coords: [10.2845, -67.6385], zona: 'limon', tarifa: 3 },
-    'base sucre': { nombre: 'Base Sucre, MBI', coords: [10.2685, -67.6512], zona: 'limon', tarifa: 3 },
-    'paseo': { nombre: 'El Paseo, El Limón', coords: [10.2820, -67.6300], zona: 'limon', tarifa: 3 },
-    'valle verde': { nombre: 'Valle Verde, El Limón', coords: [10.2890, -67.6350], zona: 'limon', tarifa: 3 },
-    'arias blanco': { nombre: 'Arias Blanco, El Limón', coords: [10.2760, -67.6360], zona: 'limon', tarifa: 3 },
+    // =========================================================================
+    // TRAMO 2: 3.0 a 5.5 km — Barrios Urbanos de Maracay (+$2.00 USD)
+    // =========================================================================
+    'delicias': { nombre: 'Las Delicias, Maracay (3.2 km)', coords: [10.2721, -67.6015], zona: 'cercanas', tarifa: 2 },
+    'el toro': { nombre: 'Barrio El Toro, Las Delicias (3.8 km)', coords: [10.2790, -67.5995], zona: 'cercanas', tarifa: 2 },
+    'camoruco': { nombre: 'Sector Camoruco, Las Delicias (3.6 km)', coords: [10.2760, -67.5980], zona: 'cercanas', tarifa: 2 },
+    'cooperativa': { nombre: 'Barrio La Cooperativa, Maracay (3.1 km)', coords: [10.2690, -67.5880], zona: 'cercanas', tarifa: 2 },
+    'pedrera': { nombre: 'Barrio La Pedrera, Maracay (4.2 km)', coords: [10.2810, -67.5810], zona: 'cercanas', tarifa: 2 },
+    'las olivas': { nombre: 'Sector Las Olivas, Maracay (3.5 km)', coords: [10.2740, -67.5850], zona: 'cercanas', tarifa: 2 },
+    'san jacinto': { nombre: 'Urb. San Jacinto, Maracay (3.4 km)', coords: [10.2395, -67.5685], zona: 'cercanas', tarifa: 2 },
+    'la placera': { nombre: 'Urb. La Placera, Maracay (3.6 km)', coords: [10.2465, -67.5650], zona: 'cercanas', tarifa: 2 },
+    'piñonal': { nombre: 'Barrio Piñonal, Maracay (3.1 km)', coords: [10.2351, -67.5862], zona: 'cercanas', tarifa: 2 },
+    'jardines de aragua': { nombre: 'Urb. Los Jardines de Aragua (3.3 km)', coords: [10.2360, -67.5750], zona: 'cercanas', tarifa: 2 },
+    'samanes': { nombre: 'Urb. Los Samanes, Maracay (3.8 km)', coords: [10.2185, -67.5912], zona: 'cercanas', tarifa: 2 },
+    'mata redonda': { nombre: 'Urb. Mata Redonda / Palma Real (4.4 km)', coords: [10.2110, -67.5950], zona: 'cercanas', tarifa: 2 },
+    'la esmeralda': { nombre: 'Urb. La Esmeralda, Maracay (4.2 km)', coords: [10.2145, -67.5930], zona: 'cercanas', tarifa: 2 },
+    'la mulera': { nombre: 'Urb. La Mulera, Maracay (3.9 km)', coords: [10.2210, -67.5880], zona: 'cercanas', tarifa: 2 },
+    'san carlos': { nombre: 'Barrio San Carlos, Maracay (3.3 km)', coords: [10.2280, -67.6080], zona: 'cercanas', tarifa: 2 },
+    'campo alegre': { nombre: 'Barrio Campo Alegre, Maracay (3.5 km)', coords: [10.2241, -67.6052], zona: 'cercanas', tarifa: 2 },
+    '23 de enero': { nombre: 'Barrio 23 de Enero, Maracay (3.1 km)', coords: [10.2425, -67.6152], zona: 'cercanas', tarifa: 2 },
+    'coromoto': { nombre: 'Barrio La Coromoto, Maracay (3.2 km)', coords: [10.2520, -67.6180], zona: 'cercanas', tarifa: 2 },
+    'santa rosa': { nombre: 'Barrio Santa Rosa, Maracay (3.1 km)', coords: [10.2380, -67.6150], zona: 'cercanas', tarifa: 2 },
+    '12 de febrero': { nombre: 'Barrio 12 de Febrero, Maracay (3.4 km)', coords: [10.2410, -67.6210], zona: 'cercanas', tarifa: 2 },
+    'milagro': { nombre: 'Barrio El Milagro, Maracay (3.5 km)', coords: [10.2505, -67.6250], zona: 'cercanas', tarifa: 2 },
+    'jose felix ribas': { nombre: 'Barrio José Félix Ribas, Maracay (3.9 km)', coords: [10.2570, -67.6260], zona: 'cercanas', tarifa: 2 },
+    'josé félix ribas': { nombre: 'Barrio José Félix Ribas, Maracay (3.9 km)', coords: [10.2570, -67.6260], zona: 'cercanas', tarifa: 2 },
+    'caña de azucar': { nombre: 'Urb. Caña de Azúcar, MBI (4.5 km)', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
+    'azucar': { nombre: 'Urb. Caña de Azúcar, MBI (4.5 km)', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
+    'azúcar': { nombre: 'Urb. Caña de Azúcar, MBI (4.5 km)', coords: [10.2642, -67.6338], zona: 'cercanas', tarifa: 2 },
+    'montaña fresca': { nombre: 'Urb. Montaña Fresca, Maracay (4.8 km)', coords: [10.2442, -67.5521], zona: 'cercanas', tarifa: 2 },
+    'guasimal': { nombre: 'Urb. Guasimal, Maracay (5.1 km)', coords: [10.2315, -67.5452], zona: 'cercanas', tarifa: 2 },
+    'los cocos': { nombre: 'Barrio Los Cocos, Sur de Maracay (4.2 km)', coords: [10.2150, -67.6050], zona: 'cercanas', tarifa: 2 },
+    'la punta': { nombre: 'Sector La Punta / Río Blanco (4.5 km)', coords: [10.2120, -67.6010], zona: 'cercanas', tarifa: 2 },
+    'rio blanco': { nombre: 'Barrio Río Blanco I y II, Maracay (4.3 km)', coords: [10.2165, -67.6020], zona: 'cercanas', tarifa: 2 },
+    'río blanco': { nombre: 'Barrio Río Blanco I y II, Maracay (4.3 km)', coords: [10.2165, -67.6020], zona: 'cercanas', tarifa: 2 },
+    'san luis': { nombre: 'Barrio San Luis / Aguacatal (4.4 km)', coords: [10.2200, -67.6120], zona: 'cercanas', tarifa: 2 },
+    'aguacatal': { nombre: 'Barrio Aguacatal, Maracay (4.5 km)', coords: [10.2190, -67.6150], zona: 'cercanas', tarifa: 2 },
 
-    // Turmero / Palo Negro ($5.00)
-    'turmero': { nombre: 'Turmero, Aragua', coords: [10.2285, -67.4746], zona: 'turmero', tarifa: 5 },
-    'palo negro': { nombre: 'Palo Negro, Aragua', coords: [10.1742, -67.5412], zona: 'turmero', tarifa: 5 },
-    'santa rita': { nombre: 'Santa Rita, FLA', coords: [10.2015, -67.5612], zona: 'turmero', tarifa: 5 },
-    'morita': { nombre: 'La Morita, Aragua', coords: [10.2152, -67.5385], zona: 'turmero', tarifa: 5 },
-    'coropo': { nombre: 'Coropo, Aragua', coords: [10.1885, -67.5512], zona: 'turmero', tarifa: 5 },
-    'saman de guere': { nombre: 'Samán de Güere, Turmero', coords: [10.2215, -67.5125], zona: 'turmero', tarifa: 5 },
-    'guere': { nombre: 'Samán de Güere, Turmero', coords: [10.2215, -67.5125], zona: 'turmero', tarifa: 5 },
-    'güere': { nombre: 'Samán de Güere, Turmero', coords: [10.2215, -67.5125], zona: 'turmero', tarifa: 5 },
-    'santa cruz': { nombre: 'Santa Cruz de Aragua', coords: [10.1812, -67.5185], zona: 'turmero', tarifa: 5 },
+    // =========================================================================
+    // TRAMO 3: 5.5 a 9.5 km — Barrios Periféricos / MBI / Castaño / Morita (+$3.00 USD)
+    // =========================================================================
+    'limon': { nombre: 'El Limón, Mario B. Iragorry (6.0 km)', coords: [10.2798, -67.6322], zona: 'limon', tarifa: 3 },
+    'limón': { nombre: 'El Limón, Mario B. Iragorry (6.0 km)', coords: [10.2798, -67.6322], zona: 'limon', tarifa: 3 },
+    'paseo': { nombre: 'Urb. El Paseo, El Limón (6.1 km)', coords: [10.2820, -67.6300], zona: 'limon', tarifa: 3 },
+    'niño jesus': { nombre: 'Sector Niño Jesús, El Limón (6.4 km)', coords: [10.2850, -67.6310], zona: 'limon', tarifa: 3 },
+    'niño jesús': { nombre: 'Sector Niño Jesús, El Limón (6.4 km)', coords: [10.2850, -67.6310], zona: 'limon', tarifa: 3 },
+    'alma mater': { nombre: 'Urb. Alma Mater, El Limón (6.8 km)', coords: [10.2880, -67.6280], zona: 'limon', tarifa: 3 },
+    'mata seca': { nombre: 'Barrio Mata Seca, El Limón (6.6 km)', coords: [10.2865, -67.6350], zona: 'limon', tarifa: 3 },
+    'los rauseos': { nombre: 'Urb. Los Rauseos, El Limón (6.9 km)', coords: [10.2910, -67.6310], zona: 'limon', tarifa: 3 },
+    'candelaria': { nombre: 'Urb. La Candelaria, MBI (6.3 km)', coords: [10.2845, -67.6385], zona: 'limon', tarifa: 3 },
+    'valle verde': { nombre: 'Barrio Valle Verde, El Limón (6.8 km)', coords: [10.2890, -67.6350], zona: 'limon', tarifa: 3 },
+    'arias blanco': { nombre: 'Barrio Arias Blanco, El Limón (5.9 km)', coords: [10.2760, -67.6360], zona: 'limon', tarifa: 3 },
+    'arsenal': { nombre: 'Urb. Arsenal, Mario B. Iragorry (5.8 km)', coords: [10.2715, -67.6425], zona: 'limon', tarifa: 3 },
+    'base sucre': { nombre: 'Urb. Base Sucre / Los Aviadores (6.5 km)', coords: [10.2685, -67.6512], zona: 'limon', tarifa: 3 },
+    'san vicente': { nombre: 'Barrio San Vicente, Maracay Oeste (5.8 km)', coords: [10.2312, -67.6415], zona: 'limon', tarifa: 3 },
+    'brisas del lago': { nombre: 'Barrio Brisas del Lago, Maracay (5.7 km)', coords: [10.2280, -67.6250], zona: 'limon', tarifa: 3 },
+    'castaño': { nombre: 'Urb. El Castaño, Norte de Maracay (6.2 km)', coords: [10.2985, -67.6012], zona: 'limon', tarifa: 3 },
+    'palmarito': { nombre: 'Sector Palmarito, El Castaño (7.2 km)', coords: [10.3080, -67.5950], zona: 'limon', tarifa: 3 },
+    'corozal': { nombre: 'Barrio Corozal, El Castaño (6.8 km)', coords: [10.3040, -67.5980], zona: 'limon', tarifa: 3 },
+    'ojo de agua': { nombre: 'Barrio Ojo de Agua, El Castaño (6.0 km)', coords: [10.2940, -67.5990], zona: 'limon', tarifa: 3 },
+    'morita': { nombre: 'La Morita I y II, FLA (7.4 km)', coords: [10.2152, -67.5385], zona: 'limon', tarifa: 3 },
+    'las cayenas': { nombre: 'Urb. Las Cayenas / La Morita (7.2 km)', coords: [10.2220, -67.5360], zona: 'limon', tarifa: 3 },
+    'santa ines': { nombre: 'Barrio Santa Inés, La Morita (8.2 km)', coords: [10.2050, -67.5350], zona: 'limon', tarifa: 3 },
+    'santa inés': { nombre: 'Barrio Santa Inés, La Morita (8.2 km)', coords: [10.2050, -67.5350], zona: 'limon', tarifa: 3 },
+    'saman de guere': { nombre: 'Barrio Samán de Güere, Mariño (9.1 km)', coords: [10.2215, -67.5125], zona: 'limon', tarifa: 3 },
+    'guere': { nombre: 'Barrio Samán de Güere, Mariño (9.1 km)', coords: [10.2215, -67.5125], zona: 'limon', tarifa: 3 },
+    'güere': { nombre: 'Barrio Samán de Güere, Mariño (9.1 km)', coords: [10.2215, -67.5125], zona: 'limon', tarifa: 3 },
+    'macaro': { nombre: 'Sector El Mácaro, Mariño (9.3 km)', coords: [10.2260, -67.5080], zona: 'limon', tarifa: 3 },
+    'mácaro': { nombre: 'Sector El Mácaro, Mariño (9.3 km)', coords: [10.2260, -67.5080], zona: 'limon', tarifa: 3 },
 
-    // Cagua / Encrucijada ($6.00)
-    'cagua': { nombre: 'Cagua, Aragua', coords: [10.1856, -67.4589], zona: 'cagua', tarifa: 6 },
-    'encrucijada': { nombre: 'La Encrucijada, Cagua', coords: [10.2052, -67.4615], zona: 'cagua', tarifa: 6 },
-    'san mateo': { nombre: 'San Mateo, Aragua', coords: [10.2152, -67.4215], zona: 'cagua', tarifa: 6 },
-    'corinsa': { nombre: 'Corinsa, Cagua', coords: [10.1785, -67.4652], zona: 'cagua', tarifa: 6 },
-    'bella vista': { nombre: 'Bella Vista, Cagua', coords: [10.1912, -67.4485], zona: 'cagua', tarifa: 6 },
+    // =========================================================================
+    // TRAMO 4: 9.5 a 14.0 km — Santa Rita / Coropo / Paraparal / Ovallera (+$4.00 USD)
+    // =========================================================================
+    'santa rita': { nombre: 'Santa Rita, Municipio Linares Alcántara (10.2 km)', coords: [10.2015, -67.5612], zona: 'santa_rita', tarifa: 4 },
+    'francisco de miranda': { nombre: 'Barrio Francisco de Miranda, FLA (10.5 km)', coords: [10.1980, -67.5680], zona: 'santa_rita', tarifa: 4 },
+    'paraparal': { nombre: 'Urb. Paraparal I y II, FLA (11.2 km)', coords: [10.1920, -67.5720], zona: 'santa_rita', tarifa: 4 },
+    'coropo': { nombre: 'Barrio Coropo, FLA / Libertador (11.0 km)', coords: [10.1885, -67.5512], zona: 'santa_rita', tarifa: 4 },
+    'ovallera': { nombre: 'Urb. La Ovallera, Libertador (12.2 km)', coords: [10.1810, -67.5480], zona: 'santa_rita', tarifa: 4 },
+    'los hornos': { nombre: 'Barrio Los Hornos, Palo Negro (12.8 km)', coords: [10.1780, -67.5350], zona: 'santa_rita', tarifa: 4 },
+    'camburito': { nombre: 'Sector Camburito, Santa Rita (10.8 km)', coords: [10.1960, -67.5590], zona: 'santa_rita', tarifa: 4 },
+    'intercomunal': { nombre: 'Av. Intercomunal Maracay-Turmero (11.5 km)', coords: [10.2250, -67.5010], zona: 'santa_rita', tarifa: 4 },
 
-    // Zonas según Distancia Progresiva desde el Centro de Maracay
-    'villa de cura': { nombre: 'Villa de Cura, Aragua (24 a 32 km)', coords: [10.0385, -67.4885], zona: 'villadecura', tarifa: 8 },
-    'zamora': { nombre: 'Municipio Zamora (Villa de Cura / Magdaleno)', coords: [10.0385, -67.4885], zona: 'villadecura', tarifa: 8 },
-    'san francisco de asis': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'villadecura', tarifa: 8 },
-    'san francisco de asís': { nombre: 'San Francisco de Asís, Zamora', coords: [10.0833, -67.5167], zona: 'villadecura', tarifa: 8 },
-    'victoria': { nombre: 'La Victoria, Aragua (32 a 42 km)', coords: [10.2268, -67.3323], zona: 'victoria', tarifa: 10 },
-    'magdaleno': { nombre: 'Magdaleno, Zamora (32 a 42 km)', coords: [10.1020, -67.6250], zona: 'victoria', tarifa: 10 },
-    'tocoron': { nombre: 'Tocorón, Zamora (32 a 42 km)', coords: [10.1250, -67.5750], zona: 'victoria', tarifa: 10 },
-    'tocorón': { nombre: 'Tocorón, Zamora (32 a 42 km)', coords: [10.1250, -67.5750], zona: 'victoria', tarifa: 10 },
-    'zuata': { nombre: 'Zuata, Aragua (32 a 42 km)', coords: [10.2100, -67.3600], zona: 'victoria', tarifa: 10 },
-    'el consejo': { nombre: 'El Consejo / Revenga, Aragua', coords: [10.2310, -67.2750], zona: 'victoria', tarifa: 10 },
-    'san sebastian': { nombre: 'San Sebastián de los Reyes (42 a 55 km)', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 12 },
-    'san sebastián': { nombre: 'San Sebastián de los Reyes (42 a 55 km)', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 12 },
-    'tejerias': { nombre: 'Las Tejerías, Aragua (42 a 55 km)', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 12 },
-    'tejerías': { nombre: 'Las Tejerías, Aragua (42 a 55 km)', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 12 },
-    'san casimiro': { nombre: 'San Casimiro, Aragua (42 a 55 km)', coords: [10.0000, -67.0167], zona: 'lejana', tarifa: 12 },
-    'colonia tovar': { nombre: 'Colonia Tovar, Aragua', coords: [10.4056, -67.2889], zona: 'lejana', tarifa: 12 },
+    // =========================================================================
+    // TRAMO 5: 14.0 a 19.0 km — Turmero / Palo Negro / Santa Cruz (+$5.00 USD)
+    // =========================================================================
+    'turmero': { nombre: 'Turmero Centro, Municipio Mariño (14.5 km)', coords: [10.2285, -67.4746], zona: 'turmero', tarifa: 5 },
+    'valle lindo': { nombre: 'Urb. Valle Lindo, Turmero (14.2 km)', coords: [10.2310, -67.4820], zona: 'turmero', tarifa: 5 },
+    'la julia': { nombre: 'Urb. La Julia, Turmero (14.0 km)', coords: [10.2340, -67.4880], zona: 'turmero', tarifa: 5 },
+    'san pablo': { nombre: 'Urb. San Pablo, Turmero (15.2 km)', coords: [10.2380, -67.4680], zona: 'turmero', tarifa: 5 },
+    'rosario de paya': { nombre: 'Rosario de Paya, Turmero (17.5 km)', coords: [10.2580, -67.4520], zona: 'turmero', tarifa: 5 },
+    'paya': { nombre: 'Sector Paya / Payita, Turmero (17.5 km)', coords: [10.2580, -67.4520], zona: 'turmero', tarifa: 5 },
+    'palo negro': { nombre: 'Palo Negro Centro, Municipio Libertador (14.8 km)', coords: [10.1742, -67.5412], zona: 'turmero', tarifa: 5 },
+    'bael': { nombre: 'Urb. BAEL / Base Libertador, Palo Negro (15.5 km)', coords: [10.1680, -67.5490], zona: 'turmero', tarifa: 5 },
+    'las vegas': { nombre: 'Barrio Las Vegas de Palo Negro (15.2 km)', coords: [10.1710, -67.5380], zona: 'turmero', tarifa: 5 },
+    'la croquera': { nombre: 'Urb. La Croquera, Palo Negro (16.0 km)', coords: [10.1650, -67.5320], zona: 'turmero', tarifa: 5 },
+    'santa cruz': { nombre: 'Santa Cruz de Aragua, Municipio Lamas (16.5 km)', coords: [10.1812, -67.5185], zona: 'turmero', tarifa: 5 },
+
+    // =========================================================================
+    // TRAMO 6: 19.0 a 25.0 km — Cagua / La Encrucijada / San Mateo (+$6.00 USD)
+    // =========================================================================
+    'encrucijada': { nombre: 'La Encrucijada de Cagua / Turmero (19.2 km)', coords: [10.2052, -67.4615], zona: 'cagua', tarifa: 6 },
+    'cagua': { nombre: 'Cagua Centro, Municipio Sucre (20.5 km)', coords: [10.1856, -67.4589], zona: 'cagua', tarifa: 6 },
+    'corinsa': { nombre: 'Urb. Corinsa, Cagua (21.0 km)', coords: [10.1785, -67.4652], zona: 'cagua', tarifa: 6 },
+    'segundera': { nombre: 'Urb. La Segundera, Cagua (22.0 km)', coords: [10.1720, -67.4480], zona: 'cagua', tarifa: 6 },
+    'bella vista': { nombre: 'Barrio Bella Vista, Cagua (22.8 km)', coords: [10.1650, -67.4420], zona: 'cagua', tarifa: 6 },
+    'ciudad jardin': { nombre: 'Urb. Ciudad Jardín, Cagua (21.5 km)', coords: [10.1750, -67.4520], zona: 'cagua', tarifa: 6 },
+    'ciudad jardín': { nombre: 'Urb. Ciudad Jardín, Cagua (21.5 km)', coords: [10.1750, -67.4520], zona: 'cagua', tarifa: 6 },
+    'san mateo': { nombre: 'San Mateo, Municipio Bolívar (23.8 km)', coords: [10.2152, -67.4215], zona: 'cagua', tarifa: 6 },
+
+    // =========================================================================
+    // TRAMO 7: 25.0 a 33.0 km — Villa de Cura / Magdaleno / Tocorón (+$8.00 USD)
+    // =========================================================================
+    'magdaleno': { nombre: 'Magdaleno, Municipio Zamora (26.0 km)', coords: [10.1020, -67.6250], zona: 'villadecura', tarifa: 8 },
+    'tocoron': { nombre: 'Tocorón, Municipio Zamora (26.5 km)', coords: [10.1250, -67.5750], zona: 'villadecura', tarifa: 8 },
+    'tocorón': { nombre: 'Tocorón, Municipio Zamora (26.5 km)', coords: [10.1250, -67.5750], zona: 'villadecura', tarifa: 8 },
+    'san francisco de asis': { nombre: 'San Francisco de Asís, Zamora (27.5 km)', coords: [10.0833, -67.5167], zona: 'villadecura', tarifa: 8 },
+    'san francisco de asís': { nombre: 'San Francisco de Asís, Zamora (27.5 km)', coords: [10.0833, -67.5167], zona: 'villadecura', tarifa: 8 },
+    'villa de cura': { nombre: 'Villa de Cura, Municipio Zamora (30.5 km)', coords: [10.0385, -67.4885], zona: 'villadecura', tarifa: 8 },
+    'zamora': { nombre: 'Villa de Cura / Municipio Zamora (30.5 km)', coords: [10.0385, -67.4885], zona: 'villadecura', tarifa: 8 },
+
+    // =========================================================================
+    // TRAMO 8: 33.0 a 43.0 km — La Victoria / Zuata / El Consejo (+$10.00 USD)
+    // =========================================================================
+    'zuata': { nombre: 'Zuata, Municipio Ribas (34.0 km)', coords: [10.2100, -67.3600], zona: 'victoria', tarifa: 10 },
+    'victoria': { nombre: 'La Victoria, Municipio Ribas (36.5 km)', coords: [10.2268, -67.3323], zona: 'victoria', tarifa: 10 },
+    'la mora': { nombre: 'Urb. La Mora I y II, La Victoria (37.5 km)', coords: [10.2380, -67.3250], zona: 'victoria', tarifa: 10 },
+    'soco': { nombre: 'Sector Soco / Castor Nieves Ríos, La Victoria (36.0 km)', coords: [10.2210, -67.3410], zona: 'victoria', tarifa: 10 },
+    'el consejo': { nombre: 'El Consejo, Municipio Revenga (41.5 km)', coords: [10.2310, -67.2750], zona: 'victoria', tarifa: 10 },
+
+    // =========================================================================
+    // TRAMO 9: 43.0 a 55.0 km — Zonas Foráneas de Aragua (+$12.00 USD)
+    // =========================================================================
+    'tejerias': { nombre: 'Las Tejerías, Santos Michelena (47.5 km)', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 12 },
+    'tejerías': { nombre: 'Las Tejerías, Santos Michelena (47.5 km)', coords: [10.2520, -67.1750], zona: 'lejana', tarifa: 12 },
+    'colonia tovar': { nombre: 'Colonia Tovar, Municipio Tovar (48.0 km)', coords: [10.4056, -67.2889], zona: 'lejana', tarifa: 12 },
+    'ocumare': { nombre: 'Ocumare de la Costa de Oro (46.0 km)', coords: [10.4560, -67.7710], zona: 'lejana', tarifa: 12 },
+    'choroni': { nombre: 'Choroní / Puerto Colombia, Girardot (45.0 km)', coords: [10.4780, -67.6050], zona: 'lejana', tarifa: 12 },
+    'choroní': { nombre: 'Choroní / Puerto Colombia, Girardot (45.0 km)', coords: [10.4780, -67.6050], zona: 'lejana', tarifa: 12 },
+    'san sebastian': { nombre: 'San Sebastián de los Reyes (51.0 km)', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 12 },
+    'san sebastián': { nombre: 'San Sebastián de los Reyes (51.0 km)', coords: [9.9612, -67.1785], zona: 'lejana', tarifa: 12 },
+    'san casimiro': { nombre: 'San Casimiro, Sur de Aragua (52.0 km)', coords: [10.0000, -67.0167], zona: 'lejana', tarifa: 12 },
+
+    // =========================================================================
+    // FUERA DEL ESTADO ARAGUA — Bloqueado / No cotizable
+    // =========================================================================
     'valencia': { nombre: 'Valencia, Carabobo (Fuera de Aragua)', coords: [10.1700, -68.0004], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     'mariara': { nombre: 'Mariara, Carabobo (Fuera de Aragua)', coords: [10.2893, -67.7033], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     'diego ibarra': { nombre: 'Municipio Diego Ibarra (Fuera de Aragua)', coords: [10.2893, -67.7033], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     'san joaquin': { nombre: 'San Joaquín, Carabobo (Fuera de Aragua)', coords: [10.2600, -67.7850], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     'san joaquín': { nombre: 'San Joaquín, Carabobo (Fuera de Aragua)', coords: [10.2600, -67.7850], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
-    'aguas calientes': { nombre: 'Aguas Calientes (Fuera de Aragua)', coords: [10.2980, -67.7120], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
+    'aguas calientes': { nombre: 'Aguas Calientes, Carabobo (Fuera de Aragua)', coords: [10.2980, -67.7120], zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     'caracas': { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
 };
 
 const CIUDADES_VE = {
-    duri: { nombre: 'Sede Inversiones Duri (Maracay Centro)', coords: [10.2502976, -67.5961389], zoom: 17, zona: 'centro', tarifa: 0 },
-    maracay: { nombre: 'Maracay Centro (Casco Central / Calicanto)', coords: [10.2469, -67.5958], zoom: 15, zona: 'centro', tarifa: 0 },
-    delicias: { nombre: 'Las Delicias, Maracay (2.5 a 6 km)', coords: [10.2721, -67.6015], zoom: 16, zona: 'cercanas', tarifa: 2 },
-    sanjacinto: { nombre: 'San Jacinto, Maracay (2.5 a 6 km)', coords: [10.2395, -67.5685], zoom: 16, zona: 'cercanas', tarifa: 2 },
-    coromoto: { nombre: 'La Coromoto / San José, Maracay (2.5 a 6 km)', coords: [10.2520, -67.6180], zoom: 16, zona: 'cercanas', tarifa: 2 },
-    canadeazucar: { nombre: 'Caña de Azúcar / Piñonal (2.5 a 6 km)', coords: [10.2642, -67.6338], zoom: 15, zona: 'cercanas', tarifa: 2 },
-    limon: { nombre: 'El Limón, Mario B. Iragorry (6 a 10 km)', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
-    turmero: { nombre: 'Turmero / Palo Negro (10 a 16 km)', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
-    cagua: { nombre: 'Cagua / La Encrucijada (16 a 24 km)', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
-    villadecura: { nombre: 'Villa de Cura, Zamora (24 a 32 km)', coords: [10.0380, -67.4890], zoom: 15, zona: 'villadecura', tarifa: 8 },
-    magdaleno: { nombre: 'Magdaleno, Zamora (32 a 42 km)', coords: [10.1020, -67.6250], zoom: 15, zona: 'victoria', tarifa: 10 },
-    victoria: { nombre: 'La Victoria, Ribas (32 a 42 km)', coords: [10.2268, -67.3323], zoom: 13, zona: 'victoria', tarifa: 10 },
+    duri: { nombre: 'Sede Inversiones Duri (0 km • Centro)', coords: [10.2502976, -67.5961389], zoom: 17, zona: 'centro', tarifa: 0 },
+    maracay: { nombre: 'Maracay Centro / Calicanto (0 a 1.5 km)', coords: [10.2469, -67.5958], zoom: 15, zona: 'centro', tarifa: 0 },
+    soledad: { nombre: 'La Soledad / Base Aragua (1.5 a 3 km)', coords: [10.2612, -67.5968], zoom: 16, zona: 'cercanas_15', tarifa: 1.5 },
+    acacias: { nombre: 'Las Acacias / San José (1.5 a 3 km)', coords: [10.2370, -67.5960], zoom: 16, zona: 'cercanas_15', tarifa: 1.5 },
+    olivos: { nombre: 'Los Olivos / La Romana (1.5 a 3 km)', coords: [10.2705, -67.5815], zoom: 16, zona: 'cercanas_15', tarifa: 1.5 },
+    delicias: { nombre: 'Las Delicias / La Cooperativa (3 a 5.5 km)', coords: [10.2721, -67.6015], zoom: 16, zona: 'cercanas', tarifa: 2 },
+    sanjacinto: { nombre: 'San Jacinto / Piñonal (3 a 5.5 km)', coords: [10.2395, -67.5685], zoom: 16, zona: 'cercanas', tarifa: 2 },
+    coromoto: { nombre: 'La Coromoto / 23 de Enero (3 a 5.5 km)', coords: [10.2520, -67.6180], zoom: 16, zona: 'cercanas', tarifa: 2 },
+    samanes: { nombre: 'Los Samanes / Campo Alegre (3 a 5.5 km)', coords: [10.2185, -67.5912], zoom: 15, zona: 'cercanas', tarifa: 2 },
+    canadeazucar: { nombre: 'Caña de Azúcar / Guasimal (3 a 5.5 km)', coords: [10.2642, -67.6338], zoom: 15, zona: 'cercanas', tarifa: 2 },
+    limon: { nombre: 'El Limón / La Candelaria (5.5 a 9.5 km)', coords: [10.2798, -67.6322], zoom: 15, zona: 'limon', tarifa: 3 },
+    morita: { nombre: 'La Morita I y II / El Castaño (5.5 a 9.5 km)', coords: [10.2152, -67.5385], zoom: 15, zona: 'limon', tarifa: 3 },
+    santarita: { nombre: 'Santa Rita / Coropo / Paraparal (9.5 a 14 km)', coords: [10.2015, -67.5612], zoom: 15, zona: 'santa_rita', tarifa: 4 },
+    turmero: { nombre: 'Turmero / Palo Negro / Santa Cruz (14 a 19 km)', coords: [10.2285, -67.4746], zoom: 14, zona: 'turmero', tarifa: 5 },
+    cagua: { nombre: 'Cagua / La Encrucijada / San Mateo (19 a 25 km)', coords: [10.1856, -67.4589], zoom: 14, zona: 'cagua', tarifa: 6 },
+    villadecura: { nombre: 'Villa de Cura / Magdaleno (25 a 33 km)', coords: [10.0380, -67.4890], zoom: 15, zona: 'villadecura', tarifa: 8 },
+    magdaleno: { nombre: 'Magdaleno / Tocorón (25 a 33 km)', coords: [10.1020, -67.6250], zoom: 15, zona: 'villadecura', tarifa: 8 },
+    victoria: { nombre: 'La Victoria / El Consejo (33 a 43 km)', coords: [10.2268, -67.3323], zoom: 13, zona: 'victoria', tarifa: 10 },
+    tejerias: { nombre: 'Las Tejerías / Colonia Tovar (43 a 55 km)', coords: [10.2520, -67.1750], zoom: 14, zona: 'lejana', tarifa: 12 },
+    mariara: { nombre: 'Mariara, Carabobo (Fuera de Aragua)', coords: [10.2893, -67.7033], zoom: 14, zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     valencia: { nombre: 'Valencia, Carabobo (Fuera de Aragua)', coords: [10.1700, -68.0004], zoom: 14, zona: 'fuera_aragua', tarifa: -1, bloqueado: true },
     caracas: { nombre: 'Caracas, Dto. Capital (Fuera de Aragua)', coords: [10.4806, -66.9036], zoom: 13, zona: 'fuera_aragua', tarifa: -1, bloqueado: true }
 };
@@ -466,11 +575,37 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
 
 function autoDetectarZonaDelivery(lat, lon, texto = '', zonaForzada = null) {
     let zonaDetectada = 'centro';
+    window._barrioDetectadoNombre = null;
+
+    // Calcular siempre la distancia GPS desde la sede cuando existan coordenadas
+    let dKm = null;
+    const latNum = lat !== null && lat !== undefined ? parseFloat(lat) : NaN;
+    const lonNum = lon !== null && lon !== undefined ? parseFloat(lon) : NaN;
+    if (!isNaN(latNum) && !isNaN(lonNum) && typeof DEFAULT_COORD !== 'undefined') {
+        dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], latNum, lonNum);
+        window._distanciaDeliveryKm = dKm.toFixed(1);
+    }
+
+    const t = (texto || '').toLowerCase();
+    // Buscar barrio específico en SECTORES_MARACAY por texto o cercanía GPS
+    if (typeof SECTORES_MARACAY !== 'undefined') {
+        for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
+            if (t && t.includes(key)) {
+                window._barrioDetectadoNombre = sec.nombre.split('(')[0].trim();
+                break;
+            }
+        }
+        if (!window._barrioDetectadoNombre && !isNaN(latNum) && !isNaN(lonNum)) {
+            const secCercano = obtenerSectorMasCercano(latNum, lonNum);
+            if (secCercano) {
+                window._barrioDetectadoNombre = secCercano.split('(')[0].trim();
+            }
+        }
+    }
 
     if (zonaForzada) {
         zonaDetectada = zonaForzada;
     } else {
-        const t = (texto || '').toLowerCase();
         let matchedByText = false;
 
         // 1. Detección de zonas FUERA DEL ESTADO ARAGUA (No cotizables)
@@ -478,42 +613,13 @@ function autoDetectarZonaDelivery(lat, lon, texto = '', zonaForzada = null) {
             'valencia', 'carabobo', 'mariara', 'diego ibarra', 'san joaquin', 'san joaquín', 
             'guacara', 'naguanagua', 'san diego', 'puerto cabello', 'moron', 'morón', 'los guayos', 'tocuyito',
             'caracas', 'distrito capital', 'dto capital', 'miranda', 'los teques', 'san antonio', 'guarenas', 'guatire', 
-            'chacao', 'baruta', 'petare', 'guarico', 'guárico', 'san juan de los morros', 'cojedes', 'san carlos', 
+            'chacao', 'baruta', 'petare', 'guarico', 'guárico', 'san juan de los morros', 'cojedes', 'san carlos de cojedes', 
             'yaracuy', 'san felipe', 'maracaibo', 'zulia', 'barquisimeto', 'lara', 'falcon', 'falcón', 
             'tachira', 'táchira', 'merida', 'mérida', 'anzoategui', 'anzoátegui', 'bolivar', 'bolívar'
         ];
 
         if (lugaresFueraAragua.some(p => t.includes(p))) {
             zonaDetectada = 'fuera_aragua';
-            matchedByText = true;
-        } else if (t.includes('tejerias') || t.includes('tejerías') || t.includes('san sebastian') || 
-                   t.includes('san sebastián') || t.includes('san casimiro') || t.includes('colonia tovar') || 
-                   t.includes('ocumare') || t.includes('costa de oro')) {
-            zonaDetectada = 'lejana';
-            matchedByText = true;
-        } else if (t.includes('victoria') || t.includes('magdaleno') || t.includes('tocoron') || 
-                   t.includes('tocorón') || t.includes('el consejo') || t.includes('revenga') || 
-                   t.includes('zuata') || t.includes('san mateo')) {
-            zonaDetectada = 'victoria';
-            matchedByText = true;
-        } else if (t.includes('villa de cura') || t.includes('zamora') || t.includes('san francisco de asis') || 
-                   t.includes('san francisco de asís')) {
-            zonaDetectada = 'villadecura';
-            matchedByText = true;
-        } else if (t.includes('cagua') || t.includes('encrucijada') || t.includes('bella vista') || t.includes('corinsa') || 
-                   (t.includes('sucre') && !t.includes('base sucre') && !t.includes('barrio sucre'))) {
-            zonaDetectada = 'cagua';
-            matchedByText = true;
-        } else if (t.includes('turmero') || t.includes('palo negro') || t.includes('santa rita') || 
-                   t.includes('morita') || t.includes('coropo') || t.includes('saman de guere') || 
-                   t.includes('samán de güere') || t.includes('santa cruz') || t.includes('lamas') || 
-                   t.includes('libertador') || t.includes('linares alcantara') || t.includes('linares alcántara')) {
-            zonaDetectada = 'turmero';
-            matchedByText = true;
-        } else if (t.includes('limon') || t.includes('limón') || t.includes('mario briceño') || 
-                   t.includes('mbi') || t.includes('arsenal') || t.includes('candelaria') || 
-                   t.includes('base sucre') || t.includes('valle verde') || t.includes('el paseo') || t.includes('arias blanco')) {
-            zonaDetectada = 'limon';
             matchedByText = true;
         } else if (typeof SECTORES_MARACAY !== 'undefined') {
             for (const [key, sec] of Object.entries(SECTORES_MARACAY)) {
@@ -525,36 +631,34 @@ function autoDetectarZonaDelivery(lat, lon, texto = '', zonaForzada = null) {
             }
         }
 
-        // 2. Si hay coordenadas GPS, calcular la distancia satelital exacta en kilómetros desde la sede central
-        if (lat && lon && typeof DEFAULT_COORD !== 'undefined') {
-            const latNum = parseFloat(lat);
-            const lonNum = parseFloat(lon);
-            const dKm = calcularDistanciaKm(DEFAULT_COORD[0], DEFAULT_COORD[1], latNum, lonNum);
-            window._distanciaDeliveryKm = dKm.toFixed(1);
-
-            // Al OESTE de -67.67 ya es Carabobo (Mariara / San Joaquín / Valencia) -> Fuera de Aragua
+        // 2. Si hay coordenadas GPS, asignar el rango progresivo por distancia exacta en km (A PARTIR DE 1.5 KM)
+        if (dKm !== null) {
             if (lonNum <= -67.67 || lonNum >= -67.10 || latNum <= 9.75 || latNum >= 10.60 || dKm > 55.0) {
                 zonaDetectada = 'fuera_aragua';
-            } else if (dKm <= 2.5) {
-                zonaDetectada = 'centro'; // 0 a 2.5 km: GRATIS
-            } else if (dKm <= 6.0) {
-                zonaDetectada = 'cercanas'; // 2.5 a 6 km: +$2.00
-            } else if (dKm <= 10.0) {
-                zonaDetectada = 'limon'; // 6 a 10 km: +$3.00
-            } else if (dKm <= 16.0) {
-                zonaDetectada = 'turmero'; // 10 a 16 km: +$5.00
-            } else if (dKm <= 24.0) {
-                zonaDetectada = 'cagua'; // 16 a 24 km: +$6.00
-            } else if (dKm <= 32.0) {
-                zonaDetectada = 'villadecura'; // 24 a 32 km: +$8.00
-            } else if (dKm <= 42.0) {
-                zonaDetectada = 'victoria'; // 32 a 42 km: +$10.00
+            } else if (dKm <= 1.5) {
+                zonaDetectada = 'centro'; // 0 a 1.5 km: ¡GRATIS ($0.00)!
+            } else if (dKm <= 3.0) {
+                zonaDetectada = 'cercanas_15'; // 1.5 a 3.0 km: +$1.50 USD
+            } else if (dKm <= 5.5) {
+                zonaDetectada = 'cercanas'; // 3.0 a 5.5 km: +$2.00 USD
+            } else if (dKm <= 9.5) {
+                zonaDetectada = 'limon'; // 5.5 a 9.5 km: +$3.00 USD
+            } else if (dKm <= 14.0) {
+                zonaDetectada = 'santa_rita'; // 9.5 a 14.0 km: +$4.00 USD
+            } else if (dKm <= 19.0) {
+                zonaDetectada = 'turmero'; // 14.0 a 19.0 km: +$5.00 USD
+            } else if (dKm <= 25.0) {
+                zonaDetectada = 'cagua'; // 19.0 a 25.0 km: +$6.00 USD
+            } else if (dKm <= 33.0) {
+                zonaDetectada = 'villadecura'; // 25.0 a 33.0 km: +$8.00 USD
+            } else if (dKm <= 43.0) {
+                zonaDetectada = 'victoria'; // 33.0 a 43.0 km: +$10.00 USD
             } else {
-                zonaDetectada = 'lejana'; // 42 a 55 km: +$12.00
+                zonaDetectada = 'lejana'; // 43.0 a 55.0 km: +$12.00 USD
             }
         } else if (!matchedByText) {
             if (t.length > 5) {
-                zonaDetectada = 'otra'; // Tarifa provisional de sector dentro de Aragua no listado: $3.00
+                zonaDetectada = 'otra';
             } else {
                 zonaDetectada = 'centro';
             }
@@ -567,7 +671,7 @@ function autoDetectarZonaDelivery(lat, lon, texto = '', zonaForzada = null) {
             sel.value = zonaDetectada;
         }
         if (typeof cambiarZonaDelivery === 'function') {
-            cambiarZonaDelivery();
+            cambiarZonaDelivery(false);
         }
     }
     if (typeof sincronizarMontosUbicacion === 'function') {
@@ -575,7 +679,7 @@ function autoDetectarZonaDelivery(lat, lon, texto = '', zonaForzada = null) {
     }
 }
 
-function aplicarUbicacionFijada(lat, lon, texto = '') {
+function aplicarUbicacionFijada(lat, lon, texto = '', zonaForzada = null) {
     if (typeof seleccionarModalidadEntrega === 'function') {
         seleccionarModalidadEntrega('delivery');
     }
@@ -614,7 +718,7 @@ function aplicarUbicacionFijada(lat, lon, texto = '') {
     const extModalBtn = document.getElementById('btnGmapsExternalView');
     if (extModalBtn) extModalBtn.href = `https://www.google.com/maps/search/?api=1&query=${formatted}`;
 
-    autoDetectarZonaDelivery(latNum, lonNum, defaultText);
+    autoDetectarZonaDelivery(latNum, lonNum, defaultText, zonaForzada);
     if (typeof sincronizarMontosUbicacion === 'function') {
         sincronizarMontosUbicacion();
     }
@@ -1082,16 +1186,14 @@ function actualizarPuntoSeleccionado(lat, lon, textoManual = '', zonaManual = nu
     const addressBox = document.getElementById('gmapsDetectedAddress');
     if (addressBox) addressBox.innerHTML = `<strong>${nombreInmediato}</strong> <small style="color:#64748b;">(${formatted})</small>`;
 
-    aplicarUbicacionFijada(latNum, lonNum, nombreInmediato);
-    autoDetectarZonaDelivery(latNum, lonNum, nombreInmediato, zonaManual);
+    aplicarUbicacionFijada(latNum, lonNum, nombreInmediato, zonaManual);
 
     if (!textoManual) {
         reverseGeocodeReal(latNum, lonNum, (desc) => {
             if (desc && desc.trim()) {
                 selectedAddressText = desc;
                 if (addressBox) addressBox.innerHTML = `<strong>${desc}</strong> <small style="color:#64748b;">(${formatted})</small>`;
-                autoDetectarZonaDelivery(latNum, lonNum, desc, zonaManual);
-                aplicarUbicacionFijada(latNum, lonNum, desc);
+                aplicarUbicacionFijada(latNum, lonNum, desc, zonaManual);
             }
         });
     }

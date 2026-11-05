@@ -6892,11 +6892,17 @@ function seleccionarModalidadEntrega(tipo) {
 }
 window.seleccionarModalidadEntrega = seleccionarModalidadEntrega;
 
-function cambiarZonaDelivery() {
+function cambiarZonaDelivery(esCambioManual = false) {
     const sel = document.getElementById('selectZonaDelivery');
     const costoInput = document.getElementById('costoDeliveryActual');
     const badge = document.getElementById('badgeTarifaDelivery');
     if (!sel) return;
+
+    if (esCambioManual) {
+        window._distanciaDeliveryKm = null;
+        window._barrioDetectadoNombre = null;
+        selectedAddressText = '';
+    }
 
     const opt = sel.options[sel.selectedIndex];
     const optVal = sel.value;
@@ -6906,6 +6912,9 @@ function cambiarZonaDelivery() {
     if (costoInput) costoInput.value = String(costo);
 
     if (badge) {
+        const barrioTag = (typeof window._barrioDetectadoNombre === 'string' && window._barrioDetectadoNombre)
+            ? ` — <strong>${window._barrioDetectadoNombre}</strong>`
+            : '';
         if (esBloqueado) {
             badge.style.color = '#dc2626';
             badge.innerHTML = `
@@ -6920,8 +6929,8 @@ function cambiarZonaDelivery() {
             badge.style.color = '#059669';
             const kmInfo = (typeof window._distanciaDeliveryKm !== 'undefined' && window._distanciaDeliveryKm) 
                 ? ` (GPS: <strong>${window._distanciaDeliveryKm} km</strong> del centro)` 
-                : ' (0 a 2.5 km de la sede)';
-            badge.innerHTML = `<i class="fas fa-gift"></i> <span>¡Delivery en todo el Centro de Maracay es <strong>COMPLETAMENTE GRATIS</strong>!${kmInfo}</span>`;
+                : ' (0 a 1.5 km de la sede)';
+            badge.innerHTML = `<i class="fas fa-gift"></i> <span>¡Delivery en el Centro de Maracay${barrioTag} es <strong>COMPLETAMENTE GRATIS</strong>!${kmInfo}</span>`;
         } else {
             const bsCosto = (typeof BcvManager !== 'undefined' && BcvManager.rate) 
                 ? BcvManager.formatBs(BcvManager.toBs(costo)) 
@@ -6931,7 +6940,7 @@ function cambiarZonaDelivery() {
                 ? `GPS: ~${window._distanciaDeliveryKm} km` 
                 : (optDist ? `Distancia: ${optDist}` : '');
             const distTag = kmInfo ? ` <span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px; font-size:0.78rem; font-weight:700; margin-left:4px;">📏 ${kmInfo}</span>` : '';
-            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa Progresiva Delivery: <strong>+$${costo.toFixed(2)} USD</strong> (${bsCosto})${distTag}</span>`;
+            badge.innerHTML = `<i class="fas fa-motorcycle"></i> <span>Tarifa Progresiva (${costo >= 1.5 ? 'desde 1.5 km' : ''})${barrioTag}: <strong>+$${costo.toFixed(2)} USD</strong> (${bsCosto})${distTag}</span>`;
         }
     }
     sincronizarMontosUbicacion();
@@ -6962,8 +6971,10 @@ function sincronizarMontosUbicacion() {
         zonaNombre = optZona.text.split('—')[0].split('(')[0].replace('📍', '').trim();
     }
 
-    // Refinar nombre de sector si se detectó una zona específica en el texto o mapa
-    let nombrePersonalizado = zonaNombre;
+    // Refinar nombre de sector si se detectó un barrio específico en el texto o mapa
+    let nombrePersonalizado = (typeof window._barrioDetectadoNombre === 'string' && window._barrioDetectadoNombre)
+        ? window._barrioDetectadoNombre
+        : zonaNombre;
     const currentAddr = (typeof selectedAddressText === 'string' ? selectedAddressText : (document.getElementById('deliveryAddress')?.value || '')).toLowerCase();
     if (currentAddr.includes('mariara') || currentAddr.includes('valencia') || currentAddr.includes('caracas') || currentAddr.includes('carabobo')) {
         nombrePersonalizado = 'Fuera del Estado Aragua (No disponible)';
