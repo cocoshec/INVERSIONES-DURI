@@ -1310,6 +1310,9 @@ function showUserBadge() {
                 <span style="font-weight:700;font-size:0.86rem;color:#ffffff;">${userName}</span>
                 <span class="role-tag" style="background:${roleColor};color:#fff;padding:2px 7px;border-radius:6px;font-size:0.68rem;font-weight:700;">${userRole}</span>
             </div>
+            <button type="button" onclick="abrirManualUsuarioModal()" title="Manual de Usuario (${userRole})" style="background:#fbbf24; color:#0f172a; border:none; border-radius:6px; padding:3px 7px; font-size:0.7rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; line-height:1.1; white-space:nowrap;">
+                <i class="fas fa-book-open" style="font-size:0.72rem;"></i> <span>Manual</span>
+            </button>
             ${bellBtnHtml}
             <button type="button" class="admin-logout-btn-mobile" onclick="logout()" title="Cerrar sesión de Administrador (${userName})">
                 <i class="fas fa-sign-out-alt"></i> <span class="logout-btn-text">Salir</span>
@@ -4821,16 +4824,16 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     // 1. Alerta de resumen superior
     const adminNotice = `
         <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:8px; padding:8px 14px; margin-bottom:12px; font-size:0.78rem; color:#475569; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Facturación y verificación de compras en tiempo real.</span>
+            <span><i class="fas fa-shield-alt" style="color:var(--accent,#FF6600);"></i> <b>Sesión de Super Administrador activa</b>. Control de notas de entrega y verificación de compras en tiempo real.</span>
             <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                <button type="button" onclick="abrirArchivoGeneralFacturas()" style="background:#1e1b4b; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(30,27,75,0.25);" title="Ver libro de todas las facturas y ventas pasadas">
-                    <i class="fas fa-archive" style="color:#f59e0b;"></i> Libro de Facturas
+                <button type="button" onclick="abrirArchivoGeneralFacturas()" style="background:#1e1b4b; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(30,27,75,0.25);" title="Ver libro de todas las notas de entrega y ventas pasadas">
+                    <i class="fas fa-archive" style="color:#f59e0b;"></i> Libro de Notas
                 </button>
-                <button type="button" onclick="descargarFacturasRapidas('semana')" style="background:#059669; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(5,150,105,0.25);" title="Descargar en Excel/CSV todas las facturas de esta semana">
-                    <i class="fas fa-file-excel"></i> Facturas Semana
+                <button type="button" onclick="descargarFacturasRapidas('semana')" style="background:#059669; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(5,150,105,0.25);" title="Descargar en Excel/CSV todas las notas de entrega de esta semana">
+                    <i class="fas fa-file-excel"></i> Notas Semana
                 </button>
-                <button type="button" onclick="descargarFacturasRapidas('mes')" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(37,99,235,0.25);" title="Descargar en Excel/CSV todas las facturas de este mes">
-                    <i class="fas fa-calendar-alt"></i> Facturas Mes
+                <button type="button" onclick="descargarFacturasRapidas('mes')" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 6px rgba(37,99,235,0.25);" title="Descargar en Excel/CSV todas las notas de entrega de este mes">
+                    <i class="fas fa-calendar-alt"></i> Notas Mes
                 </button>
                 <button type="button" onclick="logout()" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:4px; padding:4px 8px; font-size:0.72rem; cursor:pointer;" title="Cerrar sesión de administrador"><i class="fas fa-sign-out-alt"></i> Salir de Admin</button>
             </div>
@@ -4845,7 +4848,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                     ⚠️ ¡Atención! Tienes <strong>${pendingCount}</strong> pedido(s) con <strong>pago pendiente de verificar</strong>
                 </div>
                 <div style="font-size:0.82rem; color:#665103; margin-top:2px;">
-                    Revisa si el dinero ingresó a tu cuenta / pago móvil y haz clic en <b>"Aprobar Pago"</b> para confirmar la compra y actualizar su factura oficial.
+                    Revisa si el dinero ingresó a tu cuenta / pago móvil y haz clic en <b>"Aprobar Pago"</b> para confirmar la compra y actualizar su nota de entrega oficial.
                 </div>
             </div>
             <button type="button" class="btn btn-sm" onclick="filterAdminPedidos('pendiente')" style="background:#ff9f1c;color:#1a0f2e;font-weight:700;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;white-space:nowrap;">
@@ -4865,7 +4868,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
     const searchBarHtml = `
         <div style="background:#ffffff; border:1.5px solid #cbd5e1; border-radius:10px; padding:8px 14px; margin-bottom:12px; display:flex; align-items:center; gap:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
             <i class="fas fa-search" style="color:#64748b; font-size:0.95rem;"></i>
-            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), factura (ej: FACT-0001), cliente, Cédula, teléfono o Gmail..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
+            <input type="text" id="adminOrderSearchInput" placeholder="Buscar en el registro histórico por código (ej: PED-001), nota de entrega (ej: NE-0001), cliente, Cédula, teléfono o Gmail..." value="${window._adminOrderSearchQuery || ''}" oninput="filterAdminOrdersSearch(this.value)" style="border:none; outline:none; background:transparent; width:100%; font-size:0.86rem; color:#0f172a;">
             ${window._adminOrderSearchQuery ? `
                 <button type="button" onclick="filterAdminOrdersSearch('')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.9rem;" title="Limpiar búsqueda">
                     <i class="fas fa-times-circle"></i>
@@ -4897,7 +4900,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         const safeCi = (p.cliente_ci || '').replace(/'/g, "\\'");
         const safeEmail = (p.cliente_email || '').replace(/'/g, "\\'");
         const cleanNum = (p.codigo || String(p.id)).replace(/[^0-9]/g, '') || String(p.id);
-        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+        const factNum = `NE-${cleanNum.padStart(4, '0')}`;
 
         let actionButtons = '';
         if (canManage) {
@@ -4924,8 +4927,8 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
 
             actionButtons = `
                 ${statusBtn}
-                <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:700;padding:7px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(79,70,229,0.35);" onclick="abrirModalFacturaAdmin('${safeCode}')" title="Ver, imprimir y descargar factura oficial">
-                    <i class="fas fa-file-invoice-dollar"></i> Factura
+                <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:700;padding:7px 14px;font-size:0.82rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 6px rgba(79,70,229,0.35);" onclick="abrirModalFacturaAdmin('${safeCode}')" title="Ver, imprimir y descargar nota de entrega oficial">
+                    <i class="fas fa-file-invoice-dollar"></i> Nota de Entrega
                 </button>
                 <button class="btn btn-sm" style="background:#dc3545;color:#fff;padding:6px 10px;font-size:0.78rem;border-radius:4px;border:none;cursor:pointer;" title="Eliminar del historial permanentemente" onclick="eliminarPedidoHistorial(${p.id}, '${p.codigo}')">
                     <i class="fas fa-trash-alt"></i>
@@ -4934,7 +4937,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
         } else {
             actionButtons = `
                 <button type="button" class="btn btn-sm" style="background:#4f46e5;color:#fff;font-weight:600;padding:6px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="abrirModalFacturaAdmin('${safeCode}')">
-                    <i class="fas fa-file-invoice-dollar"></i> Ver Factura
+                    <i class="fas fa-file-invoice-dollar"></i> Ver Nota de Entrega
                 </button>
             `;
         }
@@ -4984,7 +4987,7 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                 <div class="order-row-info" style="display:flex; flex-direction:column; gap:4px; flex:1; min-width:240px;">
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <strong style="color:var(--dark-brown,#333); font-size:1.02rem;">${p.codigo} &mdash; ${p.cliente_nombre || 'Cliente'}</strong>
-                        <span style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-size:0.73rem; font-weight:800; padding:2px 8px; border-radius:6px; font-family:monospace;" title="N° de Factura Oficial">${factNum}</span>
+                        <span style="background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; font-size:0.73rem; font-weight:800; padding:2px 8px; border-radius:6px; font-family:monospace;" title="N° de Nota de Entrega Oficial">${factNum}</span>
                         ${isPendiente ? '<span style="background:#fffae6; color:#b07800; border:1px solid #ffe58f; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:10px;"><i class="fas fa-hourglass-half"></i> Requiere Verificación</span>' : ''}
                     </div>
                     <span style="font-size:0.83rem; color:var(--dark,#444);">
@@ -4994,7 +4997,15 @@ function renderPedidosRecientes(pedidos, filter = 'todos') {
                         ${p.cliente_email ? ` · <a href="mailto:${p.cliente_email}" style="display:inline-flex; align-items:center; gap:4px; background:#f0f7ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; text-decoration:none;" title="Enviar correo a ${p.cliente_email}"><i class="fas fa-envelope" style="color:#ea4335;"></i> ${p.cliente_email}</a>` : ''}
                         · <strong>Pago:</strong> ${formaPagoDisplay}
                     </span>
-                    ${p.direccion_entrega ? `<span style="font-size:0.76rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${p.direccion_entrega}</span>` : ''}
+                    ${p.direccion_entrega ? (() => {
+                        const rawDir = String(p.direccion_entrega);
+                        const gpsMatch = rawDir.match(/(https:\/\/www\.google\.com\/maps[^\s]+)/i);
+                        const cleanText = gpsMatch ? rawDir.replace(/\s*\|\s*GPS:\s*https:\/\/www\.google\.com\/maps[^\s]+/i, '').trim() : rawDir;
+                        const coordsMatch = gpsMatch ? gpsMatch[1].match(/query=([0-9.\-]+,[0-9.\-]+)/i) : null;
+                        const coordsLabel = coordsMatch ? ` (${coordsMatch[1]})` : '';
+                        const gpsBtn = gpsMatch ? ` <a href="${gpsMatch[1]}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:4px; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:2px 8px; border-radius:10px; font-size:0.73rem; font-weight:700; text-decoration:none; margin-left:4px;" title="Abrir ubicación exacta en Google Maps"><i class="fas fa-map-marked-alt" style="color:#ea4335;"></i> Ver en Google Maps${coordsLabel}</a>` : '';
+                        return `<span style="font-size:0.76rem; color:#666;"><i class="fas fa-map-marker-alt"></i> ${cleanText}${gpsBtn}</span>`;
+                    })() : ''}
                     ${productsSnippet}
                 </div>
                 <div class="order-row-details" style="display:flex; align-items:center; gap:12px;">
@@ -5105,7 +5116,7 @@ function generarHTMLFacturaPaper(p, logoSrc = null, idAttr = 'facturaPrintArea')
     }
     const codigo = p.codigo || `PED-${p.id || '001'}`;
     const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '101');
-    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const facturaNum = `NE-${cleanNum.padStart(4, '0')}`;
 
     let fechaStr = '';
     try {
@@ -5209,7 +5220,7 @@ function generarHTMLFacturaPaper(p, logoSrc = null, idAttr = 'facturaPrintArea')
                     </div>
                 </div>
                 <div class="factura-doc-box">
-                    <div class="factura-doc-title">NOTA DE ENTREGA / FACTURA</div>
+                    <div class="factura-doc-title">NOTA DE ENTREGA</div>
                     <div class="factura-doc-num">${facturaNum}</div>
                     <div class="factura-doc-date"><strong>Pedido:</strong> ${codigo}</div>
                     <div class="factura-doc-date">${fechaStr}</div>
@@ -5224,7 +5235,7 @@ function generarHTMLFacturaPaper(p, logoSrc = null, idAttr = 'facturaPrintArea')
             <!-- Datos del Cliente y Despacho -->
             <div class="factura-info-grid">
                 <div class="factura-info-col">
-                    <h4><i class="fas fa-user-check"></i> Facturado a (Cliente)</h4>
+                    <h4><i class="fas fa-user-check"></i> Entregado a (Cliente)</h4>
                     <p><strong>Nombre / Razón Social:</strong> ${p.cliente_nombre || 'Cliente General'}</p>
                     <p><strong>Cédula / RIF:</strong> ${p.cliente_ci || 'No registrada'}</p>
                     <p><strong>Teléfono de Contacto:</strong> ${p.cliente_telefono || 'No registrado'}</p>
@@ -5291,7 +5302,7 @@ function generarHTMLFacturaPaper(p, logoSrc = null, idAttr = 'facturaPrintArea')
                         <i class="fas fa-shield-alt" style="color:#059669;"></i> Comprobante Electrónico y Registro de Compra Oficial
                     </p>
                     <p style="margin:0; font-size:0.71rem; line-height:1.4;">
-                        Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como soporte fiscal y nota de entrega.
+                        Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como nota de entrega oficial.
                     </p>
                 </div>
                 <div class="factura-seal-box">
@@ -5318,13 +5329,13 @@ function abrirModalFactura(pedidoOrCode) {
     }
 
     if (!p) {
-        showToast('No se encontró el registro del pedido para generar la factura', 'error');
+        showToast('No se encontró el registro del pedido para generar la nota de entrega', 'error');
         return;
     }
 
-    // Seguridad: la factura oficial no se muestra al cliente si el pago no ha sido validado
+    // Seguridad: la nota de entrega oficial no se muestra al cliente si el pago no ha sido validado
     if (!isSuperUsuario() && (p.estado === 'pendiente' || !p.estado)) {
-        showToast('El pedido aún está en espera de validación de pago. La Factura Oficial se emitirá al ser aprobado.', 'warning');
+        showToast('El pedido aún está en espera de validación de pago. La Nota de Entrega Oficial se emitirá al ser aprobado.', 'warning');
         return;
     }
 
@@ -5341,7 +5352,7 @@ function abrirModalFactura(pedidoOrCode) {
             <div class="factura-actions-bar no-print">
                 <div class="factura-actions-left">
                     <i class="fas fa-file-invoice-dollar"></i>
-                    <strong>Factura Oficial &mdash; ${codigo}</strong>
+                    <strong>Nota de Entrega Oficial &mdash; ${codigo}</strong>
                 </div>
                 <button type="button" class="btn-factura-close" onclick="cerrarModalFactura()" title="Cerrar modal">&times;</button>
                 <div class="factura-actions-right">
@@ -5354,7 +5365,7 @@ function abrirModalFactura(pedidoOrCode) {
                     <button type="button" class="btn-factura-act btn-wa" onclick="compartirFacturaWhatsApp('${codigo}')" title="Enviar copia o notificación al WhatsApp del cliente">
                         <i class="fab fa-whatsapp"></i> WhatsApp
                     </button>
-                    <button type="button" class="btn-factura-act btn-email" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" title="Enviar factura directamente al correo del cliente">
+                    <button type="button" class="btn-factura-act btn-email" onclick="enviarFacturaPorCorreoPrompt('${codigo}')" title="Enviar nota de entrega directamente al correo del cliente">
                         <i class="fas fa-envelope"></i> Enviar Correo
                     </button>
                 </div>
@@ -5378,11 +5389,11 @@ window.abrirModalFactura = abrirModalFactura;
 async function descargarFacturaPDF(codigo) {
     const originalArea = document.getElementById('facturaPrintArea');
     if (!originalArea) {
-        showToast('No se encontró el documento de la factura', 'error');
+        showToast('No se encontró el documento de la nota de entrega', 'error');
         return;
     }
     const cleanCod = (codigo || 'Duri').replace(/[^a-zA-Z0-9_-]/g, '');
-    const filename = `Factura_${cleanCod}.pdf`;
+    const filename = `Nota_de_Entrega_${cleanCod}.pdf`;
     showToast('Generando archivo PDF oficial...', 'info');
 
     await loadPdfLibraries();
@@ -5455,7 +5466,7 @@ async function descargarFacturaPDF(codigo) {
         }
 
         pdf.save(filename);
-        showToast('¡Factura PDF descargada con éxito!', 'success');
+        showToast('¡Nota de Entrega PDF descargada con éxito!', 'success');
 
     } catch (err) {
         console.error('Error generando PDF con html2canvas:', err);
@@ -5484,9 +5495,9 @@ function compartirFacturaWhatsApp(codigo) {
     const rateBsStr = BcvManager.formatBs(BcvManager.rate).replace('Bs. ', '');
     const totalBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total)));
     const cleanNum = (p.codigo || String(p.id)).replace(/[^0-9]/g, '') || String(p.id || '101');
-    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const facturaNum = `NE-${cleanNum.padStart(4, '0')}`;
 
-    const msg = `📄 *INVERSIONES DURI C.A. — COMPROBANTE OFICIAL*\n\nEstimado(a) *${p.cliente_nombre || 'Cliente'}*:\nLe compartimos la información oficial de su factura *${facturaNum}* (Pedido *${p.codigo}*).\n\n• Cédula/RIF: ${p.cliente_ci || 'N/A'}\n• Estado del Pago: ${p.estado === 'procesando' || p.estado === 'completado' ? '✅ Pago Aprobado' : '⏳ Pendiente de Verificación'}\n• Total: $${parseFloat(p.total).toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n• Forma de Pago: ${p.forma_pago || 'Pago Móvil'}\n\nGracias por su compra en Inversiones Duri C.A.`;
+    const msg = `📄 *INVERSIONES DURI C.A. — NOTA DE ENTREGA OFICIAL*\n\nEstimado(a) *${p.cliente_nombre || 'Cliente'}*:\nLe compartimos la información oficial de su Nota de Entrega *${facturaNum}* (Pedido *${p.codigo}*).\n\n• Cédula/RIF: ${p.cliente_ci || 'N/A'}\n• Estado del Pago: ${p.estado === 'procesando' || p.estado === 'completado' ? '✅ Pago Aprobado' : '⏳ Pendiente de Verificación'}\n• Total: $${parseFloat(p.total).toFixed(2)} USD (≈ ${totalBs} a tasa BCV ${rateBsStr})\n• Forma de Pago: ${p.forma_pago || 'Pago Móvil'}\n\nGracias por su compra en Inversiones Duri C.A.`;
 
     const url = waPhone.length >= 10
         ? `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`
@@ -5532,7 +5543,7 @@ function mostrarModalExitoConFactura(order, waUrl) {
                         <i class="fas fa-info-circle" style="font-size:1.05rem;"></i> Pedido Pendiente de Validación
                     </div>
                     <p style="margin:0;">
-                        Tu pedido ha sido recibido y está <b>en proceso de verificación de pago</b>. En cuanto el administrador valide tu compra, se generará la <b>Factura Oficial sellada</b> y te llegará automáticamente a tu correo electrónico${order.cliente_email ? ` (<b>${order.cliente_email}</b>)` : ''}.
+                        Tu pedido ha sido recibido y está <b>en proceso de verificación de pago</b>. En cuanto el administrador valide tu compra, se generará la <b>Nota de Entrega Oficial sellada</b> y te llegará automáticamente a tu correo electrónico${order.cliente_email ? ` (<b>${order.cliente_email}</b>)` : ''}.
                     </p>
                 </div>
 
@@ -5726,6 +5737,7 @@ window.abrirModalValidarPago = abrirModalValidarPago;
 async function ejecutarAprobacionPago(id, codigo) {
     const btn = document.getElementById('btnAceptarYValidar');
     if (btn) {
+        if (btn.disabled) return;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando...';
     }
@@ -5733,9 +5745,8 @@ async function ejecutarAprobacionPago(id, codigo) {
     try {
         await actualizarEstadoPedidoDirecto(id, 'procesando', codigo);
         cerrarModalValidacionPago();
-        showToast(`¡Pago del pedido ${codigo || ''} aprobado y validado con éxito!`, 'success');
         
-        // Abrir inmediatamente la ventana con la factura oficial sellada y lista para descargar/imprimir
+        // Abrir inmediatamente la ventana con la nota de entrega oficial sellada y lista para descargar/imprimir
         mostrarModalPagoAprobadoConFactura(codigo || id);
     } catch(err) {
         console.error('Error al aprobar pago:', err);
@@ -5753,7 +5764,7 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
 
     const codigo = p.codigo || String(codigoOrId);
     const cleanNum = (codigo).replace(/[^0-9]/g, '') || String(p.id || '101');
-    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const facturaNum = `NE-${cleanNum.padStart(4, '0')}`;
     const totalVal = parseFloat(p.total || 0).toFixed(2);
     const totalBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(totalVal)));
 
@@ -5771,15 +5782,15 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
                     <i class="fas fa-check-double"></i>
                 </div>
                 <h3 style="margin:0;font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-0.2px;">¡Pago Validado y Aprobado!</h3>
-                <p style="margin:2px 0 0;font-size:0.75rem;color:#dcfce7;opacity:0.95;">Compra confirmada y factura oficial sellada.</p>
+                <p style="margin:2px 0 0;font-size:0.75rem;color:#dcfce7;opacity:0.95;">Compra confirmada y nota de entrega oficial sellada.</p>
             </div>
 
             <!-- Cuerpo Compacto con scroll suave -->
             <div style="padding:12px 16px 14px;overflow-y:auto;flex:1 1 auto;-webkit-overflow-scrolling:touch;">
-                <!-- Tarjeta Resumen Factura / Monto -->
+                <!-- Tarjeta Resumen Nota de Entrega / Monto -->
                 <div style="background:#f0fdf4;border:1px dashed #86efac;border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
                     <div style="text-align:left;">
-                        <span style="font-size:0.65rem;color:#15803d;text-transform:uppercase;font-weight:700;display:block;">Factura Sellada</span>
+                        <span style="font-size:0.65rem;color:#15803d;text-transform:uppercase;font-weight:700;display:block;">Nota de Entrega Sellada</span>
                         <strong style="font-size:0.95rem;color:#14532d;font-family:monospace;display:block;line-height:1.2;">${facturaNum}</strong>
                         <span style="font-size:0.7rem;color:#166534;">Pedido: <b>${codigo}</b></span>
                     </div>
@@ -5806,12 +5817,12 @@ function mostrarModalPagoAprobadoConFactura(codigoOrId) {
                 <div style="display:flex;flex-direction:column;gap:7px;">
                     <!-- Botón Principal: Ver/Descargar PDF -->
                     <button type="button" onclick="cerrarModalPagoAprobado(); abrirModalFactura('${codigo}');" style="width:100%;min-height:38px;padding:9px 12px;background:linear-gradient(135deg, #4f46e5, #3730a3);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.83rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 8px rgba(79,70,229,0.28);">
-                        <i class="fas fa-file-invoice-dollar" style="font-size:0.95rem;"></i> Ver y Descargar Factura (PDF)
+                        <i class="fas fa-file-invoice-dollar" style="font-size:0.95rem;"></i> Ver y Descargar Nota de Entrega (PDF)
                     </button>
 
                     <!-- Botón WhatsApp -->
                     <button type="button" onclick="compartirFacturaWhatsApp('${codigo}');" style="width:100%;min-height:36px;padding:8px 12px;background:#25d366;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 6px rgba(37,211,102,0.25);">
-                        <i class="fab fa-whatsapp" style="font-size:1rem;"></i> Compartir Factura por WhatsApp
+                        <i class="fab fa-whatsapp" style="font-size:1rem;"></i> Compartir Nota de Entrega por WhatsApp
                     </button>
 
                     <!-- Botón Volver sutil -->
@@ -5942,12 +5953,12 @@ window.obtenerEtiquetaPeriodo = obtenerEtiquetaPeriodo;
 
 function exportarFacturasCSV(pedidosFiltrados, etiquetaPeriodo = 'Reporte') {
     if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
-        showToast('No hay facturas en el período seleccionado para exportar a Excel', 'warning');
+        showToast('No hay notas de entrega en el período seleccionado para exportar a Excel', 'warning');
         return;
     }
 
     const headers = [
-        "N° Factura",
+        "N° Nota de Entrega",
         "Código Pedido",
         "Fecha",
         "Cliente",
@@ -5977,7 +5988,7 @@ function exportarFacturasCSV(pedidosFiltrados, etiquetaPeriodo = 'Reporte') {
     const rows = pedidosFiltrados.map(p => {
         const codigo = p.codigo || `PED-${p.id}`;
         const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
-        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+        const factNum = `NE-${cleanNum.padStart(4, '0')}`;
 
         let fechaStr = '';
         try {
@@ -6032,18 +6043,18 @@ function exportarFacturasCSV(pedidosFiltrados, etiquetaPeriodo = 'Reporte') {
     const link = document.createElement('a');
     link.setAttribute('href', url);
     const cleanPeriodo = String(etiquetaPeriodo).replace(/[^a-zA-Z0-9_\-]/g, '_');
-    link.setAttribute('download', `Facturas_Duri_${cleanPeriodo}_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `Notas_Entrega_Duri_${cleanPeriodo}_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast(`¡Reporte Excel (${pedidosFiltrados.length} facturas) descargado con éxito!`, 'success');
+    showToast(`¡Reporte Excel (${pedidosFiltrados.length} notas de entrega) descargado con éxito!`, 'success');
 }
 window.exportarFacturasCSV = exportarFacturasCSV;
 
 function imprimirReporteContablePDF(pedidosFiltrados, etiquetaPeriodo = 'Reporte') {
     if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
-        showToast('No hay facturas para generar el reporte contable', 'warning');
+        showToast('No hay notas de entrega para generar el reporte', 'warning');
         return;
     }
 
@@ -6077,7 +6088,7 @@ function imprimirReporteContablePDF(pedidosFiltrados, etiquetaPeriodo = 'Reporte
                     </div>
                 </div>
                 <div style="text-align:right;">
-                    <span style="display:inline-block; background:#0f172a; color:#fff; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:4px; text-transform:uppercase;">Libro General de Ventas y Facturación</span>
+                    <span style="display:inline-block; background:#0f172a; color:#fff; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:4px; text-transform:uppercase;">Libro General de Ventas y Notas de Entrega</span>
                     <div style="font-size:0.85rem; font-weight:700; color:#1e1b4b; margin-top:4px;">${etiquetaPeriodo}</div>
                     <div style="font-size:0.7rem; color:#64748b;">Emisión: ${new Date().toLocaleString('es-VE')}</div>
                 </div>
@@ -6086,7 +6097,7 @@ function imprimirReporteContablePDF(pedidosFiltrados, etiquetaPeriodo = 'Reporte
             <!-- Resumen Financiero -->
             <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px; border:1px solid #e2e8f0; border-radius:8px; padding:10px; background:#f8fafc;">
                 <div>
-                    <span style="font-size:0.68rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturas</span>
+                    <span style="font-size:0.68rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Notas de Entrega</span>
                     <div style="font-size:1.2rem; font-weight:800; color:#0f172a;">${pedidosFiltrados.length}</div>
                     <span style="font-size:0.68rem; color:#16a34a;">${totalAprobadas} aprobadas · ${totalPendientes} pend.</span>
                 </div>
@@ -6104,11 +6115,11 @@ function imprimirReporteContablePDF(pedidosFiltrados, etiquetaPeriodo = 'Reporte
                 </div>
             </div>
 
-            <!-- Tabla de Facturas -->
+            <!-- Tabla de Notas de Entrega -->
             <table style="width:100%; border-collapse:collapse; font-size:0.76rem;">
                 <thead>
                     <tr style="background:#0f172a; color:#fff; text-align:left;">
-                        <th style="padding:6px;">N° Factura</th>
+                        <th style="padding:6px;">N° Nota</th>
                         <th style="padding:6px;">Pedido</th>
                         <th style="padding:6px;">Fecha</th>
                         <th style="padding:6px;">Cliente</th>
@@ -6123,7 +6134,7 @@ function imprimirReporteContablePDF(pedidosFiltrados, etiquetaPeriodo = 'Reporte
                     ${pedidosFiltrados.map((p, idx) => {
                         const codigo = p.codigo || `PED-${p.id}`;
                         const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
-                        const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+                        const factNum = `NE-${cleanNum.padStart(4, '0')}`;
                         const tUsd = parseFloat(p.total || 0).toFixed(2);
                         const tBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total || 0)));
                         const f = parseFechaPedido(p).toLocaleDateString('es-VE');
@@ -6163,7 +6174,7 @@ window.imprimirReporteContablePDF = imprimirReporteContablePDF;
 
 function imprimirLoteFacturasPDF(pedidosFiltrados, etiquetaPeriodo = 'Lote') {
     if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
-        showToast('No hay facturas en el período seleccionado para descargar en lote', 'warning');
+        showToast('No hay notas de entrega en el período seleccionado para descargar en lote', 'warning');
         return;
     }
 
@@ -6185,7 +6196,7 @@ function imprimirLoteFacturasPDF(pedidosFiltrados, etiquetaPeriodo = 'Lote') {
     `;
 
     document.body.appendChild(container);
-    showToast(`Preparando ${pedidosFiltrados.length} facturas para imprimir / guardar en PDF...`, 'info');
+    showToast(`Preparando ${pedidosFiltrados.length} notas de entrega para imprimir / guardar en PDF...`, 'info');
     setTimeout(() => {
         window.print();
         setTimeout(() => { if (container) container.remove(); }, 4000);
@@ -6231,7 +6242,7 @@ function abrirArchivoGeneralFacturas() {
             <div class="factura-actions-bar no-print">
                 <div class="factura-actions-left">
                     <i class="fas fa-archive" style="color:#f59e0b;"></i>
-                    <strong>Libro de Facturas y Registro Contable &mdash; Inversiones Duri C.A.</strong>
+                    <strong>Libro de Notas de Entrega y Registro de Ventas &mdash; Inversiones Duri C.A.</strong>
                 </div>
                 <button type="button" class="btn-factura-close" onclick="cerrarArchivoGeneralFacturas()" title="Cerrar">&times;</button>
             </div>
@@ -6288,7 +6299,7 @@ function abrirArchivoGeneralFacturas() {
                     <!-- Barra de Búsqueda de Texto en Vivo -->
                     <div style="display:flex; align-items:center; gap:8px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:6px 12px;">
                         <i class="fas fa-search" style="color:#64748b; font-size:0.85rem;"></i>
-                        <input type="text" id="inputBusquedaFacturas" placeholder="Buscar por cliente, cédula/RIF, N° de factura (ej: FACT-0001) o pedido..." style="border:none; outline:none; background:transparent; width:100%; font-size:0.83rem; color:#0f172a;">
+                        <input type="text" id="inputBusquedaFacturas" placeholder="Buscar por cliente, cédula/RIF, N° de nota (ej: NE-0001) o pedido..." style="border:none; outline:none; background:transparent; width:100%; font-size:0.83rem; color:#0f172a;">
                     </div>
                 </div>
 
@@ -6302,7 +6313,7 @@ function abrirArchivoGeneralFacturas() {
                     <div style="display:flex; align-items:center; gap:8px;">
                         <i class="fas fa-file-download" style="color:#059669; font-size:1.1rem;"></i>
                         <div>
-                            <strong style="font-size:0.88rem; color:#0f172a; display:block;">Descargar y Exportar Facturas</strong>
+                            <strong style="font-size:0.88rem; color:#0f172a; display:block;">Descargar y Exportar Notas de Entrega</strong>
                             <span id="labelPeriodoActivo" style="font-size:0.74rem; color:#64748b;">Período actual</span>
                         </div>
                     </div>
@@ -6310,26 +6321,26 @@ function abrirArchivoGeneralFacturas() {
                         <button type="button" id="btnDescargarExcel" style="background:#059669; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(5,150,105,0.3); transition:transform 0.2s;" title="Descargar libro en formato Excel compatible (.csv)">
                             <i class="fas fa-file-excel"></i> Descargar Excel (.csv)
                         </button>
-                        <button type="button" id="btnImprimirReporte" style="background:#1e1b4b; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(30,27,75,0.3); transition:transform 0.2s;" title="Imprimir o guardar en PDF el libro contable de ventas">
+                        <button type="button" id="btnImprimirReporte" style="background:#1e1b4b; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(30,27,75,0.3); transition:transform 0.2s;" title="Imprimir o guardar en PDF el libro de ventas">
                             <i class="fas fa-file-invoice"></i> Imprimir Reporte PDF
                         </button>
-                        <button type="button" id="btnDescargarLoteFacturas" style="background:#ea580c; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(234,88,12,0.3); transition:transform 0.2s;" title="Imprimir o guardar todas las facturas completas del período en un solo documento PDF">
-                            <i class="fas fa-copy"></i> Todas las Facturas en PDF
+                        <button type="button" id="btnDescargarLoteFacturas" style="background:#ea580c; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(234,88,12,0.3); transition:transform 0.2s;" title="Imprimir o guardar todas las notas de entrega completas del período en un solo documento PDF">
+                            <i class="fas fa-copy"></i> Todas las Notas en PDF
                         </button>
                     </div>
                 </div>
 
-                <!-- Tabla del Libro de Facturas -->
+                <!-- Tabla del Libro de Notas de Entrega -->
                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.03);">
                     <div style="padding:10px 16px; border-bottom:1px solid #e2e8f0; background:#ffffff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <span style="font-weight:700; font-size:0.86rem; color:#0f172a;"><i class="fas fa-list-alt" style="color:#4f46e5;"></i> Registros Encontrados (<span id="countFiltradas">0</span>)</span>
-                        <span style="font-size:0.74rem; color:#64748b;">Haz clic en "Ver Factura" para consultar o descargar cada documento individual</span>
+                        <span style="font-size:0.74rem; color:#64748b;">Haz clic en "Ver" para consultar o descargar cada nota de entrega individual</span>
                     </div>
                     <div style="overflow-x:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:0.83rem;">
                             <thead>
                                 <tr style="background:#0f172a; color:#fff; text-align:left;">
-                                    <th style="padding:10px;">N° Factura</th>
+                                    <th style="padding:10px;">N° Nota</th>
                                     <th style="padding:10px;">Pedido</th>
                                     <th style="padding:10px;">Fecha</th>
                                     <th style="padding:10px;">Cliente</th>
@@ -6385,7 +6396,7 @@ function abrirArchivoGeneralFacturas() {
 
         // 1. Actualizar etiqueta de período
         const labelEl = modal.querySelector('#labelPeriodoActivo');
-        if (labelEl) labelEl.textContent = `Facturas correspondientes a: ${etiqueta}`;
+        if (labelEl) labelEl.textContent = `Notas de entrega correspondientes a: ${etiqueta}`;
         const countEl = modal.querySelector('#countFiltradas');
         if (countEl) countEl.textContent = filtradas.length;
 
@@ -6408,17 +6419,17 @@ function abrirArchivoGeneralFacturas() {
         if (kpiBox) {
             kpiBox.innerHTML = `
                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;">
-                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Facturas del Período</span>
+                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Notas del Período</span>
                     <div style="font-size:1.35rem; font-weight:800; color:#0f172a; margin-top:2px;">${filtradas.length}</div>
                     <span style="font-size:0.7rem; color:#10b981;">${totalAprobadas} aprobadas · ${totalPendientes} pendientes</span>
                 </div>
                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;">
-                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (USD)</span>
+                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Registrado (USD)</span>
                     <div style="font-size:1.35rem; font-weight:800; color:#2563eb; margin-top:2px;">$${totalUsd.toFixed(2)}</div>
                     <span style="font-size:0.7rem; color:#64748b;">${etiqueta}</span>
                 </div>
                 <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px;">
-                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Facturado (Bs.)</span>
+                    <span style="font-size:0.7rem; color:#64748b; font-weight:700; text-transform:uppercase;">Total Registrado (Bs.)</span>
                     <div style="font-size:1.15rem; font-weight:800; color:#ea580c; margin-top:4px;">${totalBs}</div>
                     <span style="font-size:0.7rem; color:#64748b;">Tasa BCV: ${rateBsStr} Bs/$</span>
                 </div>
@@ -6430,13 +6441,13 @@ function abrirArchivoGeneralFacturas() {
         if (tbody) {
             if (filtradas.length === 0) {
                 tbody.innerHTML = `
-                    <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No se encontraron facturas registradas para ${etiqueta}.</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No se encontraron notas de entrega registradas para ${etiqueta}.</td></tr>
                 `;
             } else {
                 tbody.innerHTML = filtradas.map(p => {
                     const codigo = p.codigo || `PED-${p.id}`;
                     const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id);
-                    const factNum = `FACT-${cleanNum.padStart(4, '0')}`;
+                    const factNum = `NE-${cleanNum.padStart(4, '0')}`;
                     const total = parseFloat(p.total || 0).toFixed(2);
                     const montoBs = BcvManager.formatBs(BcvManager.toBs(parseFloat(p.total || 0)));
                     const estado = p.estado || 'pendiente';
@@ -6633,7 +6644,7 @@ function confirmarEntregaPedido(id, codigo, email = '') {
     modal.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:rgba(15,23,42,0.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,12px)) max(12px,env(safe-area-inset-right,12px)) max(12px,env(safe-area-inset-bottom,12px)) max(12px,env(safe-area-inset-left,12px));box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch;';
 
     const emailNotice = clienteEmail
-        ? `<div style="margin-top:10px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:0.75rem;color:#166534;text-align:left;line-height:1.4;"><i class="fas fa-paper-plane" style="color:#16a34a;margin-right:5px;"></i> Se enviará la factura oficial al correo: <b>${clienteEmail}</b></div>`
+        ? `<div style="margin-top:10px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:0.75rem;color:#166534;text-align:left;line-height:1.4;"><i class="fas fa-paper-plane" style="color:#16a34a;margin-right:5px;"></i> Se enviará la nota de entrega oficial al correo: <b>${clienteEmail}</b></div>`
         : `<div style="margin-top:10px;padding:9px 12px;background:#fffbeb;border:1px solid #fef3c7;border-radius:8px;font-size:0.75rem;color:#92400e;text-align:left;line-height:1.4;"><i class="fas fa-info-circle" style="color:#d97706;margin-right:5px;"></i> El cliente no tiene correo registrado. Podrás compartir el comprobante por WhatsApp.</div>`;
 
     modal.innerHTML = `
@@ -6650,7 +6661,7 @@ function confirmarEntregaPedido(id, codigo, email = '') {
                 <button type="button" onclick="cerrarModalValidacionPago()" style="flex:1;min-height:44px;padding:10px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;font-size:0.88rem;font-weight:600;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;">
                     Volver
                 </button>
-                <button type="button" id="btnConfirmarEntregaModal" onclick="actualizarEstadoPedidoDirecto(${id}, 'completado', '${codigo}'); cerrarModalValidacionPago();" style="flex:1.3;min-height:44px;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:10px;font-size:0.88rem;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(5,150,105,0.35);">
+                <button type="button" id="btnConfirmarEntregaModal" onclick="ejecutarConfirmarEntrega(${id}, '${codigo}')" style="flex:1.3;min-height:44px;padding:10px;background:linear-gradient(135deg,#059669,#047857);border:none;border-radius:10px;font-size:0.88rem;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(5,150,105,0.35);">
                     <i class="fas fa-check-double"></i> Sí, Entregado
                 </button>
             </div>
@@ -6663,6 +6674,21 @@ function confirmarEntregaPedido(id, codigo, email = '') {
 }
 window.confirmarEntregaPedido = confirmarEntregaPedido;
 
+async function ejecutarConfirmarEntrega(id, codigo) {
+    const btn = document.getElementById('btnConfirmarEntregaModal');
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando entrega...';
+    }
+    try {
+        await actualizarEstadoPedidoDirecto(id, 'completado', codigo);
+    } finally {
+        cerrarModalValidacionPago();
+    }
+}
+window.ejecutarConfirmarEntrega = ejecutarConfirmarEntrega;
+
 async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     if (!isSuperUsuario()) {
         showToast('Acceso restringido: solo el superusuario puede verificar y administrar pagos', 'error');
@@ -6674,13 +6700,23 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
     const clienteEmail = orderData ? (orderData.cliente_email || '') : '';
     const tasaBcv = (typeof BcvManager !== 'undefined' && BcvManager.rate) ? BcvManager.rate : null;
 
-    // 2. ACTUALIZACIÓN OPTIMISTA INMEDIATA (0 ms de espera para el usuario)
+    // 2. ACTUALIZACIÓN OPTIMISTA INMEDIATA EN MEMORIA Y LOCALSTORAGE (sin sobrescribir con GET antes del PUT)
     const localOrders = getLocalOrders();
     const match = localOrders.find(o => String(o.id) === String(id) || (codigo && o.codigo === codigo));
     if (match) {
         match.estado = nuevoEstado;
         match.updated_at = new Date().toISOString();
         saveLocalOrders(localOrders);
+    }
+    if (Array.isArray(window._allAdminPedidos)) {
+        const memMatch = window._allAdminPedidos.find(o => String(o.id) === String(id) || (codigo && o.codigo === codigo));
+        if (memMatch) {
+            memMatch.estado = nuevoEstado;
+            memMatch.updated_at = new Date().toISOString();
+        }
+        if (typeof renderPedidosRecientes === 'function') {
+            renderPedidosRecientes(window._allAdminPedidos, typeof currentAdminOrderFilter !== 'undefined' ? currentAdminOrderFilter : 'todos');
+        }
     }
     
     try {
@@ -6693,24 +6729,20 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
         }));
     } catch(e) {}
 
-    // Refrescar tablas e indicadores al instante
-    loadPedidosRecientes();
     updateSuperAdminNotifBadge(false);
-    if (typeof loadProductos === 'function') loadProductos();
-    if (typeof loadInventario === 'function') loadInventario();
 
     if (nuevoEstado === 'procesando') {
-        showToast(`¡Pago del pedido ${codigo || ''} aprobado y validado!`, 'success');
+        showToast(`¡Pago del pedido ${codigo || ''} aprobado y validado con éxito!`, 'success');
     } else if (nuevoEstado === 'completado') {
         if (clienteEmail) {
-            showToast(`¡Pedido ${codigo || ''} marcado como Entregado! Enviando factura...`, 'info');
+            showToast(`¡Pedido ${codigo || ''} marcado como Entregado! Enviando nota de entrega...`, 'info');
         } else {
             showToast(`¡Pedido ${codigo || ''} marcado como Entregado con éxito!`, 'success');
         }
     }
 
     let backendResult = null;
-    // 3. Sincronización en segundo plano con el Backend MySQL y envío de correo
+    // 3. Sincronización con el Backend MySQL y envío de correo ANTES de recargar desde la BD
     try {
         const isGH = window.location.hostname.includes('github.io');
         if (!isGH) {
@@ -6730,13 +6762,18 @@ async function actualizarEstadoPedidoDirecto(id, nuevoEstado, codigo = '') {
             if (res.ok) {
                 backendResult = await res.json();
                 if (nuevoEstado === 'completado' && backendResult && backendResult.email_enviado && backendResult.email_destino) {
-                    showToast(`Factura oficial enviada con éxito a ${backendResult.email_destino}`, 'success');
+                    showToast(`Nota de Entrega oficial enviada con éxito a ${backendResult.email_destino}`, 'success');
                 }
             }
         }
     } catch (err) {
         console.warn('API backend sincronización en segundo plano:', err);
     }
+
+    // 4. Recargar desde MySQL solo DESPUÉS de que el PUT terminó
+    await loadPedidosRecientes();
+    if (typeof loadProductos === 'function') loadProductos();
+    if (typeof loadInventario === 'function') loadInventario();
 
     return backendResult;
 }
@@ -7650,7 +7687,7 @@ function showConfirmModal(subtotal, iva, total, prodLines, clientName, clientCi,
                     </div>
                     ${clientEmail ? `
                         <div style="font-size:0.82rem;color:#2563eb;margin-top:4px;">
-                            <i class="fas fa-envelope"></i> <strong>Factura al correo:</strong> ${clientEmail}
+                            <i class="fas fa-envelope"></i> <strong>Nota de Entrega al correo:</strong> ${clientEmail}
                         </div>
                     ` : ''}
                 </div>
@@ -7874,7 +7911,7 @@ document.addEventListener('submit', function(e) {
 async function enviarFacturaPorCorreoPrompt(codigoOrId) {
     const p = findOrderData(codigoOrId);
     if (!p) {
-        showToast('No se encontró el registro del pedido para enviar la factura', 'error');
+        showToast('No se encontró el registro del pedido para enviar la nota de entrega', 'error');
         return;
     }
     abrirModalEnvioCorreo(p);
@@ -7902,7 +7939,7 @@ function abrirModalEnvioCorreo(p) {
 
     const codigo = p.codigo || `PED-${p.id || '001'}`;
     const cleanNum = codigo.replace(/[^0-9]/g, '') || String(p.id || '101');
-    const facturaNum = `FACT-${cleanNum.padStart(4, '0')}`;
+    const facturaNum = `NE-${cleanNum.padStart(4, '0')}`;
     const total = parseFloat(p.total || 0).toFixed(2);
     const yaEnviado = !!p.cliente_email;
     const safeEmail = String(p.cliente_email || '').replace(/"/g, '&quot;');
@@ -7916,12 +7953,12 @@ function abrirModalEnvioCorreo(p) {
 
             <div class="mail-modal-view" id="mailViewForm">
                 <div class="mail-modal-icon"><i class="fas fa-paper-plane"></i></div>
-                <h3 id="mailModalTitle">${yaEnviado ? 'Reenviar Factura' : 'Enviar Factura'} por Correo</h3>
-                <p class="mail-modal-sub">El cliente recibirá su factura oficial en PDF adjunta.</p>
+                <h3 id="mailModalTitle">${yaEnviado ? 'Reenviar Nota de Entrega' : 'Enviar Nota de Entrega'} por Correo</h3>
+                <p class="mail-modal-sub">El cliente recibirá su nota de entrega oficial en PDF adjunta.</p>
 
                 <div class="mail-modal-summary">
                     <div>
-                        <span>Factura</span>
+                        <span>Nota de Entrega</span>
                         <strong>${facturaNum}</strong>
                     </div>
                     <div>
@@ -7944,7 +7981,7 @@ function abrirModalEnvioCorreo(p) {
                 <div class="mail-modal-actions">
                     <button type="button" class="mail-btn mail-btn-ghost" id="mailBtnCancel">Cancelar</button>
                     <button type="button" class="mail-btn mail-btn-primary" id="mailBtnSend">
-                        <i class="fas fa-paper-plane"></i> <span>${yaEnviado ? 'Reenviar' : 'Enviar'} Factura</span>
+                        <i class="fas fa-paper-plane"></i> <span>${yaEnviado ? 'Reenviar' : 'Enviar'} Nota de Entrega</span>
                     </button>
                 </div>
             </div>
@@ -7998,8 +8035,8 @@ function abrirModalEnvioCorreo(p) {
         if (result.ok) {
             view.innerHTML = `
                 <div class="mail-modal-icon success"><i class="fas fa-check"></i></div>
-                <h3>¡Factura enviada!</h3>
-                <p class="mail-modal-sub">La factura <strong>${facturaNum}</strong> fue enviada correctamente a:</p>
+                <h3>¡Nota de Entrega enviada!</h3>
+                <p class="mail-modal-sub">La nota de entrega <strong>${facturaNum}</strong> fue enviada correctamente a:</p>
                 <div class="mail-sent-to"><i class="fas fa-envelope-open-text"></i> ${email}</div>
                 <div class="mail-modal-actions single">
                     <button type="button" class="mail-btn mail-btn-primary" id="mailBtnDone">Listo</button>
@@ -8035,7 +8072,7 @@ async function _procesarEnvioFacturaCorreo(p, email) {
     }
 
     const cleanCod = (p.codigo || `PED-${p.id || '001'}`).replace(/[^a-zA-Z0-9_-]/g, '');
-    const filename = `Factura_${cleanCod}.pdf`;
+    const filename = `Nota_de_Entrega_${cleanCod}.pdf`;
     let pdfBase64 = null;
 
     try {
@@ -8155,4 +8192,370 @@ async function _procesarEnvioFacturaCorreo(p, email) {
         };
     }
 }
+
+// ========================================================
+// MÓDULO DE MANUAL DE USUARIO POR ROL Y DESCARGA EN PDF
+// Inversiones Duri C.A. - Roles: SuperUsuario, Operador, Usuario
+// ========================================================
+function obtenerContenidoManualPorRol(rolKey) {
+    const manuales = {
+        super_usuario: {
+            titulo: 'Manual de Usuario — Rol SuperUsuario (Administrador General)',
+            badge: '👑 SuperUsuario / Administrador',
+            color: '#e85d26',
+            filePrefix: 'SuperUsuario',
+            resumen: 'Guía operativa completa para la administración integral del Sistema de Gestión de Pedidos e Inventario de Inversiones Duri C.A., incluyendo verificación de pagos, Notas de Entrega, control de usuarios, pistas de auditoría y respaldos de base de datos.',
+            secciones: [
+                {
+                    num: '1',
+                    titulo: 'Acceso al Sistema y Seguridad de Cuenta',
+                    pasos: [
+                        'Ingresa desde la pantalla de inicio de sesión con tu correo electrónico y contraseña de SuperUsuario.',
+                        'El sistema cuenta con protección anti-fuerza bruta: tras 5 intentos fallidos consecutivos, la cuenta se bloquea temporalmente por 15 minutos sin afectar a otros usuarios.',
+                        'Si olvidas tu clave o necesitas desbloquear la cuenta, haz clic en "¿Olvidaste tu contraseña?" para recibir un código de 6 dígitos en tu correo electrónico.'
+                    ]
+                },
+                {
+                    num: '2',
+                    titulo: 'Verificación y Aprobación de Pagos de Pedidos',
+                    pasos: [
+                        'En la barra superior, el ícono de la campana 🔔 indica la cantidad de pedidos con pago pendiente por verificar.',
+                        'Entra al módulo "Pedidos", revisa la referencia de Pago Móvil o Transferencia y presiona el botón verde "Aprobar Pago".',
+                        'Una vez aprobado, el pedido pasa a estado "Procesando" y se habilita automáticamente la Nota de Entrega Oficial (NE-XXXX) sellada.',
+                        'Cuando la mercancía sea despachada o retirada, presiona "Validar y Entregado" para marcarlo como Completado y enviar automáticamente la Nota de Entrega en PDF al correo del cliente.'
+                    ]
+                },
+                {
+                    num: '3',
+                    titulo: 'Notas de Entrega (PDF, Correo, WhatsApp) y Libro de Notas',
+                    pasos: [
+                        'En cada pedido puedes pulsar "Nota de Entrega" para abrir el documento oficial con membrete, RIF, tasa BCV vigente y desglose de productos.',
+                        'Desde la barra superior del documento puedes Descargar PDF, Imprimir, compartir resumen por WhatsApp o Enviar/Reenviar por correo electrónico.',
+                        'Usa los botones "Libro de Notas", "Notas Semana" o "Notas Mes" en el panel de Pedidos para filtrar por fechas y exportar reportes completos en Excel (.csv) o PDF.'
+                    ]
+                },
+                {
+                    num: '4',
+                    titulo: 'Catálogo de Productos, Tasa BCV e Inventario',
+                    pasos: [
+                        'En "Productos" puedes crear, editar o desactivar artículos, asignar categoría, precio en USD, stock mínimo e imagen.',
+                        'La Tasa Oficial BCV se actualiza automáticamente para mostrar todos los montos en Dólares ($) y Bolívares (Bs.).',
+                        'En "Inventario" visualizas el semáforo de existencias (Disponible, Stock Crítico y Agotado) y registras Entradas, Salidas o Ajustes manuales en el kárdex.'
+                    ]
+                },
+                {
+                    num: '5',
+                    titulo: 'Gestión de Usuarios, Pistas de Auditoría y Respaldos de BD',
+                    pasos: [
+                        'En el módulo exclusivo "Usuarios" puedes crear nuevas cuentas, asignar roles (SuperUsuario, Operador, Usuario) o eliminar cuentas.',
+                        'En la sección de Pistas de Auditoría puedes monitorear en tiempo real cada acción ejecutada (inicios de sesión, bloqueos, pedidos, movimientos) junto con la dirección IP real y el navegador utilizado.',
+                        'Para resguardar la información de la empresa, utiliza los botones "Descargar Respaldo .SQL" o "Descargar Respaldo .JSON" y guarda una copia externa periódicamente.'
+                    ]
+                }
+            ]
+        },
+        operador: {
+            titulo: 'Manual de Usuario — Rol Operador (Catálogo e Inventario)',
+            badge: '⚙️ Operador de Inventario y Catálogo',
+            color: '#059669',
+            filePrefix: 'Operador',
+            resumen: 'Guía práctica para el personal encargado de administrar el catálogo de productos, precios en USD/Bs., control de existencias, registro de entradas/salidas en inventario y consulta de pedidos.',
+            secciones: [
+                {
+                    num: '1',
+                    titulo: 'Inicio de Sesión y Recuperación de Contraseña',
+                    pasos: [
+                        'Inicia sesión con tu correo y contraseña asignados para acceder al panel con permisos de Operador.',
+                        'Por seguridad, evita fallar más de 5 veces seguidas la contraseña. En caso de bloqueo o extravío de clave, usa "¿Olvidaste tu contraseña?" para recibir un código temporal de 6 dígitos en tu correo.'
+                    ]
+                },
+                {
+                    num: '2',
+                    titulo: 'Administración del Catálogo de Productos',
+                    pasos: [
+                        'Ingresa a la pestaña "Productos" para visualizar todos los artículos agrupados por categoría (Útiles Escolares, Papelería, Tecnología, Accesorios).',
+                        'Para registrar un producto nuevo, presiona "+ Nuevo Producto", completa código SKU, nombre, categoría, precio de compra/venta en USD, stock inicial, stock mínimo e imagen.',
+                        'El sistema convierte automáticamente el precio en USD a Bolívares usando la Tasa Oficial BCV mostrada en la barra superior.'
+                    ]
+                },
+                {
+                    num: '3',
+                    titulo: 'Control de Inventario y Movimientos (Kárdex)',
+                    pasos: [
+                        'Ingresa al módulo "Inventario" en la barra de navegación superior.',
+                        'Observa el indicador de estado de cada producto: Verde (Disponible), Amarillo (Stock Crítico igual o menor al mínimo) y Rojo (Agotado / Stock = 0).',
+                        'Para reponer mercancía o corregir conteos físicos, haz clic en "Registrar Movimiento", selecciona el producto, el tipo (Entrada, Salida o Ajuste), la cantidad y el motivo.',
+                        'Cada pedido confirmado por clientes descuenta automáticamente las unidades del inventario, y si el SuperUsuario cancela un pedido, las unidades se reintegran automáticamente.'
+                    ]
+                },
+                {
+                    num: '4',
+                    titulo: 'Consulta de Pedidos y Notas de Entrega',
+                    pasos: [
+                        'Desde la pestaña "Pedidos" puedes consultar las órdenes registradas, verificar qué productos deben prepararse para despacho o retiro en tienda y visualizar su Nota de Entrega.',
+                        'Nota: La aprobación final de pagos, eliminación de usuarios, auditoría y respaldos de base de datos están reservados exclusivamente al SuperUsuario.'
+                    ]
+                }
+            ]
+        },
+        usuario: {
+            titulo: 'Manual de Usuario — Rol Usuario / Cliente',
+            badge: '👤 Usuario / Cliente',
+            color: '#2563eb',
+            filePrefix: 'Usuario_Cliente',
+            resumen: 'Guía paso a paso para explorar el catálogo de Inversiones Duri C.A., armar pedidos en línea con cálculo de Tasa BCV, usar el mapa GPS de delivery y descargar tu Nota de Entrega oficial en PDF.',
+            secciones: [
+                {
+                    num: '1',
+                    titulo: 'Acceso y Recuperación de Cuenta',
+                    pasos: [
+                        'Ingresa con tu correo electrónico y contraseña registrados, o crea tu cuenta desde la pantalla de acceso.',
+                        'Si olvidaste tu contraseña, haz clic en "¿Olvidaste tu contraseña?", ingresa tu correo y digita el código de 6 dígitos que recibirás en tu bandeja de entrada para establecer una nueva clave.'
+                    ]
+                },
+                {
+                    num: '2',
+                    titulo: 'Exploración del Catálogo y Carrito de Compras',
+                    pasos: [
+                        'En la sección "Productos" puedes buscar artículos por nombre o código, y filtrarlos por categoría.',
+                        'Cada producto muestra su precio en Dólares ($) y su equivalente actualizado en Bolívares (Bs.) a tasa oficial del BCV.',
+                        'Presiona "Agregar" en los productos que necesites y ajusta las cantidades desde el ícono flotante del carrito 🛒.'
+                    ]
+                },
+                {
+                    num: '3',
+                    titulo: 'Tramitar Pedido y Mapa GPS de Delivery',
+                    pasos: [
+                        'Ve a la sección "Pedidos" y completa o verifica tus datos de cliente (Nombre, Cédula/RIF, Teléfono y Correo para recibir tu Nota de Entrega).',
+                        'Elige la modalidad de entrega: "Retiro en Tienda" (sin costo) o "Delivery a Domicilio".',
+                        'Si eliges Delivery, selecciona tu ubicación en el Mapa Interactivo GPS o pulsa "Detectar mi ubicación": envíos hasta 1.5 km desde la sede son GRATIS ($0.00); distancias mayores dentro del Edo. Aragua calculan automáticamente la tarifa según tu zona.',
+                        'Selecciona tu forma de pago (Pago Móvil, Transferencia, Efectivo o Tarjeta), indica la referencia y presiona "Confirmar Pedido".'
+                    ]
+                },
+                {
+                    num: '4',
+                    titulo: 'Descarga de Nota de Entrega Oficial (PDF)',
+                    pasos: [
+                        'Una vez enviado tu pedido, puedes enviar el comprobante por WhatsApp desde el botón verde.',
+                        'En cuanto el Administrador valide tu pago, recibirás automáticamente tu Nota de Entrega Oficial (NE-XXXX) sellada en formato PDF en tu correo electrónico, y también podrás consultarla y descargarla desde el sistema.'
+                    ]
+                }
+            ]
+        }
+    };
+    return manuales[rolKey] || manuales.usuario;
+}
+
+function renderizarCuerpoManualHTML(rolKey) {
+    const data = obtenerContenidoManualPorRol(rolKey);
+    const isInPages = window.location.pathname.includes('/pages/');
+    const logoSrc = isInPages ? '../img/logo-duri.png' : 'img/logo-duri.png';
+    const fechaHoy = new Date().toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const seccionesHtml = data.secciones.map(sec => `
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${data.color}; border-radius:10px; padding:14px 16px; margin-bottom:12px; page-break-inside:avoid;">
+            <h4 style="margin:0 0 8px 0; font-size:0.96rem; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                <span style="background:${data.color}; color:#fff; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem; flex-shrink:0;">${sec.num}</span>
+                ${sec.titulo}
+            </h4>
+            <ul style="margin:0; padding-left:20px; color:#334155; font-size:0.84rem; line-height:1.55;">
+                ${sec.pasos.map(p => `<li style="margin-bottom:5px;">${p}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('');
+
+    return `
+        <div id="manualPrintArea" style="background:#ffffff; color:#0f172a; font-family:Arial, Helvetica, sans-serif; padding:26px 28px; border-radius:10px; border:1px solid #e2e8f0; max-width:820px; margin:0 auto; text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:2.5px solid #0f172a; padding-bottom:14px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <img src="${logoSrc}" alt="Logo Duri" style="height:54px; width:54px; object-fit:contain; border-radius:8px; border:1px solid #e2e8f0; padding:3px;" onerror="this.style.display='none'">
+                    <div>
+                        <h2 style="margin:0; font-size:1.2rem; font-weight:800; color:#0f172a;">INVERSIONES DURI C.A.</h2>
+                        <p style="margin:2px 0 0; font-size:0.76rem; color:#475569;">RIF: J-50123456-7 · Av. Bolívar Oeste, Maracay, Edo. Aragua</p>
+                        <p style="margin:2px 0 0; font-size:0.74rem; color:#64748b;">Sistema Automatizado de Gestión de Pedidos e Inventario</p>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="display:inline-block; background:${data.color}; color:#fff; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:20px; text-transform:uppercase;">${data.badge}</span>
+                    <div style="font-size:0.74rem; color:#64748b; margin-top:5px;">Actualizado: ${fechaHoy}</div>
+                </div>
+            </div>
+
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 16px; margin-bottom:16px;">
+                <h3 style="margin:0 0 5px 0; font-size:1.05rem; font-weight:800; color:#0f172a;">${data.titulo}</h3>
+                <p style="margin:0; font-size:0.82rem; color:#475569; line-height:1.5;">${data.resumen}</p>
+            </div>
+
+            ${seccionesHtml}
+
+            <div style="margin-top:16px; padding-top:10px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:0.74rem; color:#64748b;">
+                <span><strong>Soporte Técnico:</strong> inversionesduri@gmail.com | +58 424-3657447</span>
+                <span>Documento Oficial del Sistema — Inversiones Duri C.A.</span>
+            </div>
+        </div>
+    `;
+}
+
+function abrirManualUsuarioModal(rolInicial = null) {
+    cerrarManualUsuarioModal();
+    const user = getUser();
+    const userRolRaw = (user && user.rol) ? user.rol : 'usuario';
+    const userRol = (userRolRaw === 'admin' || userRolRaw === 'super_usuario')
+        ? 'super_usuario'
+        : (userRolRaw === 'operador' ? 'operador' : 'usuario');
+
+    let activeRol = rolInicial || userRol;
+    const puedeVerTodos = (userRol === 'super_usuario');
+
+    const modal = document.createElement('div');
+    modal.id = 'modalManualUsuarioDuri';
+    modal.className = 'modal-factura-overlay';
+
+    const tabsHtml = puedeVerTodos ? `
+        <div class="no-print" style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 18px; background:#f1f5f9; border-bottom:1px solid #cbd5e1; justify-content:center;">
+            <button type="button" class="manual-role-tab" data-rol="super_usuario" style="padding:6px 14px; border-radius:8px; border:1.5px solid #e85d26; font-size:0.8rem; font-weight:700; cursor:pointer;">👑 Manual SuperUsuario</button>
+            <button type="button" class="manual-role-tab" data-rol="operador" style="padding:6px 14px; border-radius:8px; border:1.5px solid #059669; font-size:0.8rem; font-weight:700; cursor:pointer;">⚙️ Manual Operador</button>
+            <button type="button" class="manual-role-tab" data-rol="usuario" style="padding:6px 14px; border-radius:8px; border:1.5px solid #2563eb; font-size:0.8rem; font-weight:700; cursor:pointer;">👤 Manual Usuario / Cliente</button>
+        </div>
+    ` : '';
+
+    modal.innerHTML = `
+        <div class="factura-modal-container" style="max-width:900px;">
+            <div class="factura-actions-bar no-print">
+                <div class="factura-actions-left">
+                    <i class="fas fa-book-open" style="color:#fbbf24;"></i>
+                    <strong>Manual de Usuario del Sistema &mdash; Inversiones Duri C.A.</strong>
+                </div>
+                <button type="button" class="btn-factura-close" onclick="cerrarManualUsuarioModal()" title="Cerrar">&times;</button>
+                <div class="factura-actions-right">
+                    <button type="button" class="btn-factura-act btn-pdf" id="btnDescargarManualPDF" title="Descargar Manual en formato PDF">
+                        <i class="fas fa-download"></i> Descargar Manual PDF
+                    </button>
+                    <button type="button" class="btn-factura-act btn-print" onclick="window.print()" title="Imprimir Manual">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+            ${tabsHtml}
+            <div class="factura-scroll-wrap" id="manualScrollWrap" style="padding:18px; background:#f8fafc;">
+                ${renderizarCuerpoManualHTML(activeRol)}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const updateTabStyles = () => {
+        modal.querySelectorAll('.manual-role-tab').forEach(btn => {
+            const r = btn.getAttribute('data-rol');
+            const colorMap = { super_usuario: '#e85d26', operador: '#059669', usuario: '#2563eb' };
+            if (r === activeRol) {
+                btn.style.background = colorMap[r] || '#0f172a';
+                btn.style.color = '#ffffff';
+            } else {
+                btn.style.background = '#ffffff';
+                btn.style.color = colorMap[r] || '#0f172a';
+            }
+        });
+    };
+
+    updateTabStyles();
+
+    modal.querySelectorAll('.manual-role-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            activeRol = btn.getAttribute('data-rol');
+            const wrap = modal.querySelector('#manualScrollWrap');
+            if (wrap) {
+                wrap.innerHTML = renderizarCuerpoManualHTML(activeRol);
+                wrap.scrollTop = 0;
+            }
+            updateTabStyles();
+        });
+    });
+
+    const btnPdf = modal.querySelector('#btnDescargarManualPDF');
+    if (btnPdf) {
+        btnPdf.addEventListener('click', () => descargarManualPDF(activeRol));
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarManualUsuarioModal();
+    });
+}
+window.abrirManualUsuarioModal = abrirManualUsuarioModal;
+
+function cerrarManualUsuarioModal() {
+    const m = document.getElementById('modalManualUsuarioDuri');
+    if (m) m.remove();
+}
+window.cerrarManualUsuarioModal = cerrarManualUsuarioModal;
+
+async function descargarManualPDF(rolKey) {
+    const area = document.getElementById('manualPrintArea');
+    if (!area) {
+        showToast('No se encontró el contenido del manual', 'error');
+        return;
+    }
+    const info = obtenerContenidoManualPorRol(rolKey);
+    const filename = `Manual_Usuario_${info.filePrefix}_Inversiones_Duri.pdf`;
+    showToast('Generando Manual de Usuario en PDF...', 'info');
+
+    await loadPdfLibraries();
+    const JsPdfConstructor = (window.jspdf && window.jspdf.jsPDF)
+        ? window.jspdf.jsPDF
+        : (window.jsPDF || window.jspdf);
+
+    if (!window.html2canvas || !JsPdfConstructor) {
+        window.print();
+        return;
+    }
+
+    try {
+        const scrollWrap = area.closest('.factura-scroll-wrap');
+        const prevScroll = scrollWrap ? scrollWrap.scrollTop : 0;
+        if (scrollWrap) scrollWrap.scrollTop = 0;
+        await new Promise(r => setTimeout(r, 80));
+
+        const canvas = await window.html2canvas(area, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: '#ffffff',
+            logging: false,
+            scrollX: 0,
+            scrollY: 0
+        });
+        if (scrollWrap) scrollWrap.scrollTop = prevScroll;
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdf = new JsPdfConstructor({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 8;
+        const printWidth = pageWidth - (margin * 2);
+        const printHeight = (canvas.height * printWidth) / canvas.width;
+        const maxContentHeight = pageHeight - (margin * 2);
+
+        if (printHeight <= maxContentHeight) {
+            pdf.addImage(imgData, 'JPEG', margin, margin, printWidth, printHeight);
+        } else {
+            let heightLeft = printHeight;
+            let position = margin;
+            pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight);
+            heightLeft -= maxContentHeight;
+            while (heightLeft > 0) {
+                position = margin - (printHeight - heightLeft);
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', margin, position, printWidth, printHeight);
+                heightLeft -= maxContentHeight;
+            }
+        }
+        pdf.save(filename);
+        showToast('¡Manual de Usuario PDF descargado con éxito!', 'success');
+    } catch (err) {
+        console.error('Error generando PDF del manual:', err);
+        window.print();
+    }
+}
+window.descargarManualPDF = descargarManualPDF;
 

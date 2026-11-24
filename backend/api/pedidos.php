@@ -147,7 +147,7 @@ function enviarCorreoGmailSmtp($to, $subject, $htmlBody, $altBody = '', $attachm
             $base64Attachment = chunk_split($rawBase64);
         }
 
-        $attName = !empty($attachmentName) ? preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $attachmentName) : 'Factura_Oficial.pdf';
+        $attName = !empty($attachmentName) ? preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $attachmentName) : 'Nota_de_Entrega_Oficial.pdf';
         if (!preg_match('/\.pdf$/i', $attName)) $attName .= '.pdf';
 
         $bodyContent .= "--{$mainBoundary}\r\n" .
@@ -188,11 +188,11 @@ function enviarCorreoGmailSmtp($to, $subject, $htmlBody, $altBody = '', $attachm
         return ["success" => false, "message" => "Error al despachar el correo (código $finalCode)"];
     }
 
-    return ["success" => true, "message" => "Correo y factura enviados exitosamente a la bandeja de entrada"];
+    return ["success" => true, "message" => "Correo y nota de entrega enviados exitosamente a la bandeja de entrada"];
 }
 
 /**
- * Función para enviar la Factura y Nota de Entrega oficial al correo del cliente
+ * Función para enviar la Nota de Entrega oficial al correo del cliente
  */
 function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasaBcv = 0, $pdfBase64 = null, $filename = '') {
     if (empty(MAIL_USER) || empty(MAIL_PASS)) {
@@ -204,7 +204,7 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
 
     $codigo = $pedido['codigo'] ?? ('PED-' . ($pedido['id'] ?? '001'));
     $cleanNum = preg_replace('/[^0-9]/', '', $codigo) ?: ($pedido['id'] ?? '101');
-    $facturaNum = 'FACT-' . str_pad($cleanNum, 4, '0', STR_PAD_LEFT);
+    $facturaNum = 'NE-' . str_pad($cleanNum, 4, '0', STR_PAD_LEFT);
     $clienteNombre = $pedido['cliente_nombre'] ?? 'Cliente General';
     $clienteCi = $pedido['cliente_ci'] ?? 'No registrada';
     $clienteTelefono = $pedido['cliente_telefono'] ?? ($pedido['telefono'] ?? 'No registrado');
@@ -304,7 +304,7 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
             </tr>";
     }
 
-    $asunto = "Factura Oficial {$facturaNum} ({$codigo}) - Inversiones Duri C.A";
+    $asunto = "Nota de Entrega Oficial {$facturaNum} ({$codigo}) - Inversiones Duri C.A";
 
     // DISEÑO EXACTO 1:1 IDÉNTICO A LA HOJA DE FACTURA DESCARGADA
     $cuerpoHtml = "
@@ -336,7 +336,7 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
                         </table>
                     </td>
                     <td style='vertical-align:top;text-align:right;width:40%;'>
-                        <div style='font-size:11px;font-weight:800;color:#ff6600;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;'>NOTA DE ENTREGA / FACTURA</div>
+                        <div style='font-size:11px;font-weight:800;color:#ff6600;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;'>NOTA DE ENTREGA</div>
                         <div style='font-size:22px;font-weight:900;color:#0f172a;font-family:monospace;'>{$facturaNum}</div>
                         <div style='font-size:12px;color:#475569;margin-top:2px;'><strong>Pedido:</strong> {$codigo}</div>
                         <div style='font-size:12px;color:#64748b;'>{$fecha}</div>
@@ -354,7 +354,7 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
                 <tr>
                     <td style='width:50%;vertical-align:top;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;'>
                         <div style='font-size:12px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;'>
-                            👤 Facturado a (Cliente)
+                            👤 Entregado a (Cliente)
                         </div>
                         <div style='font-size:12.5px;color:#334155;line-height:1.55;'>
                             <div><strong>Nombre / Razón Social:</strong> " . htmlspecialchars($clienteNombre) . "</div>
@@ -403,7 +403,7 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
                         <div style='background:#f0fdf4;border:1px dashed #86efac;border-radius:10px;padding:12px 14px;'>
                             <div style='font-size:12px;font-weight:700;color:#166534;margin-bottom:3px;'>📎 Documento PDF Oficial Adjunto</div>
                             <div style='font-size:11.5px;color:#15803d;line-height:1.4;'>
-                                Te adjuntamos la factura original en formato <strong>PDF</strong> con membrete y sellos para control y archivo personal.
+                                Te adjuntamos la nota de entrega original en formato <strong>PDF</strong> con membrete y sellos para control y archivo personal.
                             </div>
                         </div>
                     </td>
@@ -441,7 +441,7 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
                             🛡️ Comprobante Electrónico y Registro de Compra Oficial
                         </div>
                         <div style='font-size:11px;color:#64748b;line-height:1.4;'>
-                            Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como soporte fiscal y nota de entrega.
+                            Emitido por Inversiones Duri C.A. para control de inventario, garantías y despacho. Válido como nota de entrega oficial.
                         </div>
                     </td>
                     <td style='vertical-align:middle;text-align:right;width:35%;'>
@@ -460,9 +460,9 @@ function enviarFacturaClienteEmail($destinatario, $pedido, $detalles = [], $tasa
     </body>
     </html>";
 
-    $altBody = "Factura Oficial {$facturaNum} ({$codigo}) - Inversiones Duri C.A.\nTotal: $" . number_format($totalVal, 2) . " USD (Bs. {$totalBs}).\nPago aprobado y verificado.";
+    $altBody = "Nota de Entrega Oficial {$facturaNum} ({$codigo}) - Inversiones Duri C.A.\nTotal: $" . number_format($totalVal, 2) . " USD (Bs. {$totalBs}).\nPago aprobado y verificado.";
 
-    $attName = !empty($filename) ? $filename : "Factura_{$codigo}.pdf";
+    $attName = !empty($filename) ? $filename : "Nota_de_Entrega_{$codigo}.pdf";
     return enviarCorreoGmailSmtp($destinatario, $asunto, $cuerpoHtml, $altBody, $pdfBase64, $attName);
 }
 }
